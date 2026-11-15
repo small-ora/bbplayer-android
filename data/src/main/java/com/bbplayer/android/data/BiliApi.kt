@@ -53,6 +53,19 @@ internal object BiliHttpClient {
             .retryOnConnectionFailure(true)
             .followRedirects(true)
             .followSslRedirects(true)
+            // Defence in depth: never forward the account Cookie to a non-bilibili host,
+            // even if the server answers with a cross-host redirect (OkHttp only strips
+            // Authorization, not a manually-added Cookie header).
+            .addNetworkInterceptor { chain ->
+                val request = chain.request()
+                if (request.header("Cookie") != null &&
+                    !request.url.host.endsWith("bilibili.com", ignoreCase = true)
+                ) {
+                    chain.proceed(request.newBuilder().removeHeader("Cookie").build())
+                } else {
+                    chain.proceed(request)
+                }
+            }
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .header("User-Agent", DESKTOP_UA)

@@ -48,3 +48,15 @@
 
 ## 6. 安全审查
 见 `.ai/spec-android-native/SECURITY-REVIEW-v5.md`（独立 fresh subagent）：P0/P1 处置见该文件与提交记录。
+
+---
+
+## 7. 独立安全审查结果与处置（`.ai/spec-android-native/SECURITY-REVIEW-v5.md`）
+
+- 审查者：fresh subagent（未参与实现，未看实现过程）；审查对象：v5 全部工作区改动。
+- 结论：**P0/P1 = 0**，未发现影响安全性的问题；P2 加固建议 5 条。
+- 已核实：真 Keystore AES-GCM（随机 IV + 密文 IV 前置）、落盘无明文、密钥失效安全清空、logout 删密文+key、数据层无日志、凭据只发 api/passport.bilibili.com、写操作均带 csrf、WBI 合文档、无新增权限/cleartext、无 WebView/剪贴板。
+- 处置：
+  - **P2-1 已修**：`persist()` 检查 `store.save()` 结果，失败回滚内存态并返回「登录凭据保存失败，请重试」，不再假成功；
+  - **P2-4 已修**：OkHttp 新增 network interceptor，非 `*.bilibili.com` host 一律剥离 Cookie（防跨域重定向外发）；
+  - P2-2（运行期 -101 不即时清凭据）、P2-3（节流前身份采样的 TOCTOU）、P2-5（Keystore 无 instrumentation 测试）**记录为后续加固项**，不阻断本版验收。

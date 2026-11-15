@@ -204,7 +204,12 @@ class BiliAuthRepository internal constructor(
     /** 只在 nav 校验成功后调用；写入内存、加密存储与 session。 */
     private suspend fun persist(cookies: Map<String, String>, user: BiliUser) {
         auth.update(cookies)
-        withContext(Dispatchers.IO) { store.save(cookies) }
+        val saved = withContext(Dispatchers.IO) { store.save(cookies) }
+        if (!saved) {
+            // Keystore / disk failure must not look like a successful login.
+            auth.clear()
+            throw AppException("登录凭据保存失败，请重试", retryable = true)
+        }
         _session.value = user
     }
 
