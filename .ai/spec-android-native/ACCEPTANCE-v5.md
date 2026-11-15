@@ -60,3 +60,22 @@
   - **P2-1 已修**：`persist()` 检查 `store.save()` 结果，失败回滚内存态并返回「登录凭据保存失败，请重试」，不再假成功；
   - **P2-4 已修**：OkHttp 新增 network interceptor，非 `*.bilibili.com` host 一律剥离 Cookie（防跨域重定向外发）；
   - P2-2（运行期 -101 不即时清凭据）、P2-3（节流前身份采样的 TOCTOU）、P2-5（Keystore 无 instrumentation 测试）**记录为后续加固项**，不阻断本版验收。
+
+---
+
+## 8. 最终门禁（v5）
+
+```text
+./gradlew :app:assembleDebug :app:assembleRelease \
+  :data:testDebugUnitTest :playback:testDebugUnitTest :lyrics:testDebugUnitTest :app:testDebugUnitTest
+BUILD SUCCESSFUL · EXIT=0
+TOTAL tests=615 failures=0 errors=0 skipped=0
+(app 2 · data 345 · lyrics 160 · playback 108)
+```
+release APK：`app/build/outputs/apk/release/app-release-unsigned.apk`（4.37MB，v0.5.0 / versionCode 6）。
+
+## 9. 需要你验收的 3 件事
+
+1. **登录**：App → 我的 → 登录 Bilibili → 用手机 B 站扫码确认；杀进程重开确认仍登录；再「退出登录」确认凭据被清除（登录页/我的页回到未登录）。
+2. **登录后能力**：收藏夹列表与播放、播放页「收藏到 B 站收藏夹」、加入稍后再看、UP 主主页关注；设置开启「高音质」后播放页出现 HR/DB 标识（有权限的曲目）。
+3. **隐私**：默认不上报历史；在设置 → 隐私开启「上报播放进度到 B 站历史」后，B 站网页端最近观看应出现进度（验证后建议关闭）。
