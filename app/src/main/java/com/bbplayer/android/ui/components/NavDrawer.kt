@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.runtime.Composable
@@ -57,6 +58,7 @@ data class NavEntry(val label: String, val icon: ImageVector, val route: String)
  */
 @Composable
 fun AppDrawerSheet(
+    drawerState: DrawerState,
     tabs: List<NavTab>,
     selectedIndex: Int,
     onSelectTab: (Int) -> Unit,
@@ -64,7 +66,10 @@ fun AppDrawerSheet(
     onOpenSecondary: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Passing [drawerState] installs the predictive-back handler, so the system back button
+    // closes the drawer instead of popping the NavHost underneath.
     ModalDrawerSheet(
+        drawerState = drawerState,
         modifier = modifier.width(304.dp),
         drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp),
         drawerContainerColor = SaltTheme.colors.popup,

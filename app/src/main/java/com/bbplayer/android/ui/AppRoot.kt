@@ -202,6 +202,9 @@ fun AppRoot() {
     val wideScreen = configuration.screenWidthDp >= 600
     val onPlay: (List<Track>, Int) -> Unit = { tracks, index -> playTracks(tracks, index) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val openMenu: () -> Unit = remember(drawerState) {
+        { scope.launch { drawerState.open() } }
+    }
 
     val navHost: @Composable () -> Unit = {
         AppNavHost(
@@ -258,14 +261,18 @@ fun AppRoot() {
                     // Navigation lives in a side drawer (opened by the top-left hamburger), so the
                     // bottom bar can be dedicated to music transport controls.
                     CompositionLocalProvider(
-                        LocalOpenMenu provides { scope.launch { drawerState.open() } },
+                        LocalOpenMenu provides openMenu,
                     ) {
                         ModalNavigationDrawer(
                             drawerState = drawerState,
-                            gesturesEnabled = false,
+                            // M3 gates scrim-tap-to-close on gesturesEnabled: enable gestures only
+                            // while open (also enables edge-swipe dismiss with predictive back),
+                            // keep them off while closed so horizontal lists/seek bars work.
+                            gesturesEnabled = drawerState.isOpen,
                             scrimColor = Color.Black.copy(alpha = 0.32f),
                             drawerContent = {
                                 AppDrawerSheet(
+                                    drawerState = drawerState,
                                     tabs = tabs,
                                     selectedIndex = selectedTab,
                                     onSelectTab = { index ->

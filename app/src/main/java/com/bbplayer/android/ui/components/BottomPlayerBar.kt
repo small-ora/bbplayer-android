@@ -28,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -137,7 +139,9 @@ private fun PlayPauseButton(state: PlaybackState, onClick: () -> Unit) {
         Modifier
             .size(44.dp)
             .clip(CircleShape)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            // Keep the label stable while the buffering spinner replaces the icon (a11y + tests).
+            .semantics { contentDescription = if (state.isPlaying) "暂停" else "播放" },
         contentAlignment = Alignment.Center,
     ) {
         if (state.isBuffering) {
@@ -149,7 +153,7 @@ private fun PlayPauseButton(state: PlaybackState, onClick: () -> Unit) {
         } else {
             Icon(
                 imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                contentDescription = if (state.isPlaying) "暂停" else "播放",
+                contentDescription = null,
                 tint = SaltTheme.colors.text,
                 modifier = Modifier.size(27.dp),
             )
