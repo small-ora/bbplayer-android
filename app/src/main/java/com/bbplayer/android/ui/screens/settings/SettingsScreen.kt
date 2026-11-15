@@ -110,7 +110,7 @@ fun SettingsScreen(
         AudioQuality.HI_RES, AudioQuality.DOLBY ->
             if (session == null) "${quality.label}（需登录）" else quality.label
         else -> when {
-            highQuality && session != null -> "无损优先（自动回退 ${quality.label}）"
+            highQuality && session != null -> "无损优先（FLAC / 杜比，无则最高 AAC）"
             highQuality -> "无损优先（登录后生效）"
             else -> quality.label
         }
@@ -187,7 +187,11 @@ fun SettingsScreen(
                     checked = reportProgress,
                 ) { enabled ->
                     if (enabled && session == null) {
-                        toast = "请先登录 Bilibili 账号"
+                        android.widget.Toast.makeText(
+                            context,
+                            "上报播放进度需要先登录 Bilibili 账号",
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
                         onOpenLogin()
                     } else {
                         scope.safeLaunch { prefs.setReportPlaybackProgress(enabled) }

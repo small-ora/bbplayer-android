@@ -36,7 +36,7 @@
 - 审查者：fresh subagent `3841e570-fe42-4da2-8e5f-bd4c1c4cf72b`（未参与实现、只读），依据冻结 SPEC `5045654`，对象 `git diff 5045654..9d97302`（设置去重提交）。
 - 首轮结论：**FAIL** —— 1×P1（v5 旧数据「音质=无损/杜比 + 高音质开关未开」时显示与实际不一致）+ 2×P2（登录提示在屏幕外不可见；两次偏好写非原子）。
 - 处置：全部 **FIXED** 于 `fc56d18`（见 §7），随后复跑全量门禁（615 单测 / 0 失败）与真机复验。
-- 复核：fresh 复核者 `9226e92d-d8a4-4ffc-9e60-80f8adf42cb2` 只审修复 hunk（结论回填 §7）。
+- 复核：fresh 复核者 `9226e92d-d8a4-4ffc-9e60-80f8adf42cb2` 只审修复 hunk → **REVIEW_V6_FIX_RESULT: PASS**（P1 / P2-1 / P2-2 均 FIXED，无回归）；其指出的 2 个附加 P2 也已一并修复（见 §7）。
 
 ## 5. 发布记录（v0.6.0）
 
@@ -44,7 +44,7 @@
 |---|---|
 | 版本 | versionCode **7** / versionName **0.6.0** |
 | 分支 | `release/v0.6.0` → merge 到 `main` |
-| 提交 | `feat(settings): 配置项去重` + `chore(release): v0.6.0 …` |
+| 提交 | `feat(settings): 配置项去重`（9d97302）、`fix(settings): 审查修复`（fc56d18）、`chore(release): v0.6.0`（ec1f6af） |
 | Tag | `v0.6.0`（annotated），push `main` + tag → GitHub Actions 自动构建并创建 GitHub Release（附 debug / release APK） |
 | 产物 | debug `app/build/outputs/apk/debug/app-debug.apk`（29 MB）；release `app/build/outputs/apk/release/app-release-unsigned.apk`（4.3 MB，未签名） |
 | CI 入口 | `.github/workflows/android.yml`（push main / PR / tag `v*`） |
@@ -67,7 +67,16 @@
 
 - 审查者明确通过的项：启动三选一映射与 `AppRoot` 恢复逻辑一致、缓存合并目录隔离无数据误伤、导入批量仍可用、我的页去重无布局问题、无死代码/未用 import、未改测试与 CI、版本号符合约定。
 - 修复后门禁：`assembleDebug + assembleRelease + app/data/playback/lyrics 单测` → **BUILD SUCCESSFUL / exit 0，615 tests / 0 fail / 0 skip**（日志 `.ai/evidence/v6/gate.log`、`/tmp/v6-gate2.log`）。
-- 复核（`9226e92d…`，只审修复 hunk）：**待回填**。
+### 复核结论（fresh `9226e92d…`，只审修复 hunk）：**PASS**
+
+P1 / P2-1 / P2-2 均判定 FIXED，回归检查通过。复核另指出 2 个附加 P2，已一并修复：
+
+| # | 附加 P2 | 处置 |
+|---|---|---|
+| 4 | 隐私开关「上报播放进度」未登录时仍用 footer toast + 立即跳登录，提示不可见 | 已改用系统 `Toast.makeText(...)`（与音质提示一致），仍不写偏好、仍跳登录 |
+| 5 | `highQuality=true + AAC` 的文案「自动回退 128K/64K」不实（数据层固定 flac→dolby→最高 AAC，忽略请求低档） | 文案改为「无损优先（FLAC / 杜比，无则最高 AAC）」 |
+
+修复后最终门禁：`assembleDebug + assembleRelease + 全模块单测` → **BUILD SUCCESSFUL / exit 0，615 tests / 0 fail / 0 skip**（`.ai/evidence/v6/gate3.log`）。
 
 ## 8. 证据索引
 
