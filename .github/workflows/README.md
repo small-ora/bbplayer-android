@@ -2,7 +2,7 @@
 
 `android.yml` 只做安卓端，一条流水线完成：
 
-1. `data / playback / lyrics` 单元测试（166 用例）
+1. `data / playback / lyrics` 单元测试（613 用例）
 2. `:app:assembleDebug`（可直接安装）
 3. `:app:assembleRelease`（未签名，需自备签名才能分发）
 4. 上传两个 APK 与测试报告为 workflow artifacts
