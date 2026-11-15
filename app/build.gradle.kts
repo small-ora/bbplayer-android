@@ -59,6 +59,10 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":core"))
+    implementation(project(":data"))
+    implementation(project(":playback"))
+    implementation(project(":lyrics"))
     // SaltUI — the open-source UI component library extracted from Salt Player (Apache-2.0)
     implementation("io.github.moriafly:salt-ui:2.8.6")
 

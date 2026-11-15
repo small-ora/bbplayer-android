@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "BBPlayer"
-include(":app")
+include(":app", ":core", ":data", ":playback", ":lyrics")
