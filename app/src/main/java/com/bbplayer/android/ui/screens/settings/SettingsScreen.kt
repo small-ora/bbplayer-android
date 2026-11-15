@@ -37,6 +37,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bbplayer.android.core.model.AccentPreset
 import com.bbplayer.android.core.model.AudioQuality
+import com.bbplayer.android.core.model.LyricSource
 import com.bbplayer.android.core.model.LyricVisualStyle
 import com.bbplayer.android.core.model.MiniPlayerStyle
 import com.bbplayer.android.core.model.PlayerBackgroundStyle
@@ -76,6 +77,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
     val statusBarLyric by prefs.statusBarLyricLine.collectAsStateWithLifecycle(initialValue = true)
     val downloadParallel by prefs.downloadParallel.collectAsStateWithLifecycle(initialValue = 1)
     val autoUpdate by prefs.autoCheckUpdate.collectAsStateWithLifecycle(initialValue = true)
+    val lyricSource by prefs.lyricSource.collectAsStateWithLifecycle(initialValue = LyricSource.AUTO)
+    val importBatchSize by prefs.importBatchSize.collectAsStateWithLifecycle(initialValue = 50)
 
     var dialog by remember { mutableStateOf<String?>(null) }
     var toast by remember { mutableStateOf<String?>(null) }
@@ -135,6 +138,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 SettingRow("同时下载数", "${downloadParallel} 个") { dialog = "downloadParallel" }
+                SettingRow("导入每批匹配数", "${importBatchSize} 首") { dialog = "importBatch" }
                 SettingRow("已下载管理", "查看/删除/导出") { onOpenDownloads() }
             }
         }
@@ -278,6 +282,26 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
             selectedIndex = MiniPlayerStyle.entries.indexOf(miniStyle),
             onSelect = { idx ->
                 scope.safeLaunch { prefs.setMiniPlayerStyle(MiniPlayerStyle.entries[idx]) }
+                dialog = null
+            },
+            onDismiss = { dialog = null },
+        )
+        "lyricSource" -> OptionDialog(
+            title = "歌词来源偏好",
+            options = LyricSource.entries.map { it.label },
+            selectedIndex = LyricSource.entries.indexOf(lyricSource),
+            onSelect = { idx ->
+                scope.safeLaunch { prefs.setLyricSource(LyricSource.entries[idx]) }
+                dialog = null
+            },
+            onDismiss = { dialog = null },
+        )
+        "importBatch" -> OptionDialog(
+            title = "导入每批匹配数",
+            options = listOf("20 首", "50 首", "100 首", "200 首"),
+            selectedIndex = listOf(20, 50, 100, 200).indexOf(importBatchSize).coerceAtLeast(0),
+            onSelect = { idx ->
+                scope.safeLaunch { prefs.setImportBatchSize(listOf(20, 50, 100, 200)[idx]) }
                 dialog = null
             },
             onDismiss = { dialog = null },

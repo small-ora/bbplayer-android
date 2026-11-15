@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.playlistimport
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,10 +47,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.bbplayer.android.core.Format
+import com.bbplayer.android.core.contracts.ImportBatchMatcher
 import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.core.model.ExternalPlaylist
+import com.bbplayer.android.core.model.ImportBatchResult
 import com.bbplayer.android.core.model.ImportMatch
 import com.bbplayer.android.core.model.ImportProgress
+import com.bbplayer.android.core.model.ImportStatus
+import com.bbplayer.android.core.model.ImportTask
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
@@ -66,6 +72,7 @@ import kotlin.math.abs
  * 粘贴网易云 / QQ 音乐歌单链接或 ID → 解析歌单信息 → 限速匹配 B 站视频（展示进度与结果）
  * → 未匹配项可手动搜索替换 → 保存为本地歌单。
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ImportPlaylistScreen(
     onBack: () -> Unit,
@@ -88,6 +95,57 @@ fun ImportPlaylistScreen(
     var saving by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<String?>(null) }
     var manualTarget by remember { mutableStateOf<ImportMatch?>(null) }
+
+    // ---- v4: resumable / batched import ----
+    var task by remember { mutableStateOf<ImportTask?>(null) }
+    var paused by remember { mutableStateOf(false) }
+    var blockedUntil by remember { mutableStateOf(0L) }
+    var blockedNow by remember { mutableStateOf(false) }
+    var batchSize by remember { mutableStateOf(50) }
+
+    LaunchedEffect(Unit) {
+        graph.preferencesRepository.importBatchSize.collect { batchSize = it }
+    }
+    LaunchedEffect(Unit) {
+        graph.importTaskRepository.load()?.let { saved ->
+            task = saved
+            input = saved.input
+            playlist = saved.playlist
+            matches = saved.matches
+            progress = ImportProgress(
+                done = saved.matches.size,
+                total = saved.total,
+                matches = saved.matches,
+                finished = saved.isFinished,
+            )
+            matchDone = saved.status == ImportStatus.DONE
+            if (saved.errorMessage != null) notice = saved.errorMessage
+        }
+    }
+
+    fun persistTask(update: ImportTask) {
+        task = update
+        matches = update.matches
+        progress = ImportProgress(
+            done = update.matches.size,
+            total = update.total,
+            matches = update.matches,
+            finished = update.isFinished,
+        )
+        matchDone = update.status == ImportStatus.DONE
+        scope.safeLaunch { graph.importTaskRepository.save(update) }
+    }
+
+    fun restartImport() {
+        task = null
+        matches = emptyList()
+        progress = null
+        matchDone = false
+        matchError = null
+        paused = false
+        blockedNow = false
+        scope.safeLaunch { graph.importTaskRepository.clear() }
+    }
 
     fun resetForNewPlaylist() {
         playlist = null
@@ -122,39 +180,95 @@ fun ImportPlaylistScreen(
         }
     }
 
-    fun startMatch() {
+    fun startMatch(resume: Boolean = false) {
         val current = playlist ?: return
         if (matching || current.tracks.isEmpty()) return
+        val base = if (resume && task != null) task!! else ImportTask(
+            input = input.trim(),
+            playlist = current,
+            matches = emptyList(),
+            nextIndex = 0,
+            status = ImportStatus.RUNNING,
+            updatedAt = System.currentTimeMillis(),
+        )
         matching = true
+        paused = false
+        blockedNow = false
         matchError = null
         matchDone = false
-        matches = emptyList()
-        progress = ImportProgress(done = 0, total = current.tracks.size)
+        if (!resume) {
+            matches = emptyList()
+            progress = ImportProgress(done = 0, total = current.tracks.size)
+        }
+        task = base
+        persistTask(base.copy(status = ImportStatus.RUNNING, errorMessage = null))
+
         scope.safeLaunch(
             onError = {
                 matching = false
                 matchError = it.toUserMessage()
             },
         ) {
-            graph.externalPlaylistRepository.match(current) { p ->
-                progress = p
-                if (p.matches.isNotEmpty()) matches = p.matches
-            }
-                .onSuccess { result ->
+            val matcher = graph.externalPlaylistRepository as? ImportBatchMatcher
+            if (matcher == null) {
+                // Fallback: legacy all-at-once matching.
+                graph.externalPlaylistRepository.match(current) { p ->
+                    progress = p
+                    if (p.matches.isNotEmpty()) matches = p.matches
+                }.onSuccess { result ->
                     matches = result
-                    progress = ImportProgress(
-                        done = result.size,
-                        total = current.tracks.size,
-                        matches = result,
-                        finished = true,
-                    )
-                    matching = false
                     matchDone = true
-                }
-                .onFailure {
+                    matching = false
+                    persistTask(
+                        base.copy(
+                            matches = result,
+                            nextIndex = current.tracks.size,
+                            status = ImportStatus.DONE,
+                            updatedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                }.onFailure {
                     matching = false
                     matchError = it.toUserMessage()
                 }
+                return@safeLaunch
+            }
+
+            var loopTask = base
+            val batch = batchSize.coerceIn(10, 200)
+            while (true) {
+                if (paused) {
+                    persistTask(loopTask.copy(status = ImportStatus.PAUSED, updatedAt = System.currentTimeMillis()))
+                    matching = false
+                    notice = "已暂停：下次进入会从 ${loopTask.done}/${loopTask.total} 继续"
+                    return@safeLaunch
+                }
+                val result: ImportBatchResult = matcher.matchBatch(loopTask, batch) { p ->
+                    progress = p
+                    if (p.matches.isNotEmpty()) matches = p.matches
+                }
+                loopTask = result.task
+                persistTask(loopTask)
+                if (result.blocked) {
+                    blockedNow = true
+                    blockedUntil = System.currentTimeMillis() + result.retryAfterMs.coerceAtLeast(30_000L)
+                    matching = false
+                    notice = result.task.errorMessage
+                        ?: "B站触发安全风控，已暂停。请稍后点「继续匹配」，任务进度已保存。"
+                    return@safeLaunch
+                }
+                if (loopTask.status == ImportStatus.DONE || loopTask.isFinished) {
+                    matching = false
+                    matchDone = true
+                    notice = "匹配完成：成功 ${loopTask.matches.count { it.matched != null }} 首"
+                    return@safeLaunch
+                }
+                if (loopTask.status == ImportStatus.FAILED) {
+                    matching = false
+                    matchError = loopTask.errorMessage ?: "匹配失败，请稍后重试"
+                    return@safeLaunch
+                }
+            }
         }
     }
 
@@ -199,6 +313,45 @@ fun ImportPlaylistScreen(
         contentPadding = PaddingValues(bottom = 40.dp),
     ) {
         item { SmallTopBar(title = "导入外部歌单", onBack = onBack) }
+
+        // Sticky action bar: the "save" action must stay reachable when the match list is long.
+        val stickyPlaylist = playlist
+        if (stickyPlaylist != null && matches.isNotEmpty()) {
+            stickyHeader(key = "import-save-bar") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SaltTheme.colors.background)
+                        .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = stickyPlaylist.name.ifBlank { "导入歌单" },
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = "已匹配 $matchedCount / ${stickyPlaylist.tracks.size}"
+                                + if (matching) " · 匹配中" else "",
+                            color = SaltTheme.colors.subText,
+                            fontSize = 11.sp,
+                        )
+                    }
+                    SaltPill(
+                        text = when {
+                            saving -> "保存中…"
+                            matchedCount == 0 -> "暂无匹配结果"
+                            else -> "保存为本地歌单（$matchedCount 首）"
+                        },
+                        selected = !saving && matchedCount > 0,
+                        onClick = { if (!saving && matchedCount > 0) savePlaylist() },
+                    )
+                }
+            }
+        }
 
         item {
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding)) {
@@ -302,6 +455,41 @@ fun ImportPlaylistScreen(
                 }
             }
 
+            val savedTask = task
+            if (savedTask != null && !matching && (savedTask.done > 0 || savedTask.status == ImportStatus.PAUSED)) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(SaltTheme.colors.highlight.copy(alpha = 0.09f))
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "已保存进度：${savedTask.done} / ${savedTask.total}"
+                                + if (savedTask.status == ImportStatus.PAUSED) "（已暂停）" else "",
+                            color = SaltTheme.colors.text,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        SaltPill(
+                            text = if (savedTask.isFinished) "已完成" else "继续匹配",
+                            selected = !savedTask.isFinished,
+                            onClick = {
+                                if (savedTask.isFinished) {
+                                    notice = "该任务已匹配完成，可直接保存或「重新匹配」"
+                                } else {
+                                    startMatch(resume = true)
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
             item {
                 Row(
                     modifier = Modifier.padding(horizontal = SaltTheme.dimens.padding),
@@ -309,12 +497,43 @@ fun ImportPlaylistScreen(
                 ) {
                     SaltPill(
                         text = when {
-                            matching -> "匹配中…"
+                            matching -> "暂停匹配"
                             matchDone -> "重新匹配"
+                            savedTask != null && savedTask.matches.isNotEmpty() -> "继续匹配"
                             else -> "开始匹配"
                         },
                         selected = !matching,
-                        onClick = { startMatch() },
+                        onClick = {
+                            when {
+                                matching -> paused = true
+                                savedTask != null && savedTask.matches.isNotEmpty() && !matchDone ->
+                                    startMatch(resume = true)
+                                else -> {
+                                    restartImport()
+                                    startMatch()
+                                }
+                            }
+                        },
+                    )
+                    if (savedTask != null && !matching) {
+                        Spacer(Modifier.width(10.dp))
+                        SaltPill(text = "重新开始", onClick = { restartImport(); startMatch() })
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    SaltPill(
+                        text = "每批 $batchSize 首",
+                        onClick = {
+                            scope.safeLaunch {
+                                val next = when (batchSize) {
+                                    20 -> 50
+                                    50 -> 100
+                                    100 -> 200
+                                    else -> 20
+                                }
+                                graph.preferencesRepository.setImportBatchSize(next)
+                                batchSize = next
+                            }
+                        },
                     )
                     if (matchDone) {
                         Spacer(Modifier.width(10.dp))
@@ -333,9 +552,9 @@ fun ImportPlaylistScreen(
                     Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 12.dp)) {
                         Text(
                             text = if (p != null && p.total > 0) {
-                                "正在逐曲匹配：${p.done} / ${p.total}"
+                                "正在分批匹配：${p.done} / ${p.total}（每批 $batchSize 首，可随时暂停）"
                             } else {
-                                "正在逐曲匹配…"
+                                "正在分批匹配…"
                             },
                             color = SaltTheme.colors.subText,
                             fontSize = 12.sp,
@@ -346,7 +565,7 @@ fun ImportPlaylistScreen(
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = "为降低接口压力，匹配按约 0.7 秒/首限速进行，请耐心等待",
+                            text = "为降低风控概率，匹配按约 1.2 秒/首限速；暂停/退出后进度会保存，可在下次继续",
                             color = SaltTheme.colors.subText.copy(alpha = 0.75f),
                             fontSize = 11.sp,
                         )
@@ -382,11 +601,13 @@ fun ImportPlaylistScreen(
                 item {
                     Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 16.dp)) {
                         if (matchDone && matchedCount > 0) {
-                            SaltPill(
-                                text = if (saving) "保存中…" else "保存为本地歌单（$matchedCount 首）",
-                                selected = !saving,
-                                onClick = { savePlaylist() },
+                            Text(
+                                text = "可直接点顶部「保存为本地歌单」保存匹配成功的歌曲。",
+                                color = SaltTheme.colors.subText,
+                                fontSize = 11.sp,
+                                lineHeight = 16.sp,
                             )
+                            Spacer(Modifier.height(8.dp))
                         }
                         if (matchDone && unmatchedCount > 0) {
                             Spacer(Modifier.height(8.dp))

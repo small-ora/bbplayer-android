@@ -29,6 +29,7 @@ interface AppGraph {
     val downloadRepository: com.bbplayer.android.core.contracts.DownloadRepository
     val backupRepository: com.bbplayer.android.core.contracts.BackupRepository
     val networkCacheRepository: com.bbplayer.android.core.contracts.NetworkCacheRepository
+    val importTaskRepository: com.bbplayer.android.core.contracts.ImportTaskRepository
 }
 
 val LocalAppGraph = staticCompositionLocalOf<AppGraph> {

@@ -61,6 +61,14 @@ object StubRepositories {
         override suspend fun clearCompleted() {}
     }
 
+    val importTasks: com.bbplayer.android.core.contracts.ImportTaskRepository =
+        object : com.bbplayer.android.core.contracts.ImportTaskRepository {
+            private var task: com.bbplayer.android.core.model.ImportTask? = null
+            override suspend fun load() = task
+            override suspend fun save(task: com.bbplayer.android.core.model.ImportTask) { this.task = task }
+            override suspend fun clear() { task = null }
+        }
+
     val backup: BackupRepository = object : BackupRepository {
         override suspend fun exportZip() = Result.failure<File>(notReady("备份"))
         override suspend fun importZip(file: File) = Result.failure<Int>(notReady("恢复"))
