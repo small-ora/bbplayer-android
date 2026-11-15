@@ -39,7 +39,10 @@ class BiliExternalPlaylistRepository internal constructor(
         val ref = resolveRef(input)
         when (ref.source) {
             ExternalSource.NETEASE -> {
-                val root = http.getJsonObject(neteaseUrl(ref.id), HttpHeaders.NETEASE)
+                // 校验放在缓存写入前：歌单不存在 / code 异常不写 30 分钟缓存。
+                val root = http.getJsonObject(neteaseUrl(ref.id), HttpHeaders.NETEASE) { payload ->
+                    ExternalPlaylistParser.parseNetease(payload, ref.id)
+                }
                 val base = ExternalPlaylistParser.parseNetease(root, ref.id)
                 val trackIds = ExternalPlaylistParser.neteaseTrackIds(root)
                 if (trackIds.size <= base.tracks.size) {
@@ -51,7 +54,9 @@ class BiliExternalPlaylistRepository internal constructor(
             }
 
             ExternalSource.QQ_MUSIC -> {
-                val root = http.getJsonObject(qqUrl(ref.id), HttpHeaders.QQ)
+                val root = http.getJsonObject(qqUrl(ref.id), HttpHeaders.QQ) { payload ->
+                    ExternalPlaylistParser.parseQq(payload, ref.id)
+                }
                 ExternalPlaylistParser.parseQq(root, ref.id)
             }
         }
@@ -69,11 +74,14 @@ class BiliExternalPlaylistRepository internal constructor(
         val matches = ArrayList<ImportMatch>(total)
         var lastSearchStartedAt = 0L
         var consecutiveFailures = 0
+        var securityHits = 0
         playlist.tracks.forEachIndexed { index, external ->
             if (index > 0) {
                 // 从上一曲搜索「开始时间」起算间隔，保证搜索请求频率 ≤ 1/700ms。
                 val elapsed = System.currentTimeMillis() - lastSearchStartedAt
-                val wait = minIntervalMs - elapsed
+                // Jitter keeps a long import from looking like a machine-gun burst.
+                val jitter = kotlin.random.Random.nextLong(0L, 400L)
+                val wait = minIntervalMs + jitter - elapsed
                 if (wait > 0L) sleep(wait)
             }
             lastSearchStartedAt = System.currentTimeMillis()
@@ -108,7 +116,12 @@ class BiliExternalPlaylistRepository internal constructor(
     private suspend fun resolveRef(raw: String): ExternalInput.Ref = when (val parsed = ExternalPlaylistParser.parse(raw)) {
         is ExternalInput.Ref -> parsed
         is ExternalInput.ShortLink -> {
-            val finalUrl = http.followRedirect(parsed.url, HttpHeaders.NETEASE)
+            // 落地页无法解析成歌单时视为失败，不写 24 小时缓存。
+            val finalUrl = http.followRedirect(parsed.url, HttpHeaders.NETEASE) { resolved ->
+                if (ExternalPlaylistParser.parse(resolved) is ExternalInput.Invalid) {
+                    throw AppException("短链解析失败，请检查链接是否有效", retryable = false)
+                }
+            }
             when (val again = ExternalPlaylistParser.parse(finalUrl)) {
                 is ExternalInput.Ref -> again
                 else -> throw AppException("短链解析失败，请检查链接是否有效", retryable = false)
@@ -152,7 +165,10 @@ class BiliExternalPlaylistRepository internal constructor(
 
     companion object {
         /** 逐曲搜索的最小间隔（毫秒）。 */
-        const val DEFAULT_INTERVAL_MS = 700L
+        const val DEFAULT_INTERVAL_MS = 1_200L
+
+        /** Pause after a risk-control hit before continuing the import. */
+        private const val SECURITY_BACKOFF_MS = 30_000L
 
         /** 连续搜索失败达到该次数后中止导入（避免无网络时空跑一遍歌单）。 */
         private const val MAX_CONSECUTIVE_FAILURES = 3

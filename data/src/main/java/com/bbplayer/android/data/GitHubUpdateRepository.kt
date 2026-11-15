@@ -32,6 +32,12 @@ class GitHubUpdateRepository internal constructor(
                 "User-Agent" to "$userAgentPrefix/$version",
                 "Accept" to "application/vnd.github+json",
             ),
+            // 缺 tag_name 视为失败，不写 10 分钟缓存。
+            validate = { payload ->
+                if (payload.strOrNull("tag_name", "tagName") == null) {
+                    throw AppException("更新信息解析失败，请稍后重试", retryable = true)
+                }
+            },
         )
         parseRelease(root, currentVersion)
     }

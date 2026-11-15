@@ -31,8 +31,10 @@ class BiliDiscoverRepository internal constructor(
             .addQueryParameter("term", keyword)
             .build()
             .toString()
-        val root = http.getJsonObject(url, HttpHeaders.BILIBILI)
-        root.requireSuccess("搜索建议加载失败，请稍后重试")
+        // 校验放在缓存写入前：code != 0 的结果不缓存，避免错误结果被缓存 5 分钟。
+        val root = http.getJsonObject(url, HttpHeaders.BILIBILI) { payload ->
+            payload.requireSuccess("搜索建议加载失败，请稍后重试")
+        }
         DiscoverMapper.suggestions(root)
     }
 

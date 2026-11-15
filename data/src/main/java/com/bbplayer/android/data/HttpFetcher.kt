@@ -2,6 +2,12 @@ package com.bbplayer.android.data
 
 import com.bbplayer.android.core.contracts.AppException
 import com.bbplayer.android.core.contracts.toUserMessage
+import com.bbplayer.android.data.cache.BiliCacheRegistry
+import com.bbplayer.android.data.cache.BiliCacheTtl
+import com.bbplayer.android.data.cache.CacheKey
+import com.bbplayer.android.data.cache.CachedRequestExecutor
+import com.bbplayer.android.data.cache.HttpCacheStore
+import com.bbplayer.android.data.cache.RequestThrottle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,11 +62,31 @@ internal object HttpHeaders {
 /**
  * 轻量 HTTP 读取器：GET 文本 / JSON，跟随重定向。
  * 网络与 HTTP 错误统一转成 [AppException]（中文文案 + retryable）。
+ *
+ * ## v3 缓存
+ *
+ * GET JSON 与重定向结果按 [BiliCacheTtl] 做持久化缓存（suggest 5m / 字幕 JSON 24h /
+ * 网易云·QQ 歌单 30m / GitHub 更新检查 10m …），命中不重复请求；
+ * POST（网易云批量歌曲详情）不缓存。缓存默认复用进程级共享 store
+ * （首个 `BiliApi(context)` 创建），可通过 [cache] 显式注入。
  */
 internal class HttpFetcher(
     private val client: OkHttpClient = ExternalHttp.client,
     private val json: Json = BiliJson,
+    cache: HttpCacheStore? = null,
+    throttle: RequestThrottle = BiliCacheRegistry.sharedThrottle(),
 ) {
+
+    /** 显式注入的缓存；为 null 时请求时回退到进程级共享 store（可能尚未初始化）。 */
+    private val explicitCache: HttpCacheStore? = cache
+
+    private val requests: CachedRequestExecutor by lazy {
+        CachedRequestExecutor(
+            cache = explicitCache ?: BiliCacheRegistry.sharedOrNull(),
+            throttle = throttle,
+            deduplicator = BiliCacheRegistry.sharedDeduplicator(),
+        )
+    }
 
     suspend fun getText(url: String, headers: Map<String, String> = emptyMap()): String =
         withContext(Dispatchers.IO) {
@@ -68,13 +94,30 @@ internal class HttpFetcher(
             text
         }
 
+    /**
+     * GET JSON，按 [BiliCacheTtl] 读穿缓存。
+     *
+     * [validate] 只在**未命中缓存、真正请求成功后**执行；抛异常表示业务层判定失败
+     * （如 `code != 0` / 缺字段），此时结果不写缓存，避免把错误结果缓存住。
+     */
     suspend fun getJsonObject(
         url: String,
         headers: Map<String, String> = emptyMap(),
-    ): JsonObject {
-        val text = getText(url, headers)
-        return parseJsonObject(text)
-            ?: throw AppException("返回数据解析失败，请稍后重试", retryable = true)
+        validate: ((JsonObject) -> Unit)? = null,
+    ): JsonObject = withContext(Dispatchers.IO) {
+        requests.run(
+            key = CacheKey.ofUrl("GET", url),
+            ttlMs = BiliCacheTtl.forUrl(url),
+            decode = ::parseJsonObject,
+            encode = { it.toString() },
+            throttled = isBilibiliUrl(url),
+        ) {
+            val text = getText(url, headers)
+            val parsed = parseJsonObject(text)
+                ?: throw AppException("返回数据解析失败，请稍后重试", retryable = true)
+            validate?.invoke(parsed)
+            parsed
+        }
     }
 
     /**
@@ -118,20 +161,41 @@ internal class HttpFetcher(
         }
     }
 
-    /** 跟随重定向并返回最终 URL（网易云 `163cn.tv` 短链解析用）。 */
+    /**
+     * 跟随重定向并返回最终 URL（网易云 `163cn.tv` 短链解析用，24h 缓存）。
+     *
+     * [validate] 用于校验落地 URL 有效（如能否解析成歌单引用）；校验失败不写缓存。
+     */
     suspend fun followRedirect(
         url: String,
         headers: Map<String, String> = emptyMap(),
+        validate: ((String) -> Unit)? = null,
     ): String = withContext(Dispatchers.IO) {
         val normalized = InputResolver.normalizeUrl(url)
-        val request = buildRequest(normalized, headers)
+        requests.run(
+            key = CacheKey.ofUrl("REDIRECT", normalized),
+            ttlMs = BiliCacheTtl.forUrl(normalized),
+            decode = { it },
+            encode = { it },
+            throttled = isBilibiliUrl(normalized),
+        ) {
+            val finalUrl = fetchRedirectFinalUrl(normalized, headers)
+            validate?.invoke(finalUrl)
+            finalUrl
+        }
+    }
+
+    private fun fetchRedirectFinalUrl(url: String, headers: Map<String, String>): String {
+        val request = buildRequest(url, headers)
         val response = try {
             client.newCall(request).execute()
         } catch (e: IOException) {
             throw AppException(e.toUserMessage(), e, retryable = true)
         }
-        response.use { resp -> resp.request.url.toString() }
+        response.use { resp -> return resp.request.url.toString() }
     }
+
+    private fun isBilibiliUrl(url: String): Boolean = url.contains("bilibili.com")
 
     /** 返回 (body, statusCode)；失败时直接抛 [AppException]。 */
     private fun execute(url: String, headers: Map<String, String>): Pair<String, Int> {

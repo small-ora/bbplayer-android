@@ -59,3 +59,18 @@ interface BackupRepository {
     suspend fun exportZip(): Result<File>
     suspend fun importZip(file: File): Result<Int>
 }
+
+/**
+ * Read-only statistics + clearing for the HTTP response cache
+ * (search / detail / lyrics / playlist responses kept to avoid duplicate requests).
+ */
+interface NetworkCacheRepository {
+    /** Current on-disk cache size in bytes. */
+    fun sizeBytes(): Long
+
+    /** Number of cached entries (expired entries are not counted). */
+    fun entryCount(): Int
+
+    /** Clear every cached response and return the number of removed entries. */
+    suspend fun clear(): Int
+}

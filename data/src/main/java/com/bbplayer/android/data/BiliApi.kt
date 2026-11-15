@@ -3,6 +3,14 @@ package com.bbplayer.android.data
 import android.content.Context
 import com.bbplayer.android.core.contracts.AppException
 import com.bbplayer.android.core.contracts.toUserMessage
+import com.bbplayer.android.data.cache.BiliCacheRegistry
+import com.bbplayer.android.data.cache.BiliCacheTtl
+import com.bbplayer.android.data.cache.CacheKey
+import com.bbplayer.android.data.cache.CachedRequestExecutor
+import com.bbplayer.android.data.cache.HttpCacheStore
+import com.bbplayer.android.data.cache.InFlightDeduplicator
+import com.bbplayer.android.data.cache.RequestThrottle
+import com.bbplayer.android.data.cache.SecurityCooldown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -12,7 +20,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -59,17 +69,43 @@ internal object BiliHttpClient {
  * - 所有请求带桌面 UA / Referer / Origin / `Cookie: buvid3=...`；
  * - 启动时 GET `/x/frontend/finger/spi` 取 `data.b_3` 作为 buvid3，内存 + `filesDir/buvid3.txt` 缓存；
  * - `code != 0` 与网络异常统一抛 [AppException]（中文文案 + retryable）。
+ *
+ * ## 缓存 / 节流 / 并发合并（v3）
+ *
+ * 只读 GET 请求统一经过 [CachedRequestExecutor]：
+ * 1. 先查 [HttpCacheStore]（TTL 见 [BiliCacheTtl]），**命中直接返回，不再发请求**；
+ * 2. 未命中时用 [InFlightDeduplicator] 合并相同 key 的并发请求（只发一次）；
+ * 3. 真正发请求前经 [RequestThrottle] 节流（350ms ± 100ms 抖动，全局串行）；
+ * 4. 仅 `code == 0` 的成功结果写缓存；网络异常 / 非 2xx / `code != 0` 一律不缓存。
+ *
+ * 默认复用进程级共享实例（[BiliCacheRegistry]），因此多个仓储共用同一份缓存，
+ * `BiliNetworkCache.clear()` 能清掉这里写入的所有条目。
+ * 构造参数均可显式注入（测试 / 单实例隔离用）。
  */
 class BiliApi(
     context: Context,
     private val client: OkHttpClient = BiliHttpClient.instance,
     private val json: Json = BiliJson,
     private val baseUrl: String = BASE_URL,
+    cache: HttpCacheStore? = null,
+    private val throttle: RequestThrottle = BiliCacheRegistry.sharedThrottle(),
+    deduplicator: InFlightDeduplicator = BiliCacheRegistry.sharedDeduplicator(),
 ) {
 
     private val appContext = context.applicationContext
     private val buvidFile = File(appContext.filesDir, "buvid3.txt")
     private val buvidMutex = Mutex()
+
+    /** 接口缓存（默认进程级共享：与 [com.bbplayer.android.data.cache.BiliNetworkCache] 同一份）。 */
+    private val cacheStore: HttpCacheStore = cache ?: BiliCacheRegistry.shared(appContext)
+    private val requests = CachedRequestExecutor(
+        cache = cacheStore,
+        throttle = throttle,
+        deduplicator = deduplicator,
+    )
+
+    /** 供同模块仓储共享缓存实例（HttpFetcher 等），不对外暴露。 */
+    internal val httpCache: HttpCacheStore get() = cacheStore
 
     @Volatile
     private var cachedBuvid: String? = null
@@ -98,6 +134,8 @@ class BiliApi(
     }
 
     private suspend fun fetchBuvid(): String? = withContext(Dispatchers.IO) {
+        // buvid3 接口同样属于 api.bilibili.com，纳入全局节流
+        throttle.acquire()
         val request = Request.Builder().url("$baseUrl/x/frontend/finger/spi").get().build()
         val response = try {
             client.newCall(request).execute()
@@ -120,54 +158,80 @@ class BiliApi(
     /**
      * 发 GET 请求，校验 `code`，返回 `data` 节点（可能是对象/数组）。
      *
+     * 只读接口自动走「缓存 → 并发合并 → 节流 → 请求」：
+     * 命中缓存不产生任何网络请求；`code != 0` / 非 2xx / 网络异常不写缓存。
+     *
      * [messageFor] 允许调用方按业务场景覆盖错误码文案（如评论/字幕），
      * 默认使用通用的 [apiMessage]。
      */
+    /** True while the risk-control cool-down is active. */
+    fun isBlocked(): Boolean = SecurityCooldown.remainingMs() > 0L
+
     suspend fun getRaw(
         path: String,
         params: Map<String, String> = emptyMap(),
         messageFor: (Long, String?) -> String = ::apiMessage,
-    ): JsonElement =
-        withContext(Dispatchers.IO) {
-            val buvid = ensureBuvid()
-            val urlBuilder = (baseUrl + path).toHttpUrl().newBuilder()
-            params.forEach { (key, value) -> urlBuilder.addQueryParameter(key, value) }
-            val requestBuilder = Request.Builder().url(urlBuilder.build()).get()
-            if (!buvid.isNullOrBlank()) {
-                requestBuilder.header("Cookie", "buvid3=$buvid")
-            }
-            val response = try {
-                client.newCall(requestBuilder.build()).execute()
+    ): JsonElement = withContext(Dispatchers.IO) {
+        SecurityCooldown.remainingMs().takeIf { it > 0L }?.let { remaining ->
+            throw AppException("请求被B站安全策略限制，请约 ${remaining / 1000} 秒后重试", retryable = true)
+        }
+        requests.run(
+            key = CacheKey.of(path, params),
+            ttlMs = BiliCacheTtl.forBiliPath(path),
+            decode = { raw -> runCatching { json.parseToJsonElement(raw) }.getOrNull() },
+            encode = { it.toString() },
+        ) {
+            fetchRaw(path, params, messageFor)
+        }
+    }
+
+    /** 真正发请求（只在缓存未命中时被调用）；成功才可能被写入缓存。 */
+    private suspend fun fetchRaw(
+        path: String,
+        params: Map<String, String>,
+        messageFor: (Long, String?) -> String,
+    ): JsonElement {
+        val buvid = ensureBuvid()
+        val urlBuilder = (baseUrl + path).toHttpUrl().newBuilder()
+        params.forEach { (key, value) -> urlBuilder.addQueryParameter(key, value) }
+        val requestBuilder = Request.Builder().url(urlBuilder.build()).get()
+        if (!buvid.isNullOrBlank()) {
+            requestBuilder.header("Cookie", "buvid3=$buvid")
+        }
+        val response = try {
+            client.newCall(requestBuilder.build()).execute()
+        } catch (e: IOException) {
+            throw AppException(e.toUserMessage(), e, retryable = true)
+        }
+        response.use { resp ->
+            val text = try {
+                resp.body?.string().orEmpty()
             } catch (e: IOException) {
                 throw AppException(e.toUserMessage(), e, retryable = true)
             }
-            response.use { resp ->
-                val text = try {
-                    resp.body?.string().orEmpty()
-                } catch (e: IOException) {
-                    throw AppException(e.toUserMessage(), e, retryable = true)
-                }
-                if (!resp.isSuccessful) {
-                    throw AppException(
-                        httpMessage(resp.code),
-                        retryable = resp.code >= 500 || resp.code == 412 || resp.code == 429,
-                    )
-                }
-                val root = try {
-                    json.parseToJsonElement(text) as? JsonObject
-                } catch (e: SerializationException) {
-                    null
-                } ?: throw AppException("B站返回数据解析失败，请重试", retryable = true)
-                val code = root.longOrNull("code") ?: 0L
-                if (code != 0L) {
-                    throw AppException(
-                        messageFor(code, root.strOrNull("message")),
-                        retryable = code !in NON_RETRYABLE_CODES,
-                    )
-                }
-                root.get("data") ?: JsonObject(emptyMap())
+            if (!resp.isSuccessful) {
+                if (resp.code == 412 || resp.code == 429) SecurityCooldown.markBlocked()
+                throw AppException(
+                    httpMessage(resp.code),
+                    retryable = resp.code >= 500 || resp.code == 412 || resp.code == 429,
+                )
             }
+            val root = try {
+                json.parseToJsonElement(text) as? JsonObject
+            } catch (e: SerializationException) {
+                null
+            } ?: throw AppException("B站返回数据解析失败，请重试", retryable = true)
+            val code = root.longOrNull("code") ?: 0L
+            if (code == -412L) SecurityCooldown.markBlocked()
+            if (code != 0L) {
+                throw AppException(
+                    messageFor(code, root.strOrNull("message")),
+                    retryable = code !in NON_RETRYABLE_CODES,
+                )
+            }
+            return root.get("data") ?: JsonObject(emptyMap())
         }
+    }
 
     suspend fun getObject(
         path: String,
@@ -183,9 +247,20 @@ class BiliApi(
     ): JsonArray =
         getRaw(path, params, messageFor) as? JsonArray ?: JsonArray(emptyList())
 
-    /** 跟随 b23.tv 短链重定向，返回最终 URL 与落地页 HTML。 */
+    /** 跟随 b23.tv 短链重定向，返回最终 URL 与落地页 HTML（24h 缓存，同 URL 只解析一次）。 */
     internal suspend fun resolveShortLink(url: String): ShortLinkResolution? = withContext(Dispatchers.IO) {
         val normalized = InputResolver.normalizeUrl(url)
+        requests.run(
+            key = CacheKey.ofUrl("b23", normalized),
+            ttlMs = BiliCacheTtl.SHORT_LINK,
+            decode = ::decodeShortLink,
+            encode = ::encodeShortLink,
+        ) {
+            fetchShortLink(normalized)
+        }
+    }
+
+    private fun fetchShortLink(normalized: String): ShortLinkResolution {
         val request = try {
             Request.Builder().url(normalized.toHttpUrl()).get().build()
         } catch (e: IllegalArgumentException) {
@@ -199,9 +274,20 @@ class BiliApi(
         response.use { resp ->
             val finalUrl = resp.request.url.toString()
             val html = runCatching { resp.peekBody(MAX_SHORT_LINK_BODY).string() }.getOrDefault("")
-            ShortLinkResolution(finalUrl, html)
+            return ShortLinkResolution(finalUrl, html)
         }
     }
+
+    private fun decodeShortLink(raw: String): ShortLinkResolution? = runCatching {
+        val root = json.parseToJsonElement(raw) as? JsonObject ?: return null
+        val finalUrl = root.strOrNull("finalUrl") ?: return null
+        ShortLinkResolution(finalUrl = finalUrl, html = root.strOrNull("html").orEmpty())
+    }.getOrNull()
+
+    private fun encodeShortLink(value: ShortLinkResolution): String = buildJsonObject {
+        put("finalUrl", value.finalUrl)
+        put("html", value.html)
+    }.toString()
 
     companion object {
         const val BASE_URL = "https://api.bilibili.com"

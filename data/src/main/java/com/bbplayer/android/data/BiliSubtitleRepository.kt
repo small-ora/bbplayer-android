@@ -33,7 +33,12 @@ class BiliSubtitleRepository internal constructor(
             params = mapOf("bvid" to safeBvid, "cid" to cid.toString()),
         )
         val ref = SubtitleMapper.pickSubtitle(data) ?: return@repoResult null
-        val root = http.getJsonObject(ref.url, HttpHeaders.BILIBILI)
+        // 校验放在缓存写入前：CDN 错误 JSON 不写 24 小时缓存。
+        val root = http.getJsonObject(ref.url, HttpHeaders.BILIBILI) { payload ->
+            if (payload.arrOrNull("body") == null) {
+                throw AppException("字幕数据解析失败，请重试", retryable = true)
+            }
+        }
         val cues = SubtitleMapper.parseCues(root)
         if (cues.isEmpty()) {
             null
