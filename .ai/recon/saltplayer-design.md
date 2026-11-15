@@ -2,7 +2,7 @@
 
 Target: reproduce the look in a **native Android app (Kotlin + Jetpack Compose, Material 3)**.
 This document is derived from (a) the app's **own open-source design system source code** and
-(b) **real screenshots** downloaded into `/root/bbplayer/.ai/recon/saltplayer/`.
+(b) **real screenshots** downloaded into `<repo>/.ai/recon/saltplayer/`.
 
 - App: 椒盐音乐 / Salt Player, package `com.salt.music`, by Moriafly. Latest observed release: **12.6.0 (2026-11-02)**.
 - Design system: **SaltUI** — <https://github.com/Moriafly/SaltUI> (Apache-2.0, Compose Multiplatform;

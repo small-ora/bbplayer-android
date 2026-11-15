@@ -13,7 +13,7 @@
 - OS: Linux x86_64, 8 vCPU / 7G RAM, 磁盘可用 ~23G；网络到 dl.google.com / repo.maven.apache.org 可用（~12MB/s）。
 - JDK: OpenJDK 17.0.21；Gradle 8.13（wrapper，本地已缓存发行版）；AGP 8.13.2；Kotlin 2.4.21；compose 1.10.0；compileSdk/targetSdk 36；minSdk 26。
 - Android SDK: /opt/android-sdk（platforms/android-36, build-tools 35/36, licenses 已接受）。
-- 设备: `adb devices` → `794727e4  device`，型号 24129PN74C，Android 16（sdk 37），1200x2670 @520dpi，**可安装/截图/驱动 UI**。
+- 设备: `adb devices` → `<device>  device`，型号 24129PN74C，Android 16（sdk 37），1200x2670 @520dpi，**可安装/截图/驱动 UI**。
 - Bilibili 匿名 API 已实测可通（需 UA + Referer，search 需 buvid3 cookie）: `/x/frontend/finger/spi`、`/x/web-interface/search/type`、`/x/web-interface/view`、`/x/player/playurl`（DASH audio 30216/30232/30280）、`/x/web-interface/ranking/v2?rid=3`、`/x/web-interface/archive/related`。
 - 第三方歌词 API 已实测: QQ `c.y.qq.com/soso/fcgi-bin/client_search_cp` + Netease `music.163.com/api/search/get/web` 可匿名返回。
 

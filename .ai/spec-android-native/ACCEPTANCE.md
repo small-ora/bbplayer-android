@@ -136,7 +136,7 @@ lyrics   tests= 64  failures=0 errors=0 skipped=0
 TOTAL    tests=166  failures=0 errors=0 skipped=0
 ```
 
-真机验证（设备 `5c17d7b9` MI 6 / Android 14，包名 `com.bbplayer.android.debug`）：
+真机验证（设备 `<device>` MI 6 / Android 14，包名 `com.bbplayer.android.debug`）：
 
 ```text
 $ adb install -r app/build/outputs/apk/debug/app-debug.apk   → Success
