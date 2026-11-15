@@ -54,6 +54,7 @@ fun HomeScreen(
     onOpenSearch: () -> Unit,
     onOpenPlayer: () -> Unit,
     onPlayTrack: (List<Track>, Int) -> Unit,
+    onOpenLeaderboard: () -> Unit = {},
 ) {
     val graph = LocalAppGraph.current
     val history by graph.historyRepository.recent(20).collectAsStateWithLifecycle(initialValue = emptyList())
@@ -134,7 +135,14 @@ fun HomeScreen(
             }
         }
 
-        item { SectionHeader(title = "B 站音乐区热门", subtitle = "排行榜") }
+        item {
+            SectionHeader(
+                title = "B 站音乐区热门",
+                subtitle = "排行榜",
+                action = "完整榜单",
+                onAction = onOpenLeaderboard,
+            )
+        }
         when {
             loading -> item { LoadingState() }
             error != null -> item {

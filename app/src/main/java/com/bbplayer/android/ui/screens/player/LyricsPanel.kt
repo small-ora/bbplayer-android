@@ -17,25 +17,32 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bbplayer.android.core.model.LyricLine
+import com.bbplayer.android.core.model.LyricVisualStyle
 import com.bbplayer.android.core.model.Lyrics
 import com.moriafly.salt.ui.Text
 
 /**
- * Salt Player style lyrics: left-aligned lines, only the active line is promoted
- * (bigger, bolder, white); neighbours fade to ~40% opacity. Auto-scroll keeps the active
- * line near the vertical centre, and pausing on a manual scroll is respected.
+ * Salt Player style lyrics.
+ *
+ * - [LyricVisualStyle.MODERN]: left-aligned, only the active line is promoted.
+ * - [LyricVisualStyle.OLD_SCHOOL]: centered, uniform size.
+ * - [verbatim]: karaoke fill for lines that carry word-level timing (enhanced LRC / SPL / YRC).
  */
 @Composable
 fun LyricsPanel(
@@ -43,6 +50,9 @@ fun LyricsPanel(
     positionMs: Long,
     fontScale: Float,
     modifier: Modifier = Modifier,
+    style: LyricVisualStyle = LyricVisualStyle.MODERN,
+    verbatim: Boolean = true,
+    showTranslation: Boolean = true,
     onSeekTo: (Long) -> Unit,
 ) {
     if (lyrics == null || lyrics.isEmpty) {
@@ -95,6 +105,10 @@ fun LyricsPanel(
                 line = line,
                 active = index == activeIndex,
                 fontScale = fontScale,
+                style = style,
+                verbatim = verbatim,
+                showTranslation = showTranslation,
+                positionMs = positionMs,
                 onClick = { onSeekTo(line.startMs - lyrics.offsetMs) },
             )
         }
@@ -102,35 +116,131 @@ fun LyricsPanel(
 }
 
 @Composable
-private fun LyricLineItem(line: LyricLine, active: Boolean, fontScale: Float, onClick: () -> Unit) {
-    val baseSize = 20f * fontScale
-    val size by animateFloatAsState(if (active) baseSize * 1.15f else baseSize, label = "lyricSize")
+private fun LyricLineItem(
+    line: LyricLine,
+    active: Boolean,
+    fontScale: Float,
+    style: LyricVisualStyle,
+    verbatim: Boolean,
+    showTranslation: Boolean,
+    positionMs: Long,
+    onClick: () -> Unit,
+) {
+    val modern = style == LyricVisualStyle.MODERN
+    val baseSize = (if (modern) 20f else 17f) * fontScale
+    val size by animateFloatAsState(if (active && modern) baseSize * 1.15f else baseSize, label = "lyricSize")
     val color by animateColorAsState(
-        targetValue = if (active) Color.White else Color.White.copy(alpha = 0.42f),
+        targetValue = when {
+            active -> Color.White
+            modern -> Color.White.copy(alpha = 0.42f)
+            else -> Color.White.copy(alpha = 0.55f)
+        },
         label = "lyricColor",
     )
+    val align = if (modern) TextAlign.Start else TextAlign.Center
+    val karaokeProgress = if (active && verbatim) charProgress(line, positionMs) else 0f
+
     Column(
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp),
+        horizontalAlignment = if (modern) Alignment.Start else Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = line.text,
-            color = color,
-            fontSize = size.sp,
-            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-            lineHeight = (size * 1.35f).sp,
-            textAlign = TextAlign.Start,
-        )
-        line.translation?.takeIf { it.isNotBlank() }?.let { translation ->
-            Spacer(Modifier.height(3.dp))
+        if (active && verbatim && line.words.isNotEmpty()) {
+            KaraokeLine(
+                text = line.text,
+                progress = karaokeProgress,
+                activeSize = size,
+                activeColor = color,
+                textAlign = align,
+                activeWeight = FontWeight.Bold,
+            )
+        } else {
             Text(
-                text = translation,
-                color = if (active) Color.White.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.28f),
-                fontSize = (baseSize * 0.72f).sp,
-                textAlign = TextAlign.Start,
+                text = line.text,
+                color = color,
+                fontSize = size.sp,
+                fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                lineHeight = (size * 1.35f).sp,
+                textAlign = align,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
+        if (showTranslation) {
+            line.translation?.takeIf { it.isNotBlank() }?.let { translation ->
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = translation,
+                    color = if (active) Color.White.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.28f),
+                    fontSize = (baseSize * 0.72f).sp,
+                    textAlign = align,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
     }
+}
+
+/** Base text + a highlighted copy clipped to the current karaoke position. */
+@Composable
+private fun KaraokeLine(
+    text: String,
+    progress: Float,
+    activeSize: Float,
+    activeColor: Color,
+    textAlign: TextAlign,
+    activeWeight: FontWeight,
+) {
+    var textWidth by remember(text) { mutableFloatStateOf(1f) }
+    Box {
+        Text(
+            text = text,
+            color = Color.White.copy(alpha = 0.45f),
+            fontSize = activeSize.sp,
+            fontWeight = activeWeight,
+            lineHeight = (activeSize * 1.35f).sp,
+            textAlign = textAlign,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = text,
+            color = activeColor,
+            fontSize = activeSize.sp,
+            fontWeight = activeWeight,
+            lineHeight = (activeSize * 1.35f).sp,
+            textAlign = textAlign,
+            onTextLayout = { result ->
+                if (result.lineCount > 0) textWidth = result.getLineRight(0) - result.getLineLeft(0)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawWithContent {
+                    val width = if (textWidth <= 1f) size.width else textWidth
+                    clipRect(right = width * progress.coerceIn(0f, 1f)) {
+                        this@drawWithContent.drawContent()
+                    }
+                },
+        )
+    }
+}
+
+/** Character-level progress inside a line, based on word timings when available. */
+private fun charProgress(line: LyricLine, positionMs: Long): Float {
+    val total = line.text.length.coerceAtLeast(1)
+    if (line.words.isEmpty()) {
+        val span = (line.endMs - line.startMs).coerceAtLeast(1L)
+        return ((positionMs - line.startMs).toFloat() / span).coerceIn(0f, 1f)
+    }
+    var consumed = 0
+    for (word in line.words) {
+        val length = word.text.length.coerceAtLeast(1)
+        if (positionMs < word.startMs) return consumed.toFloat() / total
+        if (positionMs <= word.endMs) {
+            val local = ((positionMs - word.startMs).toFloat() / (word.endMs - word.startMs).coerceAtLeast(1L))
+            return ((consumed + local * length) / total).coerceIn(0f, 1f)
+        }
+        consumed += length
+    }
+    return 1f
 }

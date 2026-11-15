@@ -9,38 +9,44 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.bbplayer.android.core.model.AccentPreset
 import com.bbplayer.android.core.model.ThemeMode
 import com.moriafly.salt.ui.SaltColors
 import com.moriafly.salt.ui.SaltConfigs
 import com.moriafly.salt.ui.SaltDynamicColors
 import com.moriafly.salt.ui.SaltTheme
+import com.moriafly.salt.ui.darkSaltColors
+import com.moriafly.salt.ui.lightSaltColors
 
 /**
  * BBPlayer theme: SaltUI (the component library extracted from Salt Player) with
- * optional Material You (Monet) dynamic colours mapped onto Salt's colour roles.
+ * optional Material You (Monet) dynamic colours or a preset accent colour, plus a
+ * pure-white (e-ink) mode.
  */
 @Composable
 fun BbTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = true,
+    accentPreset: AccentPreset = AccentPreset.SALT,
+    pureWhite: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val dark = when (themeMode) {
+    val dark = if (pureWhite) false else when (themeMode) {
         ThemeMode.SYSTEM -> systemDark
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
     val context = LocalContext.current
-    val colors = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        SaltDynamicColors(
+    val colors = when {
+        pureWhite -> SaltDynamicColors(light = PureWhiteColors, dark = PureWhiteColors)
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> SaltDynamicColors(
             light = dynamicLightColorScheme(context).toSaltColors(),
             dark = dynamicDarkColorScheme(context).toSaltColors(),
         )
-    } else {
-        SaltDynamicColors(
-            light = com.moriafly.salt.ui.lightSaltColors(),
-            dark = com.moriafly.salt.ui.darkSaltColors(),
+        else -> SaltDynamicColors(
+            light = lightSaltColors().withAccent(accentPreset.light),
+            dark = darkSaltColors().withAccent(accentPreset.dark),
         )
     }
     CompositionLocalProvider(LocalBbColors provides BbExtraColors(dark)) {
@@ -61,6 +67,20 @@ private fun androidx.compose.material3.ColorScheme.toSaltColors(): SaltColors = 
     popup = surfaceContainerHigh,
     stroke = outlineVariant,
     onHighlight = onPrimary,
+)
+
+private fun SaltColors.withAccent(accent: Long): SaltColors = copy(highlight = Color(accent))
+
+/** E-ink friendly palette: pure white surfaces, black text, no tinting. */
+private val PureWhiteColors: SaltColors = SaltColors(
+    highlight = Color(0xFF1A1A1A),
+    text = Color(0xFF000000),
+    subText = Color(0xFF6B6B6B),
+    background = Color(0xFFFFFFFF),
+    subBackground = Color(0xFFFFFFFF),
+    popup = Color(0xFFFFFFFF),
+    stroke = Color(0x33000000),
+    onHighlight = Color(0xFFFFFFFF),
 )
 
 /** Player-screen album-art wash colours (independent from Salt's design tokens). */

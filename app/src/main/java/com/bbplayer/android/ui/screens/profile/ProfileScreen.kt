@@ -16,6 +16,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +47,10 @@ import java.time.format.DateTimeFormatter
 fun ProfileScreen(
     onOpenSettings: () -> Unit,
     onPlayTrack: (List<Track>, Int) -> Unit,
+    onOpenLeaderboard: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
+    onOpenDownloads: () -> Unit = {},
+    onOpenImport: () -> Unit = {},
 ) {
     val graph = LocalAppGraph.current
     val summary by graph.historyRepository.summary().collectAsStateWithLifecycle(initialValue = ListeningSummary())
@@ -104,6 +111,34 @@ fun ProfileScreen(
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 12.dp)) {
                 RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                     Item(
+                        onClick = onOpenLeaderboard,
+                        text = "收听排行",
+                        sub = "B 站音乐榜 · 我的收听排行",
+                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.BarChart),
+                    )
+                    Item(
+                        onClick = onOpenHistory,
+                        text = "播放历史",
+                        sub = "按日查看听歌记录",
+                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.History),
+                    )
+                    Item(
+                        onClick = onOpenDownloads,
+                        text = "已下载",
+                        sub = "离线歌曲与导出",
+                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.Download),
+                    )
+                    Item(
+                        onClick = onOpenImport,
+                        text = "导入歌单",
+                        sub = "网易云 / QQ 音乐 → B 站",
+                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.PlaylistAdd),
+                    )
+                }
+            }
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
+                RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                    Item(
                         onClick = onOpenSettings,
                         text = "设置",
                         iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.Settings),
@@ -111,7 +146,7 @@ fun ProfileScreen(
                     Item(
                         onClick = onOpenSettings,
                         text = "主题与外观",
-                        sub = "深浅色 · 动态取色",
+                        sub = "深浅色 · 动态取色 · 强调色",
                         iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.Settings),
                     )
                 }
