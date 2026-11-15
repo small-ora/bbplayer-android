@@ -52,6 +52,11 @@ class PlaybackControllerImpl(
     private val appContext: Context,
     private val scope: CoroutineScope,
     private val musicRepository: MusicRepository,
+    /**
+     * SPEC C3 offline priority: returns a fully downloaded file for a track key
+     * (wired to the download manager by the app DI container). `null` = stream.
+     */
+    private val localFileProvider: (String) -> File? = { null },
     private val stateStore: PlaybackStateStore = PlaybackStateStore(
         PlaybackStateStore.defaultFile(appContext.filesDir),
     ),
@@ -61,7 +66,7 @@ class PlaybackControllerImpl(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private val streamResolver = BiliStreamResolver(musicRepository, now = clock)
-    private val dataSourceFactory = BbDataSourceFactory(streamResolver)
+    private val dataSourceFactory = BbDataSourceFactory(streamResolver, appContext)
 
     private val player: ExoPlayer = ExoPlayer.Builder(appContext)
         .setAudioAttributes(
@@ -82,8 +87,20 @@ class PlaybackControllerImpl(
     private val _state = MutableStateFlow(PlaybackState())
     override val state: Flow<PlaybackState> = _state.asStateFlow()
 
-    private val sleepTimer = SleepTimer(scope = scope, now = clock, onExpire = { pause() })
+    private val sleepTimer = SleepTimer(scope = scope, now = clock, onExpire = { onSleepTimerExpired() })
     override val sleepTimerRemainingMs: Flow<Long> = sleepTimer.remainingMs
+
+    // ---- sleep-timer fade-out (final 10 s) ----
+    private var fadeJob: Job? = null
+
+    @Volatile
+    private var sleepTimerGeneration: Int = 0
+
+    @Volatile
+    private var fadeActive: Boolean = false
+
+    @Volatile
+    private var fadeBaseVolume: Float = 1f
 
     /** Physical queue order — the single source of truth (shuffle is a traversal). */
     private var queue: List<Track> = emptyList()
@@ -305,8 +322,79 @@ class PlaybackControllerImpl(
     }
 
     override fun setSleepTimer(minutes: Int?) = onPlayerThread {
+        cancelSleepFade(restoreVolume = true)
         sleepTimer.set(minutes)
+        if (SleepTimerMath.isEnabled(sleepTimer.endsAtMs)) startSleepFade()
         publish()
+    }
+
+    // endregion
+
+
+    // region Sleep-timer fade-out (SPEC 4.5/4.8: last 10 s linear fade)
+
+    private fun startSleepFade() {
+        sleepTimerGeneration += 1
+        val generation = sleepTimerGeneration
+        fadeJob?.cancel()
+        fadeJob = scope.launch {
+            while (isActive) {
+                val endsAtMs = sleepTimer.endsAtMs
+                if (sleepTimerGeneration != generation || !SleepTimerMath.isEnabled(endsAtMs)) break
+                val remainingMs = SleepTimerMath.remainingMs(endsAtMs, clock())
+                if (remainingMs <= SleepFadeMath.FADE_WINDOW_MS) {
+                    if (!fadeActive) {
+                        fadeBaseVolume = withContext(Dispatchers.Main.immediate) { player.volume }
+                        fadeActive = true
+                    }
+                    val target = SleepFadeMath.volumeAt(remainingMs, fadeBaseVolume)
+                    withContext(Dispatchers.Main.immediate) { player.volume = target }
+                }
+                delay(SleepFadeMath.STEP_MS)
+            }
+        }
+    }
+
+    /** Restores the pre-fade volume and stops the ramp (cancel / re-set / expiry). */
+    private fun cancelSleepFade(restoreVolume: Boolean) {
+        sleepTimerGeneration += 1
+        fadeJob?.cancel()
+        fadeJob = null
+        if (restoreVolume && fadeActive) {
+            val base = fadeBaseVolume
+            fadeActive = false
+            onPlayerThread { player.volume = base }
+        }
+    }
+
+    private fun onSleepTimerExpired() {
+        cancelSleepFade(restoreVolume = true)
+        onPlayerThread {
+            if (player.isPlaying || player.playWhenReady) player.pause()
+            publish()
+            persistNow()
+        }
+    }
+
+    // endregion
+
+    // region Status-bar lyric line (SPEC G5)
+
+    override fun setLyricLineProvider(provider: (() -> String?)?) {
+        StatusBarLyricLine.setProvider(provider)
+        notifyLyricLineChanged()
+    }
+
+    /** Appearance setting "状态栏歌词" toggle (driven by the app settings screen). */
+    fun setLyricLineEnabled(enabled: Boolean) {
+        StatusBarLyricLine.setEnabled(enabled)
+        notifyLyricLineChanged()
+    }
+
+    /** Force the media notification to refresh the lyric line immediately. */
+    fun notifyLyricLineChanged() {
+        // MediaSessionService notification APIs must run on the main thread.
+        mainHandler.post { PlaybackServiceHolder.notifyLyricLineChanged() }
     }
 
     // endregion
@@ -342,6 +430,7 @@ class PlaybackControllerImpl(
     fun release() {
         tickerJob.cancel()
         sleepTimer.cancel()
+        fadeJob?.cancel()
         debouncePersistJob?.cancel()
         player.removeListener(listener)
         PlaybackServiceHolder.detach(player)
@@ -459,6 +548,7 @@ class PlaybackControllerImpl(
 
     private fun toMediaItem(track: Track): MediaItem {
         val quality = PlaybackMapping.qualityForTrack(track)
+        val source = PlaybackSourceSelector.select(track.key, localFileProvider)
         val metadata = MediaMetadata.Builder()
             .setTitle(track.displayTitle)
             .setArtist(track.uploader)
@@ -471,11 +561,16 @@ class PlaybackControllerImpl(
                     ?.let { setArtworkUri(Uri.parse(it)) }
             }
             .build()
-        return MediaItem.Builder()
+        val itemBuilder = MediaItem.Builder()
             .setMediaId(track.key)
-            .setUri(TrackUri.build(track, quality))
             .setMediaMetadata(metadata)
-            .build()
+        // Offline downloads play straight from disk (no resolver / no network);
+        // everything else keeps the lazy bbplayer:// stream URI.
+        when (source) {
+            is PlaybackSource.Local -> itemBuilder.setUri(Uri.fromFile(source.file))
+            PlaybackSource.Remote -> itemBuilder.setUri(TrackUri.build(track, quality))
+        }
+        return itemBuilder.build()
     }
 
     private fun publish() {

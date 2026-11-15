@@ -117,8 +117,17 @@ class BiliApi(
         }
     }
 
-    /** 发 GET 请求，校验 `code`，返回 `data` 节点（可能是对象/数组）。 */
-    suspend fun getRaw(path: String, params: Map<String, String> = emptyMap()): JsonElement =
+    /**
+     * 发 GET 请求，校验 `code`，返回 `data` 节点（可能是对象/数组）。
+     *
+     * [messageFor] 允许调用方按业务场景覆盖错误码文案（如评论/字幕），
+     * 默认使用通用的 [apiMessage]。
+     */
+    suspend fun getRaw(
+        path: String,
+        params: Map<String, String> = emptyMap(),
+        messageFor: (Long, String?) -> String = ::apiMessage,
+    ): JsonElement =
         withContext(Dispatchers.IO) {
             val buvid = ensureBuvid()
             val urlBuilder = (baseUrl + path).toHttpUrl().newBuilder()
@@ -152,7 +161,7 @@ class BiliApi(
                 val code = root.longOrNull("code") ?: 0L
                 if (code != 0L) {
                     throw AppException(
-                        apiMessage(code, root.strOrNull("message")),
+                        messageFor(code, root.strOrNull("message")),
                         retryable = code !in NON_RETRYABLE_CODES,
                     )
                 }
@@ -160,11 +169,19 @@ class BiliApi(
             }
         }
 
-    suspend fun getObject(path: String, params: Map<String, String> = emptyMap()): JsonObject =
-        getRaw(path, params) as? JsonObject ?: JsonObject(emptyMap())
+    suspend fun getObject(
+        path: String,
+        params: Map<String, String> = emptyMap(),
+        messageFor: (Long, String?) -> String = ::apiMessage,
+    ): JsonObject =
+        getRaw(path, params, messageFor) as? JsonObject ?: JsonObject(emptyMap())
 
-    suspend fun getArray(path: String, params: Map<String, String> = emptyMap()): JsonArray =
-        getRaw(path, params) as? JsonArray ?: JsonArray(emptyList())
+    suspend fun getArray(
+        path: String,
+        params: Map<String, String> = emptyMap(),
+        messageFor: (Long, String?) -> String = ::apiMessage,
+    ): JsonArray =
+        getRaw(path, params, messageFor) as? JsonArray ?: JsonArray(emptyList())
 
     /** 跟随 b23.tv 短链重定向，返回最终 URL 与落地页 HTML。 */
     internal suspend fun resolveShortLink(url: String): ShortLinkResolution? = withContext(Dispatchers.IO) {

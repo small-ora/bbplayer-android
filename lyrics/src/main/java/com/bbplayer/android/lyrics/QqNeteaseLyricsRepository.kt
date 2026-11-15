@@ -25,20 +25,26 @@ import okhttp3.OkHttpClient
  * Network failures of one provider never abort the fallback chain; `CancellationException` is always rethrown.
  * All endpoints are anonymous, read-only GETs; requests carry a desktop UA + provider Referer and an 8s timeout.
  *
- * @param context Android context used for the cache directory.
+ * @param context Android context used for the cache / offset directories.
  * @param httpClient shared OkHttp client (8s timeouts by default).
  * @param cacheStore cache storage; defaults to [FileLyricsCacheStore] under `filesDir/lyrics`.
+ * @param offsetStore per-track lyric offset persistence (AC G2); defaults to [FileTrackOffsetStore] at
+ *   `filesDir/lyric_offsets.json`.
  * @param clock wall clock used for cache `fetchedAt` (injectable for tests).
  */
 class QqNeteaseLyricsRepository(
     context: Context,
     private val httpClient: OkHttpClient = LyricsHttp.defaultClient(),
     private val cacheStore: LyricsCacheStore = FileLyricsCacheStore(File(context.filesDir, CACHE_DIR)),
+    private val offsetStore: TrackOffsetStore = FileTrackOffsetStore(File(context.filesDir, OFFSET_FILE_NAME)),
     private val clock: () -> Long = System::currentTimeMillis,
 ) : LyricsRepository {
 
     companion object {
         const val CACHE_DIR = "lyrics"
+
+        /** File name of the per-track lyric offset store inside `filesDir` (AC G2). */
+        const val OFFSET_FILE_NAME = "lyric_offsets.json"
         const val SOURCE_QQ = QqMusicApi.SOURCE
         const val SOURCE_NETEASE = NeteaseApi.SOURCE
         const val SOURCE_MANUAL = "manual"
@@ -61,7 +67,7 @@ class QqNeteaseLyricsRepository(
             val best = LyricMatcher.bestCandidate(track, QqMusicApi.search(httpClient, query))
             if (best != null) {
                 val payload = QqMusicApi.fetchLyric(httpClient, best.sourceId)
-                val lyrics = LrcParser.parse(payload.lrc, payload.translation, source = SOURCE_QQ)
+                val lyrics = ProviderLyricParsers.parse(payload, SOURCE_QQ)
                 if (!lyrics.isEmpty) {
                     store(track.key, lyrics, SOURCE_QQ, query)
                     return Result.success(lyrics)
@@ -79,7 +85,7 @@ class QqNeteaseLyricsRepository(
             val best = LyricMatcher.bestCandidate(track, NeteaseApi.search(httpClient, query))
             if (best != null) {
                 val payload = NeteaseApi.fetchLyric(httpClient, best.sourceId)
-                val lyrics = LrcParser.parse(payload.lrc, payload.translation, source = SOURCE_NETEASE)
+                val lyrics = ProviderLyricParsers.parse(payload, SOURCE_NETEASE)
                 if (!lyrics.isEmpty) {
                     store(track.key, lyrics, SOURCE_NETEASE, query)
                     return Result.success(lyrics)
@@ -152,7 +158,7 @@ class QqNeteaseLyricsRepository(
 
                 else -> return Result.failure(AppException("不支持的歌词来源：${candidate.source}"))
             }
-            val lyrics = LrcParser.parse(payload.lrc, payload.translation, source = source)
+            val lyrics = ProviderLyricParsers.parse(payload, source)
             if (lyrics.lines.isEmpty() && lyrics.plainText.isBlank()) {
                 Result.failure(AppException("未找到歌词"))
             } else {
@@ -168,7 +174,7 @@ class QqNeteaseLyricsRepository(
 
     override suspend fun saveManual(trackKey: String, lrcText: String): Result<Lyrics> {
         if (lrcText.isBlank()) return Result.failure(AppException("歌词内容为空"))
-        val lyrics = LrcParser.parse(lrcText, source = SOURCE_MANUAL)
+        val lyrics = LyricsParser.parse(lrcText, LyricsFormat.AUTO, source = SOURCE_MANUAL)
         if (lyrics.lines.isEmpty() && lyrics.plainText.isBlank()) {
             return Result.failure(AppException("未解析到歌词内容"))
         }
@@ -180,6 +186,14 @@ class QqNeteaseLyricsRepository(
         } catch (error: Exception) {
             Result.failure(AppException("歌词保存失败", error))
         }
+    }
+
+    override suspend fun getTrackOffset(trackKey: String): Int = withContext(Dispatchers.IO) {
+        offsetStore.get(trackKey)
+    }
+
+    override suspend fun setTrackOffset(trackKey: String, offsetMs: Int) {
+        withContext(Dispatchers.IO) { offsetStore.set(trackKey, offsetMs) }
     }
 
     override suspend fun clearCache() = withContext(Dispatchers.IO) {
