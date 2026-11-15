@@ -68,6 +68,7 @@ fun SettingsScreen(
     val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
     val dynamicColor by prefs.dynamicColor.collectAsStateWithLifecycle(initialValue = true)
     val quality by prefs.audioQuality.collectAsStateWithLifecycle(initialValue = AudioQuality.Q192)
+    val highQuality by prefs.highQualityAudio.collectAsStateWithLifecycle(initialValue = false)
     val autoplay by prefs.autoplayOnStart.collectAsStateWithLifecycle(initialValue = false)
     val resume by prefs.resumeOnStart.collectAsStateWithLifecycle(initialValue = true)
     val fontScale by prefs.lyricsFontScale.collectAsStateWithLifecycle(initialValue = 1f)
@@ -100,6 +101,18 @@ fun SettingsScreen(
             graph.backupRepository.importZip(target)
                 .onSuccess { toast = "已恢复 $it 个文件，请重启应用生效" }
                 .onFailure { toast = it.toUserMessage() }
+        }
+    }
+    // v5 的两个控件互相独立，升级后可能出现「显示无损但实际不优先」或反过来；这里按
+    // 真实行为显示：无损/杜比档在未登录时标注「需登录」，高音质开着但档位是 AAC 时显示
+    // 「无损优先（回退 xx）」。AppRoot 启动时会把旧组合归一化，正常不会再出现错位。
+    val qualityLabel = when (quality) {
+        AudioQuality.HI_RES, AudioQuality.DOLBY ->
+            if (session == null) "${quality.label}（需登录）" else quality.label
+        else -> when {
+            highQuality && session != null -> "无损优先（自动回退 ${quality.label}）"
+            highQuality -> "无损优先（登录后生效）"
+            else -> quality.label
         }
     }
     // D4: 「启动时自动播放」+「断点续播」两个开关合并成一个三选一（仍写两个旧偏好）。
@@ -159,7 +172,7 @@ fun SettingsScreen(
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 // D1: 音质与「高音质」开关合并为单一「音质」下拉（杜比/无损选项需要登录）。
-                SettingRow("音质", quality.label) { dialog = "quality" }
+                SettingRow("音质", qualityLabel) { dialog = "quality" }
                 // D4: 启动行为合并为一项三选一。
                 SettingRow("启动时", startupLabel) { dialog = "startup" }
             }
@@ -395,21 +408,36 @@ fun SettingsScreen(
             OptionDialog(
                 title = "音质（杜比 / 无损需登录）",
                 options = ordered.map { it.label },
-                selectedIndex = ordered.indexOf(quality).coerceAtLeast(0),
+                selectedIndex = when {
+                    // 旧「高音质」开 + 音质停在 AAC：等价于「无损优先」，高亮无损项。
+                    highQuality && quality != AudioQuality.HI_RES && quality != AudioQuality.DOLBY -> 0
+                    else -> ordered.indexOf(quality).coerceAtLeast(0)
+                },
                 onSelect = { idx ->
                     val picked = ordered[idx]
                     val needsLogin = picked == AudioQuality.DOLBY || picked == AudioQuality.HI_RES
                     if (needsLogin && session == null) {
                         dialog = null
-                        toast = "杜比 / 无损需要先登录 Bilibili 账号"
+                        // 设置页马上要跳登录页，页面内 footer toast 看不到，用系统 Toast 提示。
+                        android.widget.Toast.makeText(
+                            context,
+                            "杜比 / 无损需要先登录 Bilibili 账号",
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
                         onOpenLogin()
                     } else {
-                        scope.safeLaunch {
-                            prefs.setAudioQuality(picked)
-                            // 旧「高音质」开关的能力折叠进音质选择，v5 数据层逻辑不变。
-                            prefs.setHighQualityAudio(needsLogin)
-                        }
                         dialog = null
+                        scope.safeLaunch {
+                            // 两次写不是原子的：先写「会降级为显示无损优先」的方向，保证半途失败时
+                            // 显示与实际一致（选无损：先开 highQuality 再改档位；选 AAC：先改档位再关）。
+                            if (needsLogin) {
+                                prefs.setHighQualityAudio(true)
+                                prefs.setAudioQuality(picked)
+                            } else {
+                                prefs.setAudioQuality(picked)
+                                prefs.setHighQualityAudio(false)
+                            }
+                        }
                     }
                 },
                 onDismiss = { dialog = null },

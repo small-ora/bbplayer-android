@@ -171,6 +171,18 @@ fun AppRoot() {
     // Restore the previous queue/position once per process launch (C4 断点续播).
     LaunchedEffect(Unit) {
         val prefs = graph.preferencesRepository
+        // v6 migration: v5 的「音质下拉」与「高音质开关」互相独立，升级用户可能出现
+        // quality=杜比/无损 但 highQuality=false（实际不优先 FLAC）。v6 已把两者折叠成
+        // 单一「音质」入口，这里一次性把它们归一化，让显示与实际一致（偏好键保留）。
+        runCatching {
+            val q = prefs.audioQuality.first()
+            if ((q == com.bbplayer.android.core.model.AudioQuality.HI_RES ||
+                    q == com.bbplayer.android.core.model.AudioQuality.DOLBY) &&
+                !prefs.highQualityAudio.first()
+            ) {
+                prefs.setHighQualityAudio(true)
+            }
+        }
         val resumeEnabled = runCatching { prefs.resumeOnStart.first() }.getOrDefault(true)
         if (resumeEnabled) {
             val controller = graph.playbackController
