@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.player
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -21,6 +20,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -90,6 +91,7 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.SeekLine
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.screens.comments.CommentsScreen
 import com.bbplayer.android.ui.theme.rememberAlbumWash
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
@@ -100,7 +102,6 @@ import java.util.Locale
 @Composable
 fun PlayerScreen(
     onBack: () -> Unit,
-    onOpenComments: (String) -> Unit = {},
     onOpenLogin: () -> Unit = {},
     onOpenUploader: (Long) -> Unit = {},
 ) {
@@ -124,8 +125,9 @@ fun PlayerScreen(
     }
 
     val wash = rememberAlbumWash(track.coverUrl)
-    var showLyrics by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
+    // 三页横滑：0 = 封面（默认）、1 = 歌词（纯展示）、2 = 评论
+    val pagerState = rememberPagerState(pageCount = { 3 })
     val sheet = remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -145,8 +147,6 @@ fun PlayerScreen(
     val desktopLyricsOn by prefs.desktopLyricsEnabled.collectAsStateWithLifecycle(initialValue = false)
     val downloads by graph.downloadRepository.entries.collectAsStateWithLifecycle(initialValue = emptyList())
     val downloadEntry = downloads.firstOrNull { it.track.key == track.key }
-    var trackOffset by remember(track.key) { mutableStateOf(0) }
-    LaunchedEffect(track.key) { trackOffset = runCatching { graph.lyricsRepository.getTrackOffset(track.key) }.getOrDefault(0) }
 
     var lyrics by remember(track.key) { mutableStateOf<Lyrics?>(null) }
     var lyricsLoading by remember(track.key) { mutableStateOf(true) }
@@ -179,13 +179,14 @@ fun PlayerScreen(
         }
     }
 
-    val effectiveLyrics = remember(lyrics, prefsOffset, trackOffset) {
-        lyrics?.copy(offsetMs = (lyrics?.offsetMs ?: 0) + prefsOffset + trackOffset)
+    // 偏移只在「设置 → 歌词 → 歌词偏移」调整；播放页歌词页为纯展示，不再提供逐曲偏移按钮。
+    val effectiveLyrics = remember(lyrics, prefsOffset) {
+        lyrics?.copy(offsetMs = (lyrics?.offsetMs ?: 0) + prefsOffset)
     }
 
-    // Desktop overlay hides while the in-app lyrics page is visible.
-    androidx.compose.runtime.DisposableEffect(showLyrics) {
-        NowPlayingLyrics.inAppLyricsVisible.value = showLyrics
+    // Desktop overlay hides while the in-app lyrics page (pager page 1) is visible.
+    androidx.compose.runtime.DisposableEffect(pagerState.currentPage) {
+        NowPlayingLyrics.inAppLyricsVisible.value = pagerState.currentPage == 1
         onDispose { }
     }
     androidx.compose.runtime.DisposableEffect(Unit) {
@@ -201,7 +202,6 @@ fun PlayerScreen(
 
     val pureWhite = backgroundStyle == PlayerBackgroundStyle.PURE_WHITE
     val onPlayerColor = if (pureWhite) Color(0xFF111111) else Color.White
-    val onPlayerSecondary = if (pureWhite) Color(0x99000000) else Color.White.copy(alpha = 0.6f)
     Box(Modifier.fillMaxSize()) {
         // ---- background: gradient / solid / pure white ----
         val base = wash.firstOrNull() ?: SaltTheme.colors.highlight
@@ -293,6 +293,19 @@ fun PlayerScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        // 页码指示：封面 / 歌词 / 评论
+                        Spacer(Modifier.height(5.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            repeat(3) { index ->
+                                val active = index == pagerState.currentPage
+                                Box(
+                                    Modifier
+                                        .size(if (active) 6.dp else 5.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Color.White.copy(alpha = if (active) 0.95f else 0.32f))
+                                )
+                            }
+                        }
                     }
                 }
                 IconAction(
@@ -301,64 +314,13 @@ fun PlayerScreen(
                 )
             }
 
-            AnimatedContent(targetState = showLyrics, label = "playerMode") { lyricsMode ->
-                if (lyricsMode) {
-                    Column(Modifier.fillMaxSize()) {
-                        Spacer(Modifier.height(8.dp))
-                        when {
-                            lyricsLoading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                LoadingState(text = "正在获取歌词…")
-                            }
-                            lyricsError != null -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = lyricsError!!,
-                                        color = Color.White.copy(alpha = 0.75f),
-                                        fontSize = 14.sp,
-                                    )
-                                    Spacer(Modifier.height(10.dp))
-                                    SaltPill(text = "重试", onClick = { lyricsNonce++ })
-                                    Spacer(Modifier.height(8.dp))
-                                    SaltPill(text = "手动搜索", onClick = { sheet.value = "searchLyrics" })
-                                }
-                            }
-                            else -> LyricsPanel(
-                                lyrics = effectiveLyrics,
-                                positionMs = state.positionMs,
-                                fontScale = fontScale,
-                                modifier = Modifier.weight(1f),
-                                style = lyricStyle,
-                                verbatim = verbatim,
-                                showTranslation = showTranslation,
-                                onSeekTo = { graph.playbackController.seekTo(it.coerceAtLeast(0)) },
-                            )
-                        }
-                        // offset controls + compact controls
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            SaltPill(text = "−0.1s", onClick = {
-                                trackOffset = (trackOffset - 100).coerceIn(-3000, 3000)
-                                scope.safeLaunch { graph.lyricsRepository.setTrackOffset(track.key, trackOffset) }
-                            })
-                            Text(
-                                text = "偏移 ${prefsOffset + trackOffset} ms",
-                                color = onPlayerSecondary,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 14.dp),
-                            )
-                            SaltPill(text = "+0.1s", onClick = {
-                                trackOffset = (trackOffset + 100).coerceIn(-3000, 3000)
-                                scope.safeLaunch { graph.lyricsRepository.setTrackOffset(track.key, trackOffset) }
-                            })
-                        }
-                        MiniTransport(state = state, onPrev = { graph.playbackController.previous() }, onToggle = { graph.playbackController.playPause() }, onNext = { graph.playbackController.next() }, white = !pureWhite)
-                        Spacer(Modifier.height(6.dp))
-                    }
-                } else {
-                    MainPlayerContent(
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                beyondViewportPageCount = 1,
+            ) { page ->
+                when (page) {
+                    0 -> MainPlayerContent(
                         state = state,
                         track = track,
                         quality = quality,
@@ -367,7 +329,8 @@ fun PlayerScreen(
                             scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
                         },
                         onSeek = { graph.playbackController.seekTo(it) },
-                        onToggleLyrics = { showLyrics = true },
+                        // 「歌词」按钮 = 滑到歌词页（唯一入口是横向滑动，这里只做快捷方式）
+                        onToggleLyrics = { scope.launch { pagerState.animateScrollToPage(1) } },
                         onOpenQueue = { showQueue = true },
                         onShowSheet = { sheet.value = it },
                         onModeClick = {
@@ -375,6 +338,22 @@ fun PlayerScreen(
                         },
                         pureWhite = pureWhite,
                     )
+                    1 -> LyricsPage(
+                        lyrics = effectiveLyrics,
+                        positionMs = state.positionMs,
+                        fontScale = fontScale,
+                        lyricStyle = lyricStyle,
+                        verbatim = verbatim,
+                        showTranslation = showTranslation,
+                        lyricsLoading = lyricsLoading,
+                        lyricsError = lyricsError,
+                        onRetry = { lyricsNonce++ },
+                        onManualSearch = { sheet.value = "searchLyrics" },
+                        onSeekTo = { graph.playbackController.seekTo(it.coerceAtLeast(0)) },
+                        state = state,
+                        pureWhite = pureWhite,
+                    )
+                    else -> CommentsPage(bvid = track.bvid)
                 }
             }
         }
@@ -509,7 +488,7 @@ fun PlayerScreen(
                             Toast.makeText(context, it.toUserMessage(), Toast.LENGTH_SHORT).show()
                         }
                     }
-                    5 -> onOpenComments(track.bvid)
+                    5 -> scope.launch { pagerState.animateScrollToPage(2) }
                     6 -> scope.safeLaunch {
                         val line = currentLine.text.ifBlank { track.displayTitle }
                         val ok = ShareCard.share(context, track, line, currentLine.translation)
@@ -564,6 +543,79 @@ fun PlayerScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun LyricsPage(
+    lyrics: Lyrics?,
+    positionMs: Long,
+    fontScale: Float,
+    lyricStyle: LyricVisualStyle,
+    verbatim: Boolean,
+    showTranslation: Boolean,
+    lyricsLoading: Boolean,
+    lyricsError: String?,
+    onRetry: () -> Unit,
+    onManualSearch: () -> Unit,
+    onSeekTo: (Long) -> Unit,
+    state: PlaybackState,
+    pureWhite: Boolean,
+) {
+    val graph = LocalAppGraph.current
+    Column(Modifier.fillMaxSize()) {
+        Spacer(Modifier.height(8.dp))
+        when {
+            lyricsLoading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                LoadingState(text = "正在获取歌词…")
+            }
+            lyricsError != null -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = lyricsError,
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 14.sp,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    SaltPill(text = "重试", onClick = onRetry)
+                    Spacer(Modifier.height(8.dp))
+                    SaltPill(text = "手动搜索", onClick = onManualSearch)
+                }
+            }
+            else -> LyricsPanel(
+                lyrics = lyrics,
+                positionMs = positionMs,
+                fontScale = fontScale,
+                modifier = Modifier.weight(1f),
+                style = lyricStyle,
+                verbatim = verbatim,
+                showTranslation = showTranslation,
+                onSeekTo = onSeekTo,
+            )
+        }
+        // 纯展示页：不再放 ±0.1s / 偏移数值等调整控件；偏移请到「设置 → 歌词 → 歌词偏移」。
+        MiniTransport(
+            state = state,
+            onPrev = { graph.playbackController.previous() },
+            onToggle = { graph.playbackController.playPause() },
+            onNext = { graph.playbackController.next() },
+            white = !pureWhite,
+        )
+        Spacer(Modifier.height(6.dp))
+    }
+}
+
+@Composable
+private fun CommentsPage(bvid: String) {
+    // 评论页在播放页里以不透明圆角卡片呈现，保证浅/深色主题下都易读，也能看清左右滑动边界。
+    Box(
+        Modifier
+            .fillMaxSize()
+            .padding(top = 4.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(SaltTheme.colors.background),
+    ) {
+        CommentsScreen(bvid = bvid, onBack = {}, embedded = true)
     }
 }
 

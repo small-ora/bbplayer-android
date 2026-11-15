@@ -224,7 +224,6 @@ fun AppRoot() {
             playbackState = playback,
             onOpenPlayer = ::openPlayer,
             onPlayTrack = onPlay,
-            onOpenComments = { navController.navigate(Routes.comments(it)) },
             onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
             onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
             onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
@@ -322,7 +321,6 @@ private fun AppNavHost(
     playbackState: PlaybackState,
     onOpenPlayer: () -> Unit,
     onPlayTrack: (List<Track>, Int) -> Unit,
-    onOpenComments: (String) -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenLeaderboard: () -> Unit,
@@ -372,7 +370,6 @@ private fun AppNavHost(
         composable(Routes.PLAYER) {
             PlayerScreen(
                 onBack = { navController.popBackStack() },
-                onOpenComments = onOpenComments,
                 onOpenLogin = openLogin,
                 onOpenUploader = { mid -> navController.navigate(Routes.uploader(mid)) },
             )

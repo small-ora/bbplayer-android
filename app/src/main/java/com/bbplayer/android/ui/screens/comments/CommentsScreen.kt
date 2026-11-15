@@ -67,6 +67,8 @@ private data class ReplyState(
 fun CommentsScreen(
     bvid: String,
     onBack: () -> Unit,
+    /** 嵌入播放页（横向 pager 第 3 页）：不显示返回栏，由外层提供卡片背景。 */
+    embedded: Boolean = false,
 ) {
     val graph = LocalAppGraph.current
     val scope = rememberCoroutineScope()
@@ -189,23 +191,45 @@ fun CommentsScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 40.dp),
+        contentPadding = PaddingValues(bottom = if (embedded) 16.dp else 40.dp),
     ) {
-        item {
-            SmallTopBar(
-                title = "评论",
-                onBack = onBack,
-                actions = {
+        if (embedded) {
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("评论", fontSize = 16.sp)
+                    Spacer(Modifier.width(10.dp))
                     if (total > 0) {
                         Text(
                             text = "共 $total 条",
                             color = SaltTheme.colors.subText,
                             fontSize = 12.sp,
-                            modifier = Modifier.padding(end = 12.dp),
+                            modifier = Modifier.weight(1f),
                         )
                     }
-                },
-            )
+                }
+            }
+        } else {
+            item {
+                SmallTopBar(
+                    title = "评论",
+                    onBack = onBack,
+                    actions = {
+                        if (total > 0) {
+                            Text(
+                                text = "共 $total 条",
+                                color = SaltTheme.colors.subText,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(end = 12.dp),
+                            )
+                        }
+                    },
+                )
+            }
         }
 
         when {
