@@ -32,6 +32,7 @@ import com.bbplayer.android.ui.components.TrackRow
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bbplayer.android.core.safeLaunch
 
 @Composable
 fun PlaylistDetailScreen(
@@ -44,6 +45,8 @@ fun PlaylistDetailScreen(
     val playlists by graph.libraryRepository.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val playlist = playlists.firstOrNull { it.id == playlistId }
     val playback by graph.playbackController.state.collectAsStateWithLifecycle(initialValue = com.bbplayer.android.core.model.PlaybackState())
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -83,7 +86,9 @@ fun PlaylistDetailScreen(
                     track = track,
                     isCurrent = playback.track?.key == track.key,
                     onClick = { onPlayTrack(tracks, idx) },
-                    onMoreClick = null,
+                    onMoreClick = {
+                        scope.safeLaunch { graph.libraryRepository.removeTrack(playlistId, track.key) }
+                    },
                 )
             }
         }

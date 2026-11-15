@@ -107,6 +107,9 @@ fun LibraryScreen(
                                 if (playlist.tracks.isNotEmpty()) onPlayTrack(playlist.tracks, 0)
                             },
                             onDelete = { scope.safeLaunch { graph.libraryRepository.deletePlaylist(playlist.id) } },
+                            onRename = { newName ->
+                                scope.safeLaunch { graph.libraryRepository.renamePlaylist(playlist.id, newName) }
+                            },
                         )
                     }
                 }
@@ -161,7 +164,14 @@ fun LibraryScreen(
 }
 
 @Composable
-private fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, onPlay: () -> Unit, onDelete: () -> Unit) {
+private fun PlaylistRow(
+    playlist: Playlist,
+    onClick: () -> Unit,
+    onPlay: () -> Unit,
+    onDelete: () -> Unit,
+    onRename: (String) -> Unit,
+) {
+    var showRename by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,7 +200,59 @@ private fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, onPlay: () -> U
             SaltPill(text = "播放", onClick = onPlay)
         }
         Spacer(Modifier.width(8.dp))
+        SaltPill(text = "重命名", onClick = { showRename = true })
+        Spacer(Modifier.width(8.dp))
         SaltPill(text = "删除", onClick = onDelete)
+    }
+    if (showRename) {
+        RenamePlaylistDialog(
+            current = playlist.name,
+            onDismiss = { showRename = false },
+            onConfirm = { name ->
+                showRename = false
+                onRename(name)
+            },
+        )
+    }
+}
+
+@Composable
+private fun RenamePlaylistDialog(current: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var name by remember { mutableStateOf(current) }
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(SaltTheme.colors.popup)
+                .padding(20.dp),
+        ) {
+            Text("重命名歌单", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(14.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SaltTheme.colors.subBackground)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                BasicTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    singleLine = true,
+                    textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = 15.sp),
+                    cursorBrush = SolidColor(SaltTheme.colors.highlight),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                SaltPill(text = "取消", onClick = onDismiss)
+                Spacer(Modifier.width(10.dp))
+                SaltPill(text = "保存", selected = name.isNotBlank(), onClick = {
+                    if (name.isNotBlank()) onConfirm(name.trim())
+                })
+            }
+        }
     }
 }
 

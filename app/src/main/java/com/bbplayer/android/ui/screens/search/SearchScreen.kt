@@ -68,9 +68,17 @@ fun SearchScreen(
 
     LaunchedEffect(submittedQuery, searchNonce) {
         if (submittedQuery.isEmpty()) return@LaunchedEffect
-        graph.musicRepository.search(submittedQuery)
-            .onSuccess { results = it.items; loading = false }
-            .onFailure { error = it.toUserMessage(); loading = false }
+        // BV / AV / b23.tv / full URL are resolved as direct links first;
+        // anything else falls back to keyword search.
+        val direct = graph.musicRepository.resolveInput(submittedQuery)
+        if (direct.isSuccess && direct.getOrNull()?.isNotEmpty() == true) {
+            results = direct.getOrThrow()
+            loading = false
+        } else {
+            graph.musicRepository.search(submittedQuery)
+                .onSuccess { results = it.items; loading = false }
+                .onFailure { error = it.toUserMessage(); loading = false }
+        }
     }
 
     LazyColumn(

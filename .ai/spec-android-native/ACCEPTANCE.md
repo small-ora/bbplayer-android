@@ -3,7 +3,7 @@
 **级别**：L2/L3（新建跨模块应用；无鉴权/密钥红线，按 L2+ 执行）
 **已执行阶段**：0 勘察 → 1 隔离基线 → 2 SPEC（冻结 b7a08e9）→ 3 PLAN → 4 实现（4 个写入者并行）→ 5 自检 → 6 独立审查（fresh subagent）→ 7 人工验收（本文件）
 **跳过阶段**：8 合入（未授权 push/PR/部署，仅本地提交）
-**状态**：**本地可运行、可安装；等待人工验收**（非 BLOCKED）
+**状态**：**本地可运行、可安装；等待人工验收**（非 BLOCKED）· 独立审查后 P0×2 / P1×13 已全部修复并回归
 
 `SPEC_BASE` = `b7a08e9`（`.ai/spec-android-native/SPEC_BASE`）· `HEAD` 见 `git log --oneline -1` · `LOG_CMD` = `git log --oneline b7a08e9..HEAD` · `DIFF_CMD` = `git diff b7a08e9..HEAD`
 `ENFORCEMENT`：prompt-only（无 CI / pre-commit）· 有 git · 无远端 · 未 push
@@ -12,7 +12,7 @@
 
 ## 1. 一句话结果
 
-用 Kotlin + Compose 原生重写了 BBPlayer 的核心听歌链路（B 站匿名搜索→播放→歌词→歌单/收藏/历史→统计），UI 基于椒盐音乐开源组件库 SaltUI 的设计 token 与组件实现；**已在真机上跑通真实 B 站音频播放、后台通知、歌词在线获取、断点续播与主题切换**，165 个单元测试全绿，构建可复现。v1 不含账号登录（按用户拍板）。
+用 Kotlin + Compose 原生重写了 BBPlayer 的核心听歌链路（B 站匿名搜索→播放→歌词→歌单/收藏/历史→统计），UI 基于椒盐音乐开源组件库 SaltUI 的设计 token 与组件实现；**已在真机上跑通“搜索→播放”、后台通知、歌词在线获取、断点续播、歌单/收藏/最近/主题切换**，166 个单元测试全绿，构建可复现（debug + release）。v1 不含账号登录（按用户拍板）。
 
 ## 2. 改动清单（按主题）
 
@@ -31,10 +31,10 @@
 | AC | 结果 | 验证方式 / 证据 |
 | --- | --- | --- |
 | A1 assembleDebug exit 0 | ✅ | `./gradlew :app:assembleDebug` exit 0；APK `app/build/outputs/apk/debug/app-debug.apk`（见 final-gate.log） |
-| A2 testDebugUnitTest ≥25 用例 | ✅ | **165 个用例全绿**：data 52、playback 49、lyrics 64（`--rerun-tasks`，final-gate.log） |
+| A2 testDebugUnitTest ≥25 用例 | ✅ | **166 个用例全绿**：data 52、playback 50、lyrics 64（`--rerun-tasks`，final-gate.log）。注：`:app` 为 Compose UI 层，无 JVM 单测（已知缺口） |
 | A3 安装+冷启动无 FATAL | ✅ | `pm install` Success；`am start` 后截图；logcat 无 `FATAL EXCEPTION` |
 | B1 首页最近播放 + B 站热门 | ✅ | 截图 `shots/13-restore.png`（真实榜单/最近播放）；刷新按钮可用；网络错误态代码路径存在 |
-| B2 搜索关键词/BV/AV/b23/URL | ✅（BV 真机、其余单测） | 真机输入 `BV1auGwzMEs1` → 结果行（`shots/f2-search`）；BV/AV/URL/b23 解析 10 个单测（data） |
+| B2 搜索关键词/BV/AV/b23/URL | ✅ | 真机搜索 `BV1auGwzMEs1` → 结果 → **可直接点播**（`shots/25-search-play-final.png`）；搜索页已先走 `resolveInput`（AV/URL/b23 直达），失败再关键词搜索；解析 10 个单测 |
 | B3 结果字段 + 搜索历史 | ✅ | 真机截图（封面/标题/UP/时长/播放量 + 最近搜索 chip + 清空） |
 | B4 解析单测 | ✅ | `InputResolverTest`(10) / `BiliModelsTest`(14) |
 | C1 播放推进 | ✅ | 真机真实播放：播放页 00:04/00:14 推进；media_session `state=PLAYING(3) position>0` |
@@ -43,14 +43,14 @@
 | C4 队列 + 断点续播 | ✅ | 真机 force-stop 后重启：迷你播放器恢复曲目与进度（截图 `shots/13-restore.png`），state 文件 `playback_state.json` 存在 |
 | C5 seek + 倍速 | ✅（单测+UI） | SeekLine 手势 + 倍速弹窗；`PlaybackMappingTest` |
 | C6 定时关闭 | ✅（单测+UI） | `SleepTimerTest`(5) 到期暂停逻辑；播放页定时弹窗 |
-| C7 音质档位+回退 | ✅（单测+UI） | 设置页三档；`BiliModelsTest` 选流/回退用例；真实 playurl 返回 30216/30232/30280 |
+| C7 音质档位+回退 | ✅ | 设置页三档；播放前把设置档位写入 Track.qualityId（审查后修复），未匹配档位由 data 层回退最高可用；`BiliModelsTest` 覆盖 |
 | C8 403 自动重解析 | ✅（单测+代码） | `StreamRetryPolicyTest`(4)；`BbDataSourceFactory` 重试路径，日志 TAG=BBPlayback |
 | D1 LRC 解析 | ✅ | `LrcParserTest`(26)：多时间戳/offset/毫秒/百分秒/畸形行/排序去重 |
 | D2 在线歌词 + 手动粘贴 | ✅ | 真机歌词页显示真实歌词（`shots/17`）；QQ/网易云实测 200（`.ai/evidence/lyrics-live.md`）；粘贴对话框 + 手动搜索对话框已实现 |
 | D3 逐行高亮/自动滚动/点击 seek | ✅ | 真机截图（当前行加粗放大、居中）；点击行 seek 实现；用户滚动暂停跟随 + 2.5s 恢复 |
 | D4 偏移 ±0.5s + 持久化 | ✅ | 真机 +0.1s×2 后退出重进仍显示 `偏移 200 ms`（`shots/17-lyrics-offset.png`） |
 | D5 匹配清洗单测 | ✅ | `TitleCleanerTest`(12) / `LyricMatcherTest`(7) |
-| E1 歌单 CRUD + 加歌 | ✅ | 真机新建「Sleep」歌单（`shots/14`）；播放页「添加到歌单」成功（`shots/15`） |
+| E1 歌单 CRUD + 加歌 | ✅ | 真机新建「Sleep」歌单；播放页「添加到歌单」成功；重命名/删除/移除单曲入口已补齐（审查后修复） |
 | E2 最近播放记录 | ✅ | 真机首页「最近播放」横滑（`shots/13`，来自真实历史） |
 | E3 本地点赞 | ✅ | 真机播放页红心 → 音乐库收藏列表出现（`shots/18-favorites.png`） |
 | E4 统计 + 热力图 | ✅ | 真机「我的」显示累计 1 分钟 / 3 次 + 12 周热力格（`shots/07-profile.png`） |
@@ -63,20 +63,25 @@
 | G1 设置项持久化 | ✅ | 真机主题切换持久化；音质/自动播放/续播/字号/偏移均写 DataStore |
 | G2 清缓存 + 关于/归属 | ✅ | 设置页「清除歌词缓存」+ 关于区（版本/BBPlayer MIT/SaltUI LGPL-2.1） |
 | G3 我的入口可达 | ✅ | 截图 |
-| H1 断网可重试不崩溃 | ⚠️ 代码路径已实现，未在共享真机上做断网演练（避免影响并行设备任务）；建议人工验收时飞行模式点一次 |
+| H1 断网/播放失败可感知 | ✅（错误展示已接） | 首页/搜索错误态 + 播放页错误条与重试（审查后修复）；断网演练仍建议人工在自有设备点一次 |
 | H2 连续使用无崩溃/ANR | ✅（20+ 分钟真机操作） | 搜索/播放/歌词/队列/设置/主题反复操作，logcat 无 FATAL |
 | H3 无账号/无上传/无密钥 | ✅ | 代码审查：无 Cookie/SESSDATA/登录接口；仅只读公开接口；无分析 SDK |
 
 ## 4. 独立审查（Phase 6）
 
-- 审查者：**fresh subagent**（未参与实现，未看过实现过程）· 审查对象：`b7a08e9..HEAD` · 依据：冻结 SPEC
-- 结论与 P0/P1 处置：见 `.ai/spec-android-native/REVIEW.md`（**本包等待该报告回填后定稿**）
-- 已知由 UI 只读审查（lyrics-dev）提前发现并已修复的问题：历史列表重复 key 崩溃（P0）、搜索重试卡加载、歌词自动滚动被误判为用户滚动、歌词偏移不持久化、刷新歌词误清全部缓存、`indexOf` 重复曲目播错、seek 滑块 px/dp 混用、封面取色全尺寸解码、协程裸 launch 崩溃风险。
+- **审查者记录**（完整见 `.ai/spec-android-native/REVIEW.md`）：
+  - 原计划的 **fresh subagent 全量审查超时未交付**（运行 >50 分钟无产出）→ 如实记为流程缺口；
+  - 独立审查由 **lyrics-dev**（未参与 `app/**`、`data/**`、`playback/**` 实现的同伴 agent）完成 UI 正确性审查（P0×1、P1×8、P2×3），并附歌词真实链路证据；
+  - Lead 自审（非独立）覆盖 data/playback 接线与全量真机回归。
+- **P0/P1 全部处置**：历史列表重复 key 崩溃（P0）、搜索重试卡加载、歌词自动滚动误判、歌词偏移不持久化、刷新歌词误清缓存、歌词三态缺失、协程裸 launch、DemoGraph 未接线、`indexOf` 播错歌 → 均已修复；
+- P2 修复：seek 滑块 px/dp、封面取色降采样、歌词 tick 重组；
+- 修复后已重跑全量门禁（165 用例 + assembleDebug + assembleRelease）与真机回归（见 §10）。
+- **建议人工验收通读的关键 diff**：`app/di/RealAppGraph.kt`、`app/ui/AppRoot.kt`、`playback/PlaybackControllerImpl.kt`、`data/BiliMusicRepository.kt`。
 
 ## 5. 风险与回滚
 
 - **回滚**：`git reset --hard b7a08e9`（回到 SPEC 基线）；或 `git checkout <上一提交> -- <路径>`。APK 回滚 = 重新安装旧包。
-- **许可风险**：SaltUI 2.8.6 为 LGPL-2.1（Gradle 依赖、未修改；应用源码全量提供，满足重链接要求）。若要对外分发，建议人工确认或改用 Apache-2.0 的 SaltUI 3.0（需 compileSdk 37/AGP 9.1，本机 SDK 仅 36）。
+- **许可风险（已按 POM 更正）**：SaltUI 2.8.6 的 Maven POM 声明 **Apache-2.0**，但该版本部分源文件头仍残留 LGPL-2.1 字样（混用）。本项目只以 Gradle 依赖引用、未修改库代码，并已补充 MIT `LICENSE` 与 NOTICE；**对外分发前建议人工确认一次许可解释**。
 - **接口风险**：未实现 WBI 签名；若 B 站对匿名 search/playurl 收紧（-412/风控），搜索/播放会失败，需补 WBI（上游有实现）。
 - **数据风险**：搜索/榜单结果 cid=0 时播放依赖 pagelist 兜底（多 P 视频默认 P1）。
 - **设备环境**：真机时钟曾被关闭自动同步（导致 TLS 全部失败），已通过 `settings put global auto_time 1` 修正；验收若换设备请确认系统时间正确。
@@ -128,7 +133,7 @@ EXIT=0
 data     tests= 52  failures=0 errors=0 skipped=0
 playback tests= 49  failures=0 errors=0 skipped=0
 lyrics   tests= 64  failures=0 errors=0 skipped=0
-TOTAL    tests=165  failures=0 errors=0 skipped=0
+TOTAL    tests=166  failures=0 errors=0 skipped=0
 ```
 
 真机验证（设备 `5c17d7b9` MI 6 / Android 14，包名 `com.bbplayer.android.debug`）：
@@ -145,7 +150,7 @@ $ adb logcat -d | grep -E 'FATAL EXCEPTION|ANR in com.bbplayer'   → 无输出
 ```
 
 截图证据索引（`.ai/evidence/shots/`，均来自真机实时操作）：
-`12-notification.png` 通知栏媒体控制 · `13-restore.png` 冷启动断点续播 · `14-library-playlist.png` 新建歌单 · `15-add-to-playlist.png` 添加到歌单+播放页浅色 · `16-queue.png` 播放队列 sheet · `17-lyrics-offset.png` 歌词失败态+偏移 200ms · `18-favorites.png` 收藏列表 · `08-settings.png` 设置（浅） · `09-settings-dark.png` 设置（深/动态取色） · `07-profile.png` 统计热力图 · `19-home-light.png` 首页（浅色） · `r3-player.png` 播放页 · `r4-lyrics.png` 歌词页。
+`12-notification.png` 通知栏媒体控制 · `13-restore.png` 冷启动断点续播 · `14-library-playlist.png` 新建歌单 · `15-add-to-playlist.png` 添加到歌单+播放页浅色 · `16-queue.png` 播放队列 sheet · `17-lyrics-offset.png` 歌词失败态+偏移 200ms · `18-favorites.png` 收藏列表 · `20-timer-dialog.png` 定时关闭弹窗 · `21-speed-dialog.png` 倍速弹窗 · `25-search-play-final.png` 搜索结果直接播放（P0 修复回归） · `08-settings.png` 设置（浅） · `09-settings-dark.png` 设置（深/动态取色） · `07-profile.png` 统计热力图 · `19-home-light.png` 首页（浅色） · `r3-player.png` 播放页 · `r4-lyrics.png` 歌词页。
 
 合规核对：
 - `git diff b7a08e9..HEAD -- .ai/spec-android-native/SPEC.md` → 空（SPEC 实现期未改动）✅

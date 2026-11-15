@@ -4,12 +4,12 @@ Copyright (c) 2026 BBPlayer Android Native contributors
 This product includes software developed by third parties:
 
 1. SaltUI (https://github.com/Moriafly/SaltUI)
-   License: GNU Lesser General Public License v2.1
-   Used as an unmodified Gradle dependency (io.github.moriafly:salt-ui:2.8.6).
-   Full corresponding source is available from Maven Central
-   (group io.github.moriafly, artifact salt-ui-android, sources classifier)
-   and from the upstream repository. Application source code is provided in
-   this repository, allowing relinking with a modified version of the library.
+   License: Apache License 2.0 (as declared by the published Maven POM and the
+   upstream LICENSE). Used as an unmodified Gradle dependency
+   (io.github.moriafly:salt-ui:2.8.6). Note: some files inside the 2.8.6
+   sources artifact still carry legacy LGPL-2.1 headers; this project does not
+   modify the library. Please confirm the preferred license interpretation
+   before redistribution.
 
 2. BBPlayer (https://github.com/bbplayer-app/bbplayer)
    License: MIT

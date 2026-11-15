@@ -25,6 +25,7 @@ class PlaybackHistoryTracker(private val graph: AppGraph, private val scope: Cor
             var playedMs = 0L
             var lastPosition = 0L
             var lastResumeSave = 0L
+            var wasPlaying = false
             graph.playbackController.state.collectLatest { state ->
                 val track = state.track
                 if (track?.key != current?.key) {
@@ -43,7 +44,19 @@ class PlaybackHistoryTracker(private val graph: AppGraph, private val scope: Cor
                 }
                 if (state.isPlaying && track != null) {
                     playedMs += (state.positionMs - lastPosition).coerceIn(0L, 5_000L)
+                } else if (wasPlaying && track != null && playedMs > 500L) {
+                    // Paused / finished / errored: persist the listen so short tracks and the
+                    // last track of a session are not lost from history & statistics.
+                    runCatching {
+                        graph.historyRepository.recordPlay(
+                            track = track,
+                            listenedMs = playedMs,
+                            completed = playedMs > 0 && state.positionMs >= (track.durationMs * 0.9).toLong(),
+                        )
+                    }
+                    playedMs = 0L
                 }
+                wasPlaying = state.isPlaying
                 lastPosition = state.positionMs
                 val now = System.currentTimeMillis()
                 if (track != null && state.isPlaying && now - lastResumeSave > 5_000) {

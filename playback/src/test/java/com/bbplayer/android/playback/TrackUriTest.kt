@@ -43,8 +43,18 @@ class TrackUriTest {
         assertNull(TrackUri.parse("bbplayer://track/BV1"))
         assertNull(TrackUri.parse("bbplayer://track//123"))
         assertNull(TrackUri.parse("bbplayer://track/BV1/not-a-number"))
-        assertNull(TrackUri.parse("bbplayer://track/BV1/0"))
+        assertNull(TrackUri.parse("bbplayer://track/BV1/-1"))
         assertNull(TrackUri.parse(""))
+    }
+
+    @Test
+    fun `accepts cid zero because the data layer resolves the first page`() {
+        // Search / ranking results may not carry a cid yet; the repository resolves it
+        // through pagelist when opening the stream. Rejecting cid=0 used to break
+        // "search result -> play" entirely (see REVIEW.md P0).
+        val ref = TrackUri.parse("bbplayer://track/BV1xx411c7mD/0")
+        assertEquals(TrackUri.Ref("BV1xx411c7mD", 0L, 0), ref)
+        assertEquals("BV1xx411c7mD:0", ref!!.trackKey)
     }
 
     @Test

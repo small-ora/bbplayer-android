@@ -68,8 +68,8 @@ lyrics/    LRC 解析、QQ/网易云歌词获取与匹配、缓存
 
 ## 开源许可与致谢
 
-- 本项目代码：**MIT**（见 [LICENSE](LICENSE)）
+- 本项目代码：**MIT**（见 `LICENSE`）
 - 功能与交互参考：[bbplayer-app/bbplayer](https://github.com/bbplayer-app/bbplayer)（MIT），未复制其 React Native 代码
-- UI 组件库：[Moriafly/SaltUI](https://github.com/Moriafly/SaltUI)（**LGPL-2.1**），以 Gradle 依赖方式引用；其完整源码可从 Maven Central 获取，本仓库提供全部应用源码，满足可重新链接要求。相关归属展示在 App「设置 → 关于」中
+- UI 组件库：[Moriafly/SaltUI](https://github.com/Moriafly/SaltUI)（**Apache-2.0**，Maven POM 声明；注：2.8.6 的部分源文件头仍残留 LGPL-2.1 声明，建议分发前与人确认一次）。归属展示在 App「设置 → 关于」中
 - 设计参考：[Salt Player（椒盐音乐）](https://github.com/Moriafly/SaltPlayerSource)
 - 数据来源：Bilibili 公开接口；歌词：QQ 音乐 / 网易云音乐公开接口。仅供学习研究，请勿用于商业用途

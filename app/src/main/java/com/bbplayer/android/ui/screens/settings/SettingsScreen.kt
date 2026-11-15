@@ -40,7 +40,7 @@ import com.bbplayer.android.ui.components.SmallTopBar
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
-import kotlinx.coroutines.launch
+import com.bbplayer.android.core.safeLaunch
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
@@ -76,7 +76,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 SettingRow("主题模式", themeMode.label) { dialog = "theme" }
                 SettingSwitchRow("动态取色", "跟随系统壁纸取色（Android 12+）", dynamicColor) {
-                    scope.launch { prefs.setDynamicColor(it) }
+                    scope.safeLaunch { prefs.setDynamicColor(it) }
                 }
             }
         }
@@ -86,10 +86,10 @@ fun SettingsScreen(onBack: () -> Unit) {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 SettingRow("音质", quality.label) { dialog = "quality" }
                 SettingSwitchRow("启动时自动播放", "打开 App 后自动继续上次播放", autoplay) {
-                    scope.launch { prefs.setAutoplayOnStart(it) }
+                    scope.safeLaunch { prefs.setAutoplayOnStart(it) }
                 }
                 SettingSwitchRow("断点续播", "记住上次播放的位置", resume) {
-                    scope.launch { prefs.setResumeOnStart(it) }
+                    scope.safeLaunch { prefs.setResumeOnStart(it) }
                 }
             }
         }
@@ -100,17 +100,17 @@ fun SettingsScreen(onBack: () -> Unit) {
                 StepRow(
                     title = "歌词字号",
                     value = String.format(java.util.Locale.US, "%.1fx", fontScale),
-                    onMinus = { scope.launch { prefs.setLyricsFontScale((fontScale - 0.1f).coerceIn(0.8f, 1.6f)) } },
-                    onPlus = { scope.launch { prefs.setLyricsFontScale((fontScale + 0.1f).coerceIn(0.8f, 1.6f)) } },
+                    onMinus = { scope.safeLaunch { prefs.setLyricsFontScale((fontScale - 0.1f).coerceIn(0.8f, 1.6f)) } },
+                    onPlus = { scope.safeLaunch { prefs.setLyricsFontScale((fontScale + 0.1f).coerceIn(0.8f, 1.6f)) } },
                 )
                 StepRow(
                     title = "歌词偏移",
                     value = if (lyricOffset == 0) "0 ms" else "${if (lyricOffset > 0) "+" else ""}$lyricOffset ms",
-                    onMinus = { scope.launch { prefs.setLyricsOffsetMs((lyricOffset - 100).coerceIn(-2000, 2000)) } },
-                    onPlus = { scope.launch { prefs.setLyricsOffsetMs((lyricOffset + 100).coerceIn(-2000, 2000)) } },
+                    onMinus = { scope.safeLaunch { prefs.setLyricsOffsetMs((lyricOffset - 100).coerceIn(-2000, 2000)) } },
+                    onPlus = { scope.safeLaunch { prefs.setLyricsOffsetMs((lyricOffset + 100).coerceIn(-2000, 2000)) } },
                 )
                 SettingRow("清除歌词缓存", "") {
-                    scope.launch {
+                    scope.safeLaunch {
                         graph.lyricsRepository.clearCache()
                         toast = "歌词缓存已清除"
                     }
@@ -123,7 +123,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 SettingRow("版本", version) {}
                 SettingRow("BBPlayer", "数据来自 Bilibili，仅作学习用途") {}
-                SettingRow("界面风格", "SaltUI / 椒盐音乐（LGPL-2.1）") {}
+                SettingRow("界面风格", "SaltUI / 椒盐音乐（Apache-2.0）") {}
                 SettingRow("上游项目", "bbplayer-app/bbplayer（MIT）") {}
             }
         }
@@ -145,7 +145,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             options = ThemeMode.entries.map { it.label },
             selectedIndex = ThemeMode.entries.indexOf(themeMode),
             onSelect = { idx ->
-                scope.launch { prefs.setThemeMode(ThemeMode.entries[idx]) }
+                scope.safeLaunch { prefs.setThemeMode(ThemeMode.entries[idx]) }
                 dialog = null
             },
             onDismiss = { dialog = null },
@@ -155,7 +155,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             options = AudioQuality.entries.sortedByDescending { it.id }.map { it.label },
             selectedIndex = AudioQuality.entries.sortedByDescending { it.id }.indexOf(quality),
             onSelect = { idx ->
-                scope.launch { prefs.setAudioQuality(AudioQuality.entries.sortedByDescending { it.id }[idx]) }
+                scope.safeLaunch { prefs.setAudioQuality(AudioQuality.entries.sortedByDescending { it.id }[idx]) }
                 dialog = null
             },
             onDismiss = { dialog = null },

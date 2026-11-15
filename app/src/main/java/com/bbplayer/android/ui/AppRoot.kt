@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.bbplayer.android.core.model.PlaybackState
+import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.BottomDock
 import com.bbplayer.android.ui.components.DockTab
@@ -83,6 +84,18 @@ fun AppRoot() {
         }
     }
 
+    /** Play with the user's preferred audio quality (setting -> track -> playback). */
+    fun playTracks(tracks: List<Track>, index: Int) {
+        scope.safeLaunch {
+            val quality = graph.preferencesRepository.audioQuality.first()
+            val prepared = tracks.map { track ->
+                if (track.qualityId == quality.id) track else track.copy(qualityId = quality.id)
+            }
+            graph.playbackController.playQueue(prepared, index)
+        }
+        navController.navigate(Routes.PLAYER) { launchSingleTop = true }
+    }
+
     fun openPlayer() {
         navController.navigate(Routes.PLAYER) { launchSingleTop = true }
     }
@@ -98,7 +111,7 @@ fun AppRoot() {
                     onOpenSearch = { navController.switchTab(Routes.SEARCH) },
                     onOpenPlayer = ::openPlayer,
                     onPlayTrack = { tracks, index ->
-                        scope.safeLaunch { graph.playbackController.playQueue(tracks, index) }
+                        playTracks(tracks, index)
                         navController.navigate(Routes.PLAYER) { launchSingleTop = true }
                     },
                 )
@@ -107,7 +120,7 @@ fun AppRoot() {
                 SearchScreen(
                     onOpenPlayer = ::openPlayer,
                     onPlayTrack = { tracks, index ->
-                        scope.safeLaunch { graph.playbackController.playQueue(tracks, index) }
+                        playTracks(tracks, index)
                         navController.navigate(Routes.PLAYER) { launchSingleTop = true }
                     },
                 )
@@ -117,7 +130,7 @@ fun AppRoot() {
                     onOpenPlaylist = { navController.navigate(Routes.playlist(it)) },
                     onOpenPlayer = ::openPlayer,
                     onPlayTrack = { tracks, index ->
-                        scope.safeLaunch { graph.playbackController.playQueue(tracks, index) }
+                        playTracks(tracks, index)
                         navController.navigate(Routes.PLAYER) { launchSingleTop = true }
                     },
                 )
@@ -126,7 +139,7 @@ fun AppRoot() {
                 ProfileScreen(
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                     onPlayTrack = { tracks, index ->
-                        scope.safeLaunch { graph.playbackController.playQueue(tracks, index) }
+                        playTracks(tracks, index)
                         navController.navigate(Routes.PLAYER) { launchSingleTop = true }
                     },
                 )
@@ -143,7 +156,7 @@ fun AppRoot() {
                     onBack = { navController.popBackStack() },
                     onOpenPlayer = ::openPlayer,
                     onPlayTrack = { tracks, index ->
-                        scope.safeLaunch { graph.playbackController.playQueue(tracks, index) }
+                        playTracks(tracks, index)
                         navController.navigate(Routes.PLAYER) { launchSingleTop = true }
                     },
                 )

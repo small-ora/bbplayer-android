@@ -55,8 +55,10 @@ object TrackUri {
         if (parts.size != 2) return null
         val bvid = parts[0]
         if (bvid.isEmpty() || bvid.any { it.isWhitespace() }) return null
+        // cid may be 0 for search/ranking results that do not carry a cid yet:
+        // the data layer resolves the first page cid via pagelist at stream time.
         val cid = parts[1].toLongOrNull() ?: return null
-        if (cid <= 0L) return null
+        if (cid < 0L) return null
         val qualityId = query
             .split('&')
             .asSequence()

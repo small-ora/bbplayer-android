@@ -175,6 +175,30 @@ fun PlayerScreen(onBack: () -> Unit) {
                 .navigationBarsPadding()
                 .padding(horizontal = 24.dp),
         ) {
+            state.errorMessage?.let { message ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = message,
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.weight(1f),
+                    )
+                    SaltPill(text = "重试", onClick = {
+                        scope.safeLaunch {
+                            graph.playbackController.playQueue(state.queue, state.currentIndex)
+                        }
+                    })
+                }
+            }
+
             // ---- top bar ----
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(
