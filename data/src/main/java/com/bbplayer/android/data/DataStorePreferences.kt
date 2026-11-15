@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.bbplayer.android.core.contracts.PreferencesRepository
 import com.bbplayer.android.core.model.AccentPreset
 import com.bbplayer.android.core.model.AudioQuality
+import com.bbplayer.android.core.model.LyricSource
 import com.bbplayer.android.core.model.LyricVisualStyle
 import com.bbplayer.android.core.model.MiniPlayerStyle
 import com.bbplayer.android.core.model.PlayerBackgroundStyle
@@ -107,6 +108,14 @@ class DataStorePreferences(context: Context) : PreferencesRepository {
 
     override val autoCheckUpdate: Flow<Boolean> = dataStore.data.map { it[Keys.AUTO_CHECK_UPDATE] ?: true }
 
+    override val lyricSource: Flow<LyricSource> = dataStore.data.map { preferences ->
+        LyricSource.entries.firstOrNull { it.name == preferences[Keys.LYRIC_SOURCE] } ?: LyricSource.AUTO
+    }
+
+    override val importBatchSize: Flow<Int> = dataStore.data.map {
+        (it[Keys.IMPORT_BATCH_SIZE] ?: 50).coerceIn(10, 200)
+    }
+
     override suspend fun setPlayerBackgroundStyle(style: PlayerBackgroundStyle) {
         dataStore.edit { it[Keys.PLAYER_BACKGROUND_STYLE] = style.name }
     }
@@ -153,6 +162,14 @@ class DataStorePreferences(context: Context) : PreferencesRepository {
 
     override suspend fun setAutoCheckUpdate(enabled: Boolean) {
         dataStore.edit { it[Keys.AUTO_CHECK_UPDATE] = enabled }
+    }
+
+    override suspend fun setLyricSource(source: LyricSource) {
+        dataStore.edit { it[Keys.LYRIC_SOURCE] = source.name }
+    }
+
+    override suspend fun setImportBatchSize(size: Int) {
+        dataStore.edit { it[Keys.IMPORT_BATCH_SIZE] = size.coerceIn(10, 200) }
     }
 
     override suspend fun setThemeMode(mode: ThemeMode) {
@@ -204,6 +221,8 @@ class DataStorePreferences(context: Context) : PreferencesRepository {
         val DESKTOP_LYRICS_COLOR = longPreferencesKey("desktop_lyrics_color")
         val DOWNLOAD_PARALLEL = intPreferencesKey("download_parallel")
         val AUTO_CHECK_UPDATE = booleanPreferencesKey("auto_check_update")
+        val LYRIC_SOURCE = stringPreferencesKey("lyric_source")
+        val IMPORT_BATCH_SIZE = intPreferencesKey("import_batch_size")
     }
 
     private companion object {

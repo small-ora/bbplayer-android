@@ -127,6 +127,13 @@ interface PreferencesRepository {
     suspend fun setDesktopLyricsColor(color: Long)
     suspend fun setDownloadParallel(count: Int)
     suspend fun setAutoCheckUpdate(enabled: Boolean)
+
+    // ---- v4: lyric provider preference + import batching ----
+    val lyricSource: Flow<com.bbplayer.android.core.model.LyricSource>
+    val importBatchSize: Flow<Int>
+
+    suspend fun setLyricSource(source: com.bbplayer.android.core.model.LyricSource)
+    suspend fun setImportBatchSize(size: Int)
 }
 
 /** Lyrics acquisition, caching and manual editing. */
