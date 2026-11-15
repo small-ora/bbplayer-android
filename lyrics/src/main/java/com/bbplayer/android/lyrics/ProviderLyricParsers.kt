@@ -14,13 +14,23 @@ import com.bbplayer.android.core.model.Lyrics
  */
 internal object ProviderLyricParsers {
 
-    fun parse(payload: LyricPayload, source: String): Lyrics {
+    /**
+     * @param estimateMissingWords when true (the online path used by [QqNeteaseLyricsRepository]) wordless lines get
+     *   a uniform estimated word timeline via [EstimatedTiming] and `Lyrics.source` is marked with
+     *   [EstimatedTiming.SOURCE_SUFFIX]. Real verbatim tracks are returned untouched; the default false preserves the
+     *   strict "words only when the provider supplied them" behaviour used by the parser tests.
+     */
+    fun parse(payload: LyricPayload, source: String, estimateMissingWords: Boolean = false): Lyrics {
         val translation = payload.translation
         val verbatim = runCatching { parseVerbatim(payload, translation, source) }.getOrNull()
-        if (verbatim != null && verbatim.lines.isNotEmpty()) return verbatim
-        return runCatching {
-            LyricsParser.parse(payload.lrc, LyricsFormat.AUTO, translation, source)
-        }.getOrElse { Lyrics(emptyList(), 0, source, "") }
+        val parsed = if (verbatim != null && verbatim.lines.isNotEmpty()) {
+            verbatim
+        } else {
+            runCatching {
+                LyricsParser.parse(payload.lrc, LyricsFormat.AUTO, translation, source)
+            }.getOrElse { Lyrics(emptyList(), 0, source, "") }
+        }
+        return if (estimateMissingWords) EstimatedTiming.apply(parsed) else parsed
     }
 
     /** Verbatim (word-timed) track only; null when the payload has none or it parses to nothing. */

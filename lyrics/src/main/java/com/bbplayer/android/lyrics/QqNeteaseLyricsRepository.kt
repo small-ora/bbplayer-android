@@ -31,6 +31,9 @@ import okhttp3.OkHttpClient
  * @param offsetStore per-track lyric offset persistence (AC G2); defaults to [FileTrackOffsetStore] at
  *   `filesDir/lyric_offsets.json`.
  * @param clock wall clock used for cache `fetchedAt` (injectable for tests).
+ * @param estimateWordTiming when true (default) lyrics that only carry line timestamps are extended with a uniform
+ *   estimated word timeline ([EstimatedTiming]) and their `source` is marked `qq:estimated` / `netease:estimated`, so the UI
+ *   karaoke fill works even without a real YRC/QRC track. Set to false to keep strict provider timing only.
  */
 class QqNeteaseLyricsRepository(
     context: Context,
@@ -38,6 +41,7 @@ class QqNeteaseLyricsRepository(
     private val cacheStore: LyricsCacheStore = FileLyricsCacheStore(File(context.filesDir, CACHE_DIR)),
     private val offsetStore: TrackOffsetStore = FileTrackOffsetStore(File(context.filesDir, OFFSET_FILE_NAME)),
     private val clock: () -> Long = System::currentTimeMillis,
+    private val estimateWordTiming: Boolean = true,
 ) : LyricsRepository {
 
     companion object {
@@ -67,7 +71,7 @@ class QqNeteaseLyricsRepository(
             val best = LyricMatcher.bestCandidate(track, QqMusicApi.search(httpClient, query))
             if (best != null) {
                 val payload = QqMusicApi.fetchLyric(httpClient, best.sourceId)
-                val lyrics = ProviderLyricParsers.parse(payload, SOURCE_QQ)
+                val lyrics = ProviderLyricParsers.parse(payload, SOURCE_QQ, estimateWordTiming)
                 if (!lyrics.isEmpty) {
                     store(track.key, lyrics, SOURCE_QQ, query)
                     return Result.success(lyrics)
@@ -85,7 +89,7 @@ class QqNeteaseLyricsRepository(
             val best = LyricMatcher.bestCandidate(track, NeteaseApi.search(httpClient, query))
             if (best != null) {
                 val payload = NeteaseApi.fetchLyric(httpClient, best.sourceId)
-                val lyrics = ProviderLyricParsers.parse(payload, SOURCE_NETEASE)
+                val lyrics = ProviderLyricParsers.parse(payload, SOURCE_NETEASE, estimateWordTiming)
                 if (!lyrics.isEmpty) {
                     store(track.key, lyrics, SOURCE_NETEASE, query)
                     return Result.success(lyrics)
@@ -158,7 +162,7 @@ class QqNeteaseLyricsRepository(
 
                 else -> return Result.failure(AppException("不支持的歌词来源：${candidate.source}"))
             }
-            val lyrics = ProviderLyricParsers.parse(payload, source)
+            val lyrics = ProviderLyricParsers.parse(payload, source, estimateWordTiming)
             if (lyrics.lines.isEmpty() && lyrics.plainText.isBlank()) {
                 Result.failure(AppException("未找到歌词"))
             } else {
