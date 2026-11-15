@@ -68,7 +68,6 @@ import com.bbplayer.android.ui.components.NavEntry
 import com.bbplayer.android.ui.components.NavTab
 import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
 import android.net.Uri
-import com.bbplayer.android.ui.screens.comments.CommentsScreen
 import com.bbplayer.android.ui.screens.library.CollectionDetailScreen
 import com.bbplayer.android.ui.screens.library.FavoriteFolderScreen
 import com.bbplayer.android.ui.screens.library.WatchLaterScreen
@@ -97,7 +96,6 @@ object Routes {
     const val PLAYER = "player"
     const val SETTINGS = "settings"
     const val PLAYLIST = "playlist/{id}"
-    const val COMMENTS = "comments/{bvid}"
     const val DOWNLOADS = "downloads"
     const val IMPORT_PLAYLIST = "import"
     const val LEADERBOARD = "leaderboard"
@@ -108,7 +106,6 @@ object Routes {
     const val COLLECTION_DETAIL = "collection/{id}?title={title}"
     const val UPLOADER = "uploader/{mid}"
     fun playlist(id: String) = "playlist/$id"
-    fun comments(bvid: String) = "comments/$bvid"
     fun favoriteFolder(id: Long, title: String) = "favoriteFolder/$id?title=${Uri.encode(title)}"
     fun collection(id: Long, title: String) = "collection/$id?title=${Uri.encode(title)}"
     fun uploader(mid: Long) = "uploader/$mid"
@@ -414,12 +411,6 @@ private fun AppNavHost(
                 onBack = { navController.popBackStack() },
                 onOpenPlayer = onOpenPlayer,
                 onPlayTrack = onPlayTrack,
-            )
-        }
-        composable(Routes.COMMENTS) { entry ->
-            CommentsScreen(
-                bvid = entry.arguments?.getString("bvid").orEmpty(),
-                onBack = { navController.popBackStack() },
             )
         }
         composable(Routes.LOGIN) {

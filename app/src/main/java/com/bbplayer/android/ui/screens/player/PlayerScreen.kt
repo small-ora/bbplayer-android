@@ -140,6 +140,11 @@ fun PlayerScreen(
     val quality by prefs.audioQuality.collectAsStateWithLifecycle(initialValue = AudioQuality.Q192)
     val fontScale by prefs.lyricsFontScale.collectAsStateWithLifecycle(initialValue = 1f)
     val prefsOffset by prefs.lyricsOffsetMs.collectAsStateWithLifecycle(initialValue = 0)
+    // v2 遗留的「逐曲偏移」仍会叠加生效（播放页不再提供调整按钮；全局偏移在设置里调）。
+    var legacyTrackOffset by remember(track.key) { mutableStateOf(0) }
+    LaunchedEffect(track.key) {
+        legacyTrackOffset = runCatching { graph.lyricsRepository.getTrackOffset(track.key) }.getOrDefault(0)
+    }
     val backgroundStyle by prefs.playerBackgroundStyle.collectAsStateWithLifecycle(initialValue = PlayerBackgroundStyle.GRADIENT)
     val lyricStyle by prefs.lyricVisualStyle.collectAsStateWithLifecycle(initialValue = LyricVisualStyle.MODERN)
     val verbatim by prefs.verbatimLyrics.collectAsStateWithLifecycle(initialValue = true)
@@ -180,8 +185,8 @@ fun PlayerScreen(
     }
 
     // 偏移只在「设置 → 歌词 → 歌词偏移」调整；播放页歌词页为纯展示，不再提供逐曲偏移按钮。
-    val effectiveLyrics = remember(lyrics, prefsOffset) {
-        lyrics?.copy(offsetMs = (lyrics?.offsetMs ?: 0) + prefsOffset)
+    val effectiveLyrics = remember(lyrics, prefsOffset, legacyTrackOffset) {
+        lyrics?.copy(offsetMs = (lyrics?.offsetMs ?: 0) + prefsOffset + legacyTrackOffset)
     }
 
     // Desktop overlay hides while the in-app lyrics page (pager page 1) is visible.
@@ -281,14 +286,14 @@ fun PlayerScreen(
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(
                     Icons.Rounded.KeyboardArrowDown, "收起", onClick = onBack,
-                    tint = Color.White, size = 40,
+                    tint = onPlayerColor, size = 40,
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("正在播放", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+                        Text("正在播放", color = onPlayerColor.copy(alpha = 0.85f), fontSize = 12.sp)
                         Text(
                             track.uploader,
-                            color = Color.White.copy(alpha = 0.55f),
+                            color = onPlayerColor.copy(alpha = 0.55f),
                             fontSize = 11.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -302,7 +307,7 @@ fun PlayerScreen(
                                     Modifier
                                         .size(if (active) 6.dp else 5.dp)
                                         .clip(RoundedCornerShape(50))
-                                        .background(Color.White.copy(alpha = if (active) 0.95f else 0.32f))
+                                        .background(onPlayerColor.copy(alpha = if (active) 0.95f else 0.32f))
                                 )
                             }
                         }
@@ -310,14 +315,16 @@ fun PlayerScreen(
                 }
                 IconAction(
                     Icons.Rounded.MoreHoriz, "更多", onClick = { sheet.value = "more" },
-                    tint = Color.White, size = 40,
+                    tint = onPlayerColor, size = 40,
                 )
             }
 
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxWidth().weight(1f),
-                beyondViewportPageCount = 1,
+                // 三页全部保留在组合中：歌词滚动/评论分页/楼中楼展开在左右滑动时不会丢状态；
+                // 评论请求由 CommentsScreen(active=…) 门控，只有真正滑到评论页才发。
+                beyondViewportPageCount = 2,
             ) { page ->
                 when (page) {
                     0 -> MainPlayerContent(
@@ -353,7 +360,10 @@ fun PlayerScreen(
                         state = state,
                         pureWhite = pureWhite,
                     )
-                    else -> CommentsPage(bvid = track.bvid)
+                    else -> CommentsPage(
+                        bvid = track.bvid,
+                        active = pagerState.currentPage == 2,
+                    )
                 }
             }
         }
@@ -606,7 +616,7 @@ private fun LyricsPage(
 }
 
 @Composable
-private fun CommentsPage(bvid: String) {
+private fun CommentsPage(bvid: String, active: Boolean) {
     // 评论页在播放页里以不透明圆角卡片呈现，保证浅/深色主题下都易读，也能看清左右滑动边界。
     Box(
         Modifier
@@ -615,7 +625,7 @@ private fun CommentsPage(bvid: String) {
             .clip(RoundedCornerShape(24.dp))
             .background(SaltTheme.colors.background),
     ) {
-        CommentsScreen(bvid = bvid, onBack = {}, embedded = true)
+        CommentsScreen(bvid = bvid, onBack = {}, embedded = true, active = active)
     }
 }
 

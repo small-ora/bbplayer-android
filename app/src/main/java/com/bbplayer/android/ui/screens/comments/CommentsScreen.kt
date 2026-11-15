@@ -69,6 +69,8 @@ fun CommentsScreen(
     onBack: () -> Unit,
     /** 嵌入播放页（横向 pager 第 3 页）：不显示返回栏，由外层提供卡片背景。 */
     embedded: Boolean = false,
+    /** 嵌入模式下，仅当该页可见时才请求评论（避免翻到歌词页就预加载评论）。 */
+    active: Boolean = true,
 ) {
     val graph = LocalAppGraph.current
     val scope = rememberCoroutineScope()
@@ -83,6 +85,8 @@ fun CommentsScreen(
     var moreError by remember(bvid) { mutableStateOf<String?>(null) }
     var reloadKey by remember(bvid) { mutableStateOf(0) }
     var replyStates by remember(bvid) { mutableStateOf<Map<Long, ReplyState>>(emptyMap()) }
+    // 切歌（bvid 变化）时重置滚动位置；同一首歌在 pager 内保持已加载的评论与阅读位置。
+    val listState = remember(bvid) { androidx.compose.foundation.lazy.LazyListState() }
 
     suspend fun fetchPage(target: Int, replace: Boolean) {
         if (replace) {
@@ -180,7 +184,8 @@ fun CommentsScreen(
         }
     }
 
-    LaunchedEffect(bvid, reloadKey) {
+    LaunchedEffect(bvid, reloadKey, active) {
+        if (!active) return@LaunchedEffect
         scope.safeLaunch(onError = { throwable ->
             loading = false
             error = throwable.toUserMessage()
@@ -191,6 +196,7 @@ fun CommentsScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(bottom = if (embedded) 16.dp else 40.dp),
     ) {
         if (embedded) {
