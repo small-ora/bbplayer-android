@@ -168,12 +168,6 @@ fun ProfileScreen(
                         text = "设置",
                         iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.Settings),
                     )
-                    Item(
-                        onClick = onOpenSettings,
-                        text = "主题与外观",
-                        sub = "深浅色 · 动态取色 · 强调色",
-                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.Settings),
-                    )
                 }
             }
         }

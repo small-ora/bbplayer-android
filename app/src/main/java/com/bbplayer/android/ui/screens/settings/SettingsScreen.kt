@@ -83,8 +83,6 @@ fun SettingsScreen(
     val downloadParallel by prefs.downloadParallel.collectAsStateWithLifecycle(initialValue = 1)
     val autoUpdate by prefs.autoCheckUpdate.collectAsStateWithLifecycle(initialValue = true)
     val lyricSource by prefs.lyricSource.collectAsStateWithLifecycle(initialValue = LyricSource.AUTO)
-    val importBatchSize by prefs.importBatchSize.collectAsStateWithLifecycle(initialValue = 50)
-    val highQuality by prefs.highQualityAudio.collectAsStateWithLifecycle(initialValue = false)
     val reportProgress by prefs.reportPlaybackProgress.collectAsStateWithLifecycle(initialValue = false)
     val session by graph.authRepository.session().collectAsStateWithLifecycle(initialValue = null as BiliUser?)
 
@@ -103,6 +101,12 @@ fun SettingsScreen(
                 .onSuccess { toast = "已恢复 $it 个文件，请重启应用生效" }
                 .onFailure { toast = it.toUserMessage() }
         }
+    }
+    // D4: 「启动时自动播放」+「断点续播」两个开关合并成一个三选一（仍写两个旧偏好）。
+    val startupLabel = when {
+        !resume -> "关闭"
+        autoplay -> "恢复并播放"
+        else -> "恢复上次播放"
     }
     val version = remember {
         runCatching {
@@ -154,25 +158,10 @@ fun SettingsScreen(
         item { SettingsGroup("播放") }
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                // D1: 音质与「高音质」开关合并为单一「音质」下拉（杜比/无损选项需要登录）。
                 SettingRow("音质", quality.label) { dialog = "quality" }
-                SettingSwitchRow("启动时自动播放", "打开 App 后自动继续上次播放", autoplay) {
-                    scope.safeLaunch { prefs.setAutoplayOnStart(it) }
-                }
-                SettingSwitchRow("断点续播", "记住上次播放的位置", resume) {
-                    scope.safeLaunch { prefs.setResumeOnStart(it) }
-                }
-                SettingSwitchRow(
-                    title = "高音质（登录后可用）",
-                    subtitle = "登录后优先 FLAC / 杜比，不可用时自动回退到最高 AAC",
-                    checked = highQuality,
-                ) { enabled ->
-                    if (enabled && session == null) {
-                        toast = "请先登录 Bilibili 账号"
-                        onOpenLogin()
-                    } else {
-                        scope.safeLaunch { prefs.setHighQualityAudio(enabled) }
-                    }
-                }
+                // D4: 启动行为合并为一项三选一。
+                SettingRow("启动时", startupLabel) { dialog = "startup" }
             }
         }
 
@@ -198,7 +187,6 @@ fun SettingsScreen(
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 SettingRow("同时下载数", "${downloadParallel} 个") { dialog = "downloadParallel" }
-                SettingRow("导入每批匹配数", "${importBatchSize} 首") { dialog = "importBatch" }
                 SettingRow("已下载管理", "查看/删除/导出") { onOpenDownloads() }
             }
         }
@@ -218,12 +206,6 @@ fun SettingsScreen(
                     onMinus = { scope.safeLaunch { prefs.setLyricsOffsetMs((lyricOffset - 100).coerceIn(-2000, 2000)) } },
                     onPlus = { scope.safeLaunch { prefs.setLyricsOffsetMs((lyricOffset + 100).coerceIn(-2000, 2000)) } },
                 )
-                SettingRow("清除歌词缓存", "") {
-                    scope.safeLaunch {
-                        graph.lyricsRepository.clearCache()
-                        toast = "歌词缓存已清除"
-                    }
-                }
             }
         }
 
@@ -248,12 +230,14 @@ fun SettingsScreen(
                     title = "接口缓存",
                     value = "${cacheCount} 条 · ${formatBytes(cacheSize)}",
                 ) {}
-                SettingRow("清除接口缓存", "清空搜索/详情/歌词等接口缓存") {
+                // D5: 接口缓存与歌词缓存合并为一个清理入口。
+                SettingRow("清除缓存", "接口缓存 + 歌词缓存") {
                     scope.safeLaunch {
                         val cleared = graph.networkCacheRepository.clear()
+                        graph.lyricsRepository.clearCache()
                         cacheSize = graph.networkCacheRepository.sizeBytes()
                         cacheCount = graph.networkCacheRepository.entryCount()
-                        toast = "已清除 $cleared 条接口缓存"
+                        toast = "已清除 $cleared 条接口缓存与歌词缓存"
                     }
                 }
             }
@@ -356,16 +340,6 @@ fun SettingsScreen(
             },
             onDismiss = { dialog = null },
         )
-        "importBatch" -> OptionDialog(
-            title = "导入每批匹配数",
-            options = listOf("20 首", "50 首", "100 首", "200 首"),
-            selectedIndex = listOf(20, 50, 100, 200).indexOf(importBatchSize).coerceAtLeast(0),
-            onSelect = { idx ->
-                scope.safeLaunch { prefs.setImportBatchSize(listOf(20, 50, 100, 200)[idx]) }
-                dialog = null
-            },
-            onDismiss = { dialog = null },
-        )
         "lyricStyle" -> OptionDialog(
             title = "歌词样式",
             options = LyricVisualStyle.entries.map { it.label },
@@ -409,12 +383,63 @@ fun SettingsScreen(
             }
             dialog = null
         }
-        "quality" -> OptionDialog(
-            title = "默认音质",
-            options = AudioQuality.entries.sortedByDescending { it.id }.map { it.label },
-            selectedIndex = AudioQuality.entries.sortedByDescending { it.id }.indexOf(quality),
+        "quality" -> {
+            // 无损优先，其次杜比，再按常用 AAC 档位从高到低；只保留这一个音质入口。
+            val ordered = listOf(
+                AudioQuality.HI_RES,
+                AudioQuality.DOLBY,
+                AudioQuality.Q192,
+                AudioQuality.Q128,
+                AudioQuality.Q64,
+            )
+            OptionDialog(
+                title = "音质（杜比 / 无损需登录）",
+                options = ordered.map { it.label },
+                selectedIndex = ordered.indexOf(quality).coerceAtLeast(0),
+                onSelect = { idx ->
+                    val picked = ordered[idx]
+                    val needsLogin = picked == AudioQuality.DOLBY || picked == AudioQuality.HI_RES
+                    if (needsLogin && session == null) {
+                        dialog = null
+                        toast = "杜比 / 无损需要先登录 Bilibili 账号"
+                        onOpenLogin()
+                    } else {
+                        scope.safeLaunch {
+                            prefs.setAudioQuality(picked)
+                            // 旧「高音质」开关的能力折叠进音质选择，v5 数据层逻辑不变。
+                            prefs.setHighQualityAudio(needsLogin)
+                        }
+                        dialog = null
+                    }
+                },
+                onDismiss = { dialog = null },
+            )
+        }
+        "startup" -> OptionDialog(
+            title = "启动时",
+            options = listOf("关闭", "恢复上次播放", "恢复并播放"),
+            selectedIndex = when {
+                !resume -> 0
+                autoplay -> 2
+                else -> 1
+            },
             onSelect = { idx ->
-                scope.safeLaunch { prefs.setAudioQuality(AudioQuality.entries.sortedByDescending { it.id }[idx]) }
+                scope.safeLaunch {
+                    when (idx) {
+                        0 -> {
+                            prefs.setResumeOnStart(false)
+                            prefs.setAutoplayOnStart(false)
+                        }
+                        1 -> {
+                            prefs.setResumeOnStart(true)
+                            prefs.setAutoplayOnStart(false)
+                        }
+                        else -> {
+                            prefs.setResumeOnStart(true)
+                            prefs.setAutoplayOnStart(true)
+                        }
+                    }
+                }
                 dialog = null
             },
             onDismiss = { dialog = null },
