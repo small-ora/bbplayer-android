@@ -1,11 +1,11 @@
 # 验收包 v1 — BBPlayer 安卓原生版
 
 **级别**：L2/L3（新建跨模块应用；无鉴权/密钥红线，按 L2+ 执行）
-**已执行阶段**：0 勘察 → 1 隔离基线 → 2 SPEC（冻结 b7a08e9）→ 3 PLAN → 4 实现（4 个写入者并行）→ 5 自检 → 6 独立审查（fresh subagent）→ 7 人工验收（本文件）
+**已执行阶段**：0 勘察 → 1 隔离基线 → 2 SPEC（冻结 c0fbd1c）→ 3 PLAN → 4 实现（4 个写入者并行）→ 5 自检 → 6 独立审查（fresh subagent）→ 7 人工验收（本文件）
 **跳过阶段**：8 合入（未授权 push/PR/部署，仅本地提交）
 **状态**：**本地可运行、可安装；等待人工验收**（非 BLOCKED）· 独立审查后 P0×2 / P1×13 已全部修复并回归
 
-`SPEC_BASE` = `b7a08e9`（`.ai/spec-android-native/SPEC_BASE`）· `HEAD` 见 `git log --oneline -1` · `LOG_CMD` = `git log --oneline b7a08e9..HEAD` · `DIFF_CMD` = `git diff b7a08e9..HEAD`
+`SPEC_BASE` = `c0fbd1c`（`.ai/spec-android-native/SPEC_BASE`）· `HEAD` 见 `git log --oneline -1` · `LOG_CMD` = `git log --oneline c0fbd1c..HEAD` · `DIFF_CMD` = `git diff c0fbd1c..HEAD`
 `ENFORCEMENT`：prompt-only（无 CI / pre-commit）· 有 git · 无远端 · 未 push
 
 ---
@@ -80,7 +80,7 @@
 
 ## 5. 风险与回滚
 
-- **回滚**：`git reset --hard b7a08e9`（回到 SPEC 基线）；或 `git checkout <上一提交> -- <路径>`。APK 回滚 = 重新安装旧包。
+- **回滚**：`git reset --hard c0fbd1c`（回到 SPEC 基线）；或 `git checkout <上一提交> -- <路径>`。APK 回滚 = 重新安装旧包。
 - **许可风险（已按 POM 更正）**：SaltUI 2.8.6 的 Maven POM 声明 **Apache-2.0**，但该版本部分源文件头仍残留 LGPL-2.1 字样（混用）。本项目只以 Gradle 依赖引用、未修改库代码，并已补充 MIT `LICENSE` 与 NOTICE；**对外分发前建议人工确认一次许可解释**。
 - **接口风险**：未实现 WBI 签名；若 B 站对匿名 search/playurl 收紧（-412/风控），搜索/播放会失败，需补 WBI（上游有实现）。
 - **数据风险**：搜索/榜单结果 cid=0 时播放依赖 pagelist 兜底（多 P 视频默认 P1）。
@@ -153,7 +153,7 @@ $ adb logcat -d | grep -E 'FATAL EXCEPTION|ANR in com.bbplayer'   → 无输出
 `12-notification.png` 通知栏媒体控制 · `13-restore.png` 冷启动断点续播 · `14-library-playlist.png` 新建歌单 · `15-add-to-playlist.png` 添加到歌单+播放页浅色 · `16-queue.png` 播放队列 sheet · `17-lyrics-offset.png` 歌词失败态+偏移 200ms · `18-favorites.png` 收藏列表 · `20-timer-dialog.png` 定时关闭弹窗 · `21-speed-dialog.png` 倍速弹窗 · `25-search-play-final.png` 搜索结果直接播放（P0 修复回归） · `08-settings.png` 设置（浅） · `09-settings-dark.png` 设置（深/动态取色） · `07-profile.png` 统计热力图 · `19-home-light.png` 首页（浅色） · `r3-player.png` 播放页 · `r4-lyrics.png` 歌词页。
 
 合规核对：
-- `git diff b7a08e9..HEAD -- .ai/spec-android-native/SPEC.md` → 空（SPEC 实现期未改动）✅
+- `git diff c0fbd1c..HEAD -- .ai/spec-android-native/SPEC.md` → 空（SPEC 实现期未改动）✅
 - 代码中无 `SESSDATA/bili_jct/api key/secret/password`（仅有构建产物里的多语言资源）✅
 - 无明文 HTTP 业务请求（封面/音频均强制 https）✅
 - 未 push / 未开 PR / 未部署 ✅

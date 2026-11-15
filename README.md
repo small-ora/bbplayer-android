@@ -1,5 +1,8 @@
 # BBPlayer · 安卓原生版
 
+[![Android CI](https://github.com/small-ora/bbplayer-android/actions/workflows/android.yml/badge.svg)](https://github.com/small-ora/bbplayer-android/actions/workflows/android.yml)
+[![Release](https://img.shields.io/github/v/release/small-ora/bbplayer-android?display_name=tag)](https://github.com/small-ora/bbplayer-android/releases)
+
 用 **Kotlin + Jetpack Compose** 重写的 [BBPlayer](https://github.com/bbplayer-app/bbplayer)（B 站音频播放器）核心体验。
 界面与组件风格参考 **[椒盐音乐 Salt Player](https://github.com/Moriafly/SaltPlayerSource)**，直接基于其开源的 SaltUI 组件库（`io.github.moriafly:salt-ui`）。
 
@@ -31,7 +34,7 @@
 环境：JDK 17、Android SDK（compileSdk 36 / build-tools 36）、Gradle 8.13（wrapper）。
 
 ```bash
-# 单元测试（data / playback / lyrics 三个模块，共 165 个用例）
+# 单元测试（data / playback / lyrics 三个模块，共 166 个用例）
 ./gradlew :data:testDebugUnitTest :playback:testDebugUnitTest :lyrics:testDebugUnitTest
 
 # Debug APK
@@ -44,6 +47,11 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 > 首次运行会请求通知权限（Android 13+），用于媒体播放通知；拒绝后仍可前台播放。
+
+### GitHub Actions 自动构建
+
+推送到 `main` 或手动触发 `Android CI` 工作流即可自动跑测试并产出 APK（workflow artifacts 可下载）；
+打 `v*` tag（如 `v0.1.0`）会自动创建 GitHub Release 并附上 debug / release APK。详见 [.github/workflows/README.md](.github/workflows/README.md)。
 
 ## 架构
 

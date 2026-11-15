@@ -1,7 +1,7 @@
 # REVIEW — BBPlayer 安卓原生版 v1
 
-**审查依据（冻结）**：`git show b7a08e9:.ai/spec-android-native/SPEC.md`（审查期间 SPEC 未被改动：`git diff b7a08e9..HEAD -- SPEC.md` 为空）
-**审查对象**：`git diff b7a08e9..HEAD`（99 文件 / +11013 行，含实现、测试、文档）
+**审查依据（冻结）**：`git show c0fbd1c:.ai/spec-android-native/SPEC.md`（审查期间 SPEC 未被改动：`git diff c0fbd1c..HEAD -- SPEC.md` 为空）
+**审查对象**：`git diff c0fbd1c..HEAD`（99 文件 / +11013 行，含实现、测试、文档）
 
 ## 审查者记录
 
@@ -60,6 +60,6 @@
 | 21 | P2 | 许可/README | SaltUI 2.8.6 许可表述不一致；README 称 MIT 但缺 LICENSE | **已修**：按 Maven POM 更正为 Apache-2.0（并注明 2.8.6 部分源文件头残留 LGPL-2.1 的歧义，供人裁定）；新增 MIT `LICENSE` |
 | 22 | P2 | `:app` 无单元测试；AC A2 只统计模块测试 | **记录**：A2 已在验收包按模块口径写明（165 用例来自 core 之外三个模块）；UI 层无单测属已知缺口 |
 
-SPEC 变更检查（reviewer 复核）：`git diff b7a08e9..HEAD -- .ai/spec-android-native/SPEC.md` 为空，无未说明变更 ✅
+SPEC 变更检查（reviewer 复核）：`git diff c0fbd1c..HEAD -- .ai/spec-android-native/SPEC.md` 为空，无未说明变更 ✅
 
 **结论更新**：独立审查共发现 P0×2（历史列表重复 key、cid=0 播放失败，均已修复并真机回归）、P1×13（全部修复）、P2 若干（能修的已修，许可/测试口径已在验收包如实说明）。未发现未处置的 P0/P1 阻塞项。
