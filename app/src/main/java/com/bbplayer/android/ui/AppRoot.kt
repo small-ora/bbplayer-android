@@ -69,6 +69,20 @@ fun AppRoot() {
     val route = backStackEntry?.destination?.route
     val showDock = route in tabRoutes
 
+    // Restore the previous queue/position once per process launch (C4 断点续播).
+    LaunchedEffect(Unit) {
+        val prefs = graph.preferencesRepository
+        val resumeEnabled = runCatching { prefs.resumeOnStart.first() }.getOrDefault(true)
+        if (resumeEnabled) {
+            val controller = graph.playbackController
+            if (controller is com.bbplayer.android.playback.PlaybackControllerImpl) {
+                val autoplay = runCatching { prefs.autoplayOnStart.first() }.getOrDefault(false)
+                runCatching { controller.restore(autoplay = autoplay) }
+                    .onFailure { android.util.Log.w("BBPlayer", "restore playback failed", it) }
+            }
+        }
+    }
+
     fun openPlayer() {
         navController.navigate(Routes.PLAYER) { launchSingleTop = true }
     }

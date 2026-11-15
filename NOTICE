@@ -1,0 +1,26 @@
+BBPlayer Android Native
+Copyright (c) 2026 BBPlayer Android Native contributors
+
+This product includes software developed by third parties:
+
+1. SaltUI (https://github.com/Moriafly/SaltUI)
+   License: GNU Lesser General Public License v2.1
+   Used as an unmodified Gradle dependency (io.github.moriafly:salt-ui:2.8.6).
+   Full corresponding source is available from Maven Central
+   (group io.github.moriafly, artifact salt-ui-android, sources classifier)
+   and from the upstream repository. Application source code is provided in
+   this repository, allowing relinking with a modified version of the library.
+
+2. BBPlayer (https://github.com/bbplayer-app/bbplayer)
+   License: MIT
+   Used as functional/behavioural reference only; no React Native source code
+   was copied into this project.
+
+3. AndroidX / Jetpack Compose, Media3, OkHttp, Coil, kotlinx.serialization
+   Licenses: Apache License 2.0 (see each project's repository).
+
+4. Data from Bilibili public APIs, QQ Music and NetEase Cloud Music public
+   endpoints. This project is not affiliated with Bilibili or the music
+   providers. For personal learning/research use only.
+
+Third-party trademarks and content belong to their respective owners.
