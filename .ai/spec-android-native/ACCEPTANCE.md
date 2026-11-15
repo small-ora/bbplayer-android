@@ -109,3 +109,46 @@
 - [ ] 修改后通过（意见：____）
 - [ ] 打回
 - [ ] 无法验收（原因：____）
+
+---
+
+## 10. 机器验证证据（最终门禁，2026-11-15 13:44）
+
+```text
+$ ./gradlew :app:assembleDebug :data:testDebugUnitTest :playback:testDebugUnitTest :lyrics:testDebugUnitTest --rerun-tasks --console=plain
+... 132 actionable tasks: 132 executed
+BUILD SUCCESSFUL in 12s
+EXIT=0
+```
+（完整日志：`.ai/evidence/final-gate.log`）
+
+单元测试统计（`*/build/test-results/testDebugUnitTest/*.xml`）：
+
+```text
+data     tests= 52  failures=0 errors=0 skipped=0
+playback tests= 49  failures=0 errors=0 skipped=0
+lyrics   tests= 64  failures=0 errors=0 skipped=0
+TOTAL    tests=165  failures=0 errors=0 skipped=0
+```
+
+真机验证（设备 `5c17d7b9` MI 6 / Android 14，包名 `com.bbplayer.android.debug`）：
+
+```text
+$ adb install -r app/build/outputs/apk/debug/app-debug.apk   → Success
+$ adb shell am start -n com.bbplayer.android.debug/com.bbplayer.android.MainActivity
+$ adb shell dumpsys media_session | grep -A1 state=PlaybackState
+   state=PlaybackState {state=PLAYING(3), position=3311, ...}   ← 真实 B 站音频播放
+$ adb shell dumpsys notification --noredact | grep pkg=com.bbplayer
+   NotificationRecord(... pkg=com.bbplayer.android.debug ... category=transport ... actions=2)
+   android.title=给我们的组合起个名！  android.text=田一名sir   ← 通知含封面与操作
+$ adb logcat -d | grep -E 'FATAL EXCEPTION|ANR in com.bbplayer'   → 无输出
+```
+
+截图证据索引（`.ai/evidence/shots/`，均来自真机实时操作）：
+`12-notification.png` 通知栏媒体控制 · `13-restore.png` 冷启动断点续播 · `14-library-playlist.png` 新建歌单 · `15-add-to-playlist.png` 添加到歌单+播放页浅色 · `16-queue.png` 播放队列 sheet · `17-lyrics-offset.png` 歌词失败态+偏移 200ms · `18-favorites.png` 收藏列表 · `08-settings.png` 设置（浅） · `09-settings-dark.png` 设置（深/动态取色） · `07-profile.png` 统计热力图 · `19-home-light.png` 首页（浅色） · `r3-player.png` 播放页 · `r4-lyrics.png` 歌词页。
+
+合规核对：
+- `git diff b7a08e9..HEAD -- .ai/spec-android-native/SPEC.md` → 空（SPEC 实现期未改动）✅
+- 代码中无 `SESSDATA/bili_jct/api key/secret/password`（仅有构建产物里的多语言资源）✅
+- 无明文 HTTP 业务请求（封面/音频均强制 https）✅
+- 未 push / 未开 PR / 未部署 ✅
