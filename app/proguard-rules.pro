@@ -1,0 +1,7 @@
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.**
+-keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
+-keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class com.bbplayer.android.**$$serializer { *; }
+-keepclassmembers class com.bbplayer.android.** { *** Companion; }
+-keepclasseswithmembers class com.bbplayer.android.** { kotlinx.serialization.KSerializer serializer(...); }
