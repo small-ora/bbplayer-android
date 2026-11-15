@@ -188,6 +188,37 @@ fun AppRoot() {
     val onPlay: (List<Track>, Int) -> Unit = { tracks, index -> playTracks(tracks, index) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
+    val navHost: @Composable () -> Unit = {
+        AppNavHost(
+            navController = navController,
+            playbackState = playback,
+            onOpenPlayer = ::openPlayer,
+            onPlayTrack = onPlay,
+            onOpenComments = { navController.navigate(Routes.comments(it)) },
+            onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
+            onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
+            onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
+            onOpenHistory = { navController.navigate(Routes.HISTORY) },
+        )
+    }
+
+    // Bottom bar = music transport controls only (Salt Player style). Navigation lives in the
+    // drawer (phone) / rail (wide screen). Hidden on the player screen and pushed pages.
+    val playerBar: @Composable (Modifier, MiniPlayerStyle) -> Unit = { barModifier, barStyle ->
+        if (isTab && playback.track != null) {
+            BottomPlayerBar(
+                state = playback,
+                style = barStyle,
+                onOpenPlayer = ::openPlayer,
+                onTogglePlay = { graph.playbackController.playPause() },
+                onPrevious = { graph.playbackController.previous() },
+                onNext = { graph.playbackController.next() },
+                onOpenQueue = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
+                modifier = barModifier,
+            )
+        }
+    }
+
     BoxWithConstraints(Modifier.fillMaxSize().background(SaltTheme.colors.background)) {
         val twoPane = wideScreen || maxWidth >= 600.dp
         val selectedTab = tabRoutes.indexOf(route).coerceAtLeast(0)
@@ -196,23 +227,21 @@ fun AppRoot() {
                 NavRail(tabs = tabs, selectedIndex = selectedTab, onSelect = { index ->
                     navController.switchTab(tabRoutes[index])
                 })
-                Box(Modifier.weight(1f).fillMaxHeight()) {
-                    AppNavHost(
-                        navController = navController,
-                        playbackState = playback,
-                        onOpenPlayer = ::openPlayer,
-                        onPlayTrack = onPlay,
-                        onOpenComments = { navController.navigate(Routes.comments(it)) },
-                        onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
-                        onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
-                        onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
-                        onOpenHistory = { navController.navigate(Routes.HISTORY) },
+            }
+            Box(Modifier.weight(1f).fillMaxHeight()) {
+                if (twoPane) {
+                    navHost()
+                    playerBar(
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(bottom = 10.dp)
+                            .fillMaxWidth(0.72f),
+                        MiniPlayerStyle.FLOAT,
                     )
-                }
-            } else {
-                // Navigation lives in a side drawer now (opened by the top-left hamburger), so the
-                // bottom bar can be dedicated to music transport controls.
-                Box(Modifier.weight(1f).fillMaxHeight()) {
+                } else {
+                    // Navigation lives in a side drawer (opened by the top-left hamburger), so the
+                    // bottom bar can be dedicated to music transport controls.
                     CompositionLocalProvider(
                         LocalOpenMenu provides { scope.launch { drawerState.open() } },
                     ) {
@@ -237,41 +266,18 @@ fun AppRoot() {
                             },
                         ) {
                             Box(Modifier.fillMaxSize()) {
-                                AppNavHost(
-                                    navController = navController,
-                                    playbackState = playback,
-                                    onOpenPlayer = ::openPlayer,
-                                    onPlayTrack = onPlay,
-                                    onOpenComments = { navController.navigate(Routes.comments(it)) },
-                                    onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
-                                    onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
-                                    onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
-                                    onOpenHistory = { navController.navigate(Routes.HISTORY) },
+                                navHost()
+                                playerBar(
+                                    Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .navigationBarsPadding(),
+                                    miniStyle,
                                 )
                             }
                         }
                     }
                 }
             }
-        }
-
-        // Bottom bar = music transport controls only (Salt Player style capsule). Navigation is in
-        // the drawer (phone) / rail (wide screen). Hidden on the player screen and pushed pages.
-        if (isTab && playback.track != null) {
-            BottomPlayerBar(
-                state = playback,
-                style = if (twoPane) MiniPlayerStyle.FLOAT else miniStyle,
-                onOpenPlayer = ::openPlayer,
-                onTogglePlay = { graph.playbackController.playPause() },
-                onPrevious = { graph.playbackController.previous() },
-                onNext = { graph.playbackController.next() },
-                onOpenQueue = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = if (twoPane) 10.dp else 0.dp)
-                    .fillMaxWidth(if (twoPane) 0.72f else 1f),
-            )
         }
     }
 }
