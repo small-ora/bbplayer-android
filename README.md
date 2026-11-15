@@ -10,6 +10,12 @@
 
 ## 功能
 
+### v4 新增（导入续跑 / 歌词偏好）
+
+- **歌单导入可暂停 / 续跑 / 分批**：任务持久化到本地，重启 App 后从断点继续；每批 20/50/100/200 首可调，每批落盘；命中 B 站 `-412` 自动停止并显示冷却倒计时，已匹配进度不丢
+- **歌词来源偏好**：自动（QQ→网易云）/ QQ 优先 / 网易云优先，随设置即时生效
+- **旧缓存补逐字**：v3 之前缓存的纯 LRC 歌词会自动补估算逐字时间轴（一次升级写回，无需手动清缓存）
+
 ### v3 新增（缓存 / 逐字 / 元数据）
 
 - **接口缓存与限流**：搜索、详情、分 P、playurl、榜单、相关、联想/热搜、评论、字幕、外部歌单、更新检查统一缓存（TTL + LRU + 磁盘持久化，`filesDir/api_cache`）；同 key 并发合并；**请求节流 350ms±抖动**；命中缓存不再发请求；错误不缓存；设置 → 缓存可查看/清除
@@ -53,7 +59,7 @@
 环境：JDK 17、Android SDK（compileSdk 36 / build-tools 36）、Gradle 8.13（wrapper）。
 
 ```bash
-# 单元测试（data / playback / lyrics 三个模块，共 404 个用例）
+# 单元测试（data / playback / lyrics 三个模块，共 445 个用例）
 ./gradlew :data:testDebugUnitTest :playback:testDebugUnitTest :lyrics:testDebugUnitTest
 
 # Debug APK
