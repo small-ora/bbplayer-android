@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,12 +19,21 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,9 +60,11 @@ import com.bbplayer.android.core.model.PlaybackState
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
-import com.bbplayer.android.ui.components.BottomDock
-import com.bbplayer.android.ui.components.DockTab
-import com.bbplayer.android.ui.components.MiniPlayerBar
+import com.bbplayer.android.ui.components.AppDrawerSheet
+import com.bbplayer.android.ui.components.BottomPlayerBar
+import com.bbplayer.android.ui.components.LocalOpenMenu
+import com.bbplayer.android.ui.components.NavEntry
+import com.bbplayer.android.ui.components.NavTab
 import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
 import com.bbplayer.android.ui.screens.comments.CommentsScreen
 import com.bbplayer.android.ui.screens.discover.LeaderboardScreen
@@ -69,6 +80,7 @@ import com.bbplayer.android.ui.screens.search.SearchScreen
 import com.bbplayer.android.ui.screens.settings.SettingsScreen
 import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 object Routes {
     const val HOME = "home"
@@ -88,12 +100,21 @@ object Routes {
 }
 
 private val tabs = listOf(
-    DockTab("首页", Icons.Rounded.Home),
-    DockTab("搜索", Icons.Rounded.Search),
-    DockTab("音乐库", Icons.Rounded.LibraryMusic),
-    DockTab("我的", Icons.Rounded.Person),
+    NavTab("首页", Icons.Rounded.Home),
+    NavTab("搜索", Icons.Rounded.Search),
+    NavTab("音乐库", Icons.Rounded.LibraryMusic),
+    NavTab("我的", Icons.Rounded.Person),
 )
 private val tabRoutes = listOf(Routes.HOME, Routes.SEARCH, Routes.LIBRARY, Routes.PROFILE)
+
+/** Secondary destinations in the side drawer's "更多" section (pushed pages, not tabs). */
+private val moreEntries = listOf(
+    NavEntry("排行榜", Icons.Rounded.BarChart, Routes.LEADERBOARD),
+    NavEntry("收听历史", Icons.Rounded.History, Routes.HISTORY),
+    NavEntry("已下载", Icons.Rounded.Download, Routes.DOWNLOADS),
+    NavEntry("导入歌单", Icons.Rounded.PlaylistAdd, Routes.IMPORT_PLAYLIST),
+    NavEntry("设置", Icons.Rounded.Settings, Routes.SETTINGS),
+)
 
 @Composable
 fun AppRoot() {
@@ -165,12 +186,14 @@ fun AppRoot() {
     val configuration = LocalConfiguration.current
     val wideScreen = configuration.screenWidthDp >= 600
     val onPlay: (List<Track>, Int) -> Unit = { tracks, index -> playTracks(tracks, index) }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     BoxWithConstraints(Modifier.fillMaxSize().background(SaltTheme.colors.background)) {
         val twoPane = wideScreen || maxWidth >= 600.dp
+        val selectedTab = tabRoutes.indexOf(route).coerceAtLeast(0)
         Row(Modifier.fillMaxSize()) {
             if (twoPane) {
-                NavRail(tabs = tabs, selectedIndex = tabRoutes.indexOf(route).coerceAtLeast(0), onSelect = { index ->
+                NavRail(tabs = tabs, selectedIndex = selectedTab, onSelect = { index ->
                     navController.switchTab(tabRoutes[index])
                 })
                 Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -187,56 +210,67 @@ fun AppRoot() {
                     )
                 }
             } else {
+                // Navigation lives in a side drawer now (opened by the top-left hamburger), so the
+                // bottom bar can be dedicated to music transport controls.
                 Box(Modifier.weight(1f).fillMaxHeight()) {
-                    AppNavHost(
-                        navController = navController,
-                        playbackState = playback,
-                        onOpenPlayer = ::openPlayer,
-                        onPlayTrack = onPlay,
-                        onOpenComments = { navController.navigate(Routes.comments(it)) },
-                        onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
-                        onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
-                        onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
-                        onOpenHistory = { navController.navigate(Routes.HISTORY) },
-                    )
+                    CompositionLocalProvider(
+                        LocalOpenMenu provides { scope.launch { drawerState.open() } },
+                    ) {
+                        ModalNavigationDrawer(
+                            drawerState = drawerState,
+                            gesturesEnabled = false,
+                            scrimColor = Color.Black.copy(alpha = 0.32f),
+                            drawerContent = {
+                                AppDrawerSheet(
+                                    tabs = tabs,
+                                    selectedIndex = selectedTab,
+                                    onSelectTab = { index ->
+                                        navController.switchTab(tabRoutes[index])
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    secondary = moreEntries,
+                                    onOpenSecondary = { target ->
+                                        navController.navigate(target) { launchSingleTop = true }
+                                        scope.launch { drawerState.close() }
+                                    },
+                                )
+                            },
+                        ) {
+                            Box(Modifier.fillMaxSize()) {
+                                AppNavHost(
+                                    navController = navController,
+                                    playbackState = playback,
+                                    onOpenPlayer = ::openPlayer,
+                                    onPlayTrack = onPlay,
+                                    onOpenComments = { navController.navigate(Routes.comments(it)) },
+                                    onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
+                                    onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
+                                    onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
+                                    onOpenHistory = { navController.navigate(Routes.HISTORY) },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // Mini player: either inside the bottom dock (phone) or as a floating capsule.
-        if (isTab && playback.track != null && (miniStyle == MiniPlayerStyle.FLOAT || twoPane)) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = if (twoPane) 24.dp else 12.dp, vertical = 10.dp)
-                    .fillMaxWidth(if (twoPane) 0.72f else 1f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SaltTheme.colors.popup)
-                    .height(if (twoPane) 64.dp else 62.dp),
-            ) {
-                MiniPlayerBar(
-                    state = playback,
-                    onOpenPlayer = ::openPlayer,
-                    onTogglePlay = { graph.playbackController.playPause() },
-                    onOpenQueue = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
-                )
-            }
-        }
-        if (isTab && !twoPane) {
-            BottomDock(
-                tabs = tabs,
-                selectedIndex = tabRoutes.indexOf(route).coerceAtLeast(0),
-                onSelect = { index -> navController.switchTab(tabRoutes[index]) },
-                playbackState = playback,
+        // Bottom bar = music transport controls only (Salt Player style capsule). Navigation is in
+        // the drawer (phone) / rail (wide screen). Hidden on the player screen and pushed pages.
+        if (isTab && playback.track != null) {
+            BottomPlayerBar(
+                state = playback,
+                style = if (twoPane) MiniPlayerStyle.FLOAT else miniStyle,
                 onOpenPlayer = ::openPlayer,
                 onTogglePlay = { graph.playbackController.playPause() },
+                onPrevious = { graph.playbackController.previous() },
+                onNext = { graph.playbackController.next() },
                 onOpenQueue = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
-                showMiniPlayer = miniStyle == MiniPlayerStyle.DOCK,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(bottom = 6.dp),
+                    .padding(bottom = if (twoPane) 10.dp else 0.dp)
+                    .fillMaxWidth(if (twoPane) 0.72f else 1f),
             )
         }
     }
@@ -343,7 +377,7 @@ private fun AppNavHost(
 }
 
 @Composable
-private fun NavRail(tabs: List<DockTab>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+private fun NavRail(tabs: List<NavTab>, selectedIndex: Int, onSelect: (Int) -> Unit) {
     Column(
         Modifier
             .width(72.dp)

@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -42,15 +43,31 @@ import androidx.compose.ui.unit.sp
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
-/** Big page title (Salt Player: 24 sp semibold, generous top padding). */
+/**
+ * Big page title (Salt Player: 24 sp semibold, generous top padding).
+ *
+ * When a navigation drawer is available ([LocalOpenMenu] non-null, i.e. narrow screens), a
+ * hamburger appears in the **top-left corner** and opens the side menu. Wide screens provide a
+ * permanent rail instead, so the button is hidden automatically.
+ */
 @Composable
 fun LargeTitle(title: String, subtitle: String? = null, actions: (@Composable () -> Unit)? = null) {
+    val openMenu = LocalOpenMenu.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = SaltTheme.dimens.padding, end = SaltTheme.dimens.padding, top = 22.dp, bottom = 10.dp),
+            .padding(
+                start = if (openMenu != null) 6.dp else SaltTheme.dimens.padding,
+                end = SaltTheme.dimens.padding,
+                top = if (openMenu != null) 16.dp else 22.dp,
+                bottom = 10.dp,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (openMenu != null) {
+            IconAction(Icons.Rounded.Menu, "菜单", onClick = openMenu)
+            Spacer(Modifier.width(2.dp))
+        }
         Column(Modifier.weight(1f)) {
             Text(text = title, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
             subtitle?.let {
