@@ -19,6 +19,15 @@ interface AppGraph {
     val preferencesRepository: PreferencesRepository
     val lyricsRepository: LyricsRepository
     val playbackController: PlaybackController
+
+    // ---- v2 (all non-login features) ----
+    val discoverRepository: com.bbplayer.android.core.contracts.DiscoverRepository
+    val commentRepository: com.bbplayer.android.core.contracts.CommentRepository
+    val externalPlaylistRepository: com.bbplayer.android.core.contracts.ExternalPlaylistRepository
+    val subtitleRepository: com.bbplayer.android.core.contracts.SubtitleRepository
+    val updateRepository: com.bbplayer.android.core.contracts.UpdateRepository
+    val downloadRepository: com.bbplayer.android.core.contracts.DownloadRepository
+    val backupRepository: com.bbplayer.android.core.contracts.BackupRepository
 }
 
 val LocalAppGraph = staticCompositionLocalOf<AppGraph> {

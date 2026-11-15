@@ -33,6 +33,14 @@ class RealAppGraph(context: Context, private val appScope: CoroutineScope) : App
 
     override val lyricsRepository: LyricsRepository = QqNeteaseLyricsRepository(appContext)
 
+    override val discoverRepository: com.bbplayer.android.core.contracts.DiscoverRepository = StubRepositories.discover
+    override val commentRepository: com.bbplayer.android.core.contracts.CommentRepository = StubRepositories.comments
+    override val externalPlaylistRepository: com.bbplayer.android.core.contracts.ExternalPlaylistRepository = StubRepositories.externalPlaylist
+    override val subtitleRepository: com.bbplayer.android.core.contracts.SubtitleRepository = StubRepositories.subtitle
+    override val updateRepository: com.bbplayer.android.core.contracts.UpdateRepository = StubRepositories.update
+    override val downloadRepository: com.bbplayer.android.core.contracts.DownloadRepository = StubRepositories.downloads
+    override val backupRepository: com.bbplayer.android.core.contracts.BackupRepository = StubRepositories.backup
+
     override val playbackController: PlaybackController = PlaybackControllerImpl(
         appContext = appContext,
         scope = appScope,
