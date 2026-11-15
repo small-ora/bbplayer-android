@@ -16,6 +16,9 @@ import com.bbplayer.android.core.model.DownloadEntry
 import com.bbplayer.android.core.model.DownloadStatus
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.playback.PlaybackConfig
+import com.bbplayer.android.playback.export.Mp4TagMetadata
+import com.bbplayer.android.playback.export.Mp4TagWriter
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -58,6 +61,9 @@ import okhttp3.Request
  * `Music/BBPlayer/<title> - <uploader>.m4a` via MediaStore.Files on API 29+,
  * or to the public Music dir on API 28 and below (falling back to the app's
  * external files dir when the WRITE_EXTERNAL_STORAGE permission was denied).
+ * Before writing, the copy gets iTunes MP4 metadata (title/artist/album),
+ * lyrics and cover art via [Mp4TagWriter]; tagging is best-effort and falls
+ * back to the raw m4s bytes so an export never fails because of metadata.
  */
 class BiliDownloadManager(
     context: Context,
@@ -180,25 +186,30 @@ class BiliDownloadManager(
             val source = entry.filePath.takeIf { it.isNotBlank() }?.let(::File)
                 ?.takeIf { it.isFile && it.length() > 0L }
                 ?: return@withContext Result.failure(AppException("下载文件已丢失，请重新下载", retryable = false))
-            val exported = runCatching {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    exportToMediaStore(source, entry.track, lrc)
-                } else {
-                    exportToLegacyPublicMusic(source, entry.track, lrc)
+            val prepared = prepareTaggedExport(source, entry.track, lrc)
+            try {
+                val exported = runCatching {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        exportToMediaStore(prepared.file, entry.track, lrc)
+                    } else {
+                        exportToLegacyPublicMusic(prepared.file, entry.track, lrc)
+                    }
+                }.recoverCatching {
+                    // A locked / unmounted volume must not lose the export: fall back
+                    // to the app-owned external directory (always readable by the app).
+                    exportToAppExternalDir(prepared.file, entry.track, lrc)
                 }
-            }.recoverCatching {
-                // A locked / unmounted volume must not lose the export: fall back
-                // to the app-owned external directory (always readable by the app).
-                exportToAppExternalDir(source, entry.track, lrc)
+                exported.fold(
+                    onSuccess = { Result.success(it) },
+                    onFailure = { error ->
+                        Result.failure(
+                            if (error is AppException) error else AppException("导出失败：${error.toUserMessage()}"),
+                        )
+                    },
+                )
+            } finally {
+                prepared.cleanup()
             }
-            exported.fold(
-                onSuccess = { Result.success(it) },
-                onFailure = { error ->
-                    Result.failure(
-                        if (error is AppException) error else AppException("导出失败：${error.toUserMessage()}"),
-                    )
-                },
-            )
         }
 
     // endregion
@@ -396,6 +407,74 @@ class BiliDownloadManager(
 
     // region Export
 
+    /**
+     * Best-effort tagged copy of the cached m4s. Metadata/cover failures must
+     * never block an export, so the raw source is used as a fallback.
+     */
+    private fun prepareTaggedExport(source: File, track: Track, lrc: String?): PreparedExport {
+        val temp = runCatching {
+            val dir = File(appContext.cacheDir, EXPORT_TAG_DIR).apply { if (!isDirectory) mkdirs() }
+            File.createTempFile("tagged-", ".m4a", dir)
+        }.getOrNull() ?: return PreparedExport(source, temporary = false)
+        val metadata = Mp4TagMetadata(
+            title = track.displayTitle.ifBlank { DownloadNames.exportBaseName(track) },
+            artist = track.uploader.takeIf { it.isNotBlank() },
+            album = EXPORT_ALBUM,
+        )
+        val cover = fetchCoverArt(track.coverUrl)
+        return Mp4TagWriter.prepareTaggedFile(source, temp, metadata, cover, lrc).fold(
+            onSuccess = { PreparedExport(temp, temporary = true) },
+            onFailure = {
+                temp.delete()
+                PreparedExport(source, temporary = false)
+            },
+        )
+    }
+
+    /**
+     * Fetches the cover with a hard 8 s budget. Bilibili covers are JPEG; PNG is
+     * accepted too. Anything empty, failed or larger than [Mp4TagWriter.MAX_COVER_BYTES]
+     * is skipped so tagging can still embed title/artist/album/lyrics.
+     */
+    private fun fetchCoverArt(url: String): ByteArray? {
+        if (url.isBlank()) return null
+        return runCatching {
+            val request = Request.Builder()
+                .url(url)
+                .header("Referer", PlaybackConfig.BILIBILI_REFERER)
+                .header("User-Agent", PlaybackConfig.DESKTOP_USER_AGENT)
+                .header("Accept", "image/jpeg,image/png,image/*;q=0.8")
+                .build()
+            val client = okHttpClient.newBuilder()
+                .callTimeout(COVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@runCatching null
+                val body = response.body ?: return@runCatching null
+                if (body.contentLength() > Mp4TagWriter.MAX_COVER_BYTES) return@runCatching null
+                val output = ByteArrayOutputStream()
+                body.byteStream().use { input ->
+                    val buffer = ByteArray(COVER_BUFFER_SIZE)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        if (output.size() + read > Mp4TagWriter.MAX_COVER_BYTES) {
+                            return@runCatching null
+                        }
+                        output.write(buffer, 0, read)
+                    }
+                }
+                output.toByteArray().takeIf { it.isNotEmpty() }
+            }
+        }.getOrNull()
+    }
+
+    private class PreparedExport(val file: File, val temporary: Boolean) {
+        fun cleanup() {
+            if (temporary) runCatching { file.delete() }
+        }
+    }
+
     private fun exportToMediaStore(source: File, track: Track, lrc: String?): String {
         val resolver = appContext.contentResolver
         val relativePath = DownloadNames.publicRelativePath()
@@ -430,7 +509,18 @@ class BiliDownloadManager(
             put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
-        return appContext.contentResolver.insert(mediaFilesCollection(), values)
+        // Audio collection is the reliable target for `Music/...` on Android 10+
+        // (MediaStore.Files rejects RELATIVE_PATH on many OEM/API 33+ builds, which
+        // previously pushed every export to the app-private external dir).
+        val collections = buildList {
+            add(MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY))
+            add(mediaFilesCollection())
+        }
+        for (collection in collections) {
+            val inserted = runCatching { appContext.contentResolver.insert(collection, values) }.getOrNull()
+            if (inserted != null) return inserted
+        }
+        return null
     }
 
     private fun writeMediaStoreSidecar(displayName: String, content: String, relativePath: String) {
@@ -493,6 +583,12 @@ class BiliDownloadManager(
 
     private companion object {
         const val BUFFER_SIZE = 64 * 1024
+        const val COVER_BUFFER_SIZE = 16 * 1024
+        const val COVER_TIMEOUT_SECONDS = 8L
+
+        /** Bilibili has no album concept; a stable label keeps exports grouped. */
+        const val EXPORT_ALBUM = "Bilibili"
+        const val EXPORT_TAG_DIR = "export-tags"
         val RETRYABLE_STATUS = setOf(403, 408, 416, 429)
 
         fun defaultOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
