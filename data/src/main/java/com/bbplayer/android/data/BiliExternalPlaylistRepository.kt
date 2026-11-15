@@ -5,6 +5,7 @@ import com.bbplayer.android.core.contracts.AppException
 import com.bbplayer.android.core.contracts.ExternalPlaylistRepository
 import com.bbplayer.android.core.contracts.MusicRepository
 import com.bbplayer.android.core.model.ExternalPlaylist
+import com.bbplayer.android.core.model.ExternalTrack
 import com.bbplayer.android.core.model.ExternalSource
 import com.bbplayer.android.core.model.ImportMatch
 import com.bbplayer.android.core.model.ImportProgress
@@ -39,7 +40,14 @@ class BiliExternalPlaylistRepository internal constructor(
         when (ref.source) {
             ExternalSource.NETEASE -> {
                 val root = http.getJsonObject(neteaseUrl(ref.id), HttpHeaders.NETEASE)
-                ExternalPlaylistParser.parseNetease(root, ref.id)
+                val base = ExternalPlaylistParser.parseNetease(root, ref.id)
+                val trackIds = ExternalPlaylistParser.neteaseTrackIds(root)
+                if (trackIds.size <= base.tracks.size) {
+                    base
+                } else {
+                    // `playlist/detail` 匿名只返回前 10 首；用 trackIds + 批量详情补齐全量。
+                    base.copy(tracks = fetchNeteaseTracks(trackIds, base.tracks))
+                }
             }
 
             ExternalSource.QQ_MUSIC -> {
@@ -110,6 +118,31 @@ class BiliExternalPlaylistRepository internal constructor(
         is ExternalInput.Invalid -> throw AppException(parsed.reason, retryable = false)
     }
 
+    /**
+     * 按 `trackIds` 顺序批量拉取完整歌曲详情（每批 [NETEASE_DETAIL_BATCH] 首）。
+     *
+     * 网易云匿名 `playlist/detail` 的 `tracks` 只有前 10 首，这是补齐 100+ 首歌单的关键。
+     */
+    private suspend fun fetchNeteaseTracks(
+        trackIds: List<Long>,
+        fallback: List<ExternalTrack>,
+    ): List<ExternalTrack> {
+        val byId = LinkedHashMap<Long, ExternalTrack>()
+        for (chunk in trackIds.chunked(NETEASE_DETAIL_BATCH)) {
+            val body = chunk.joinToString(prefix = "[", postfix = "]") { "{\"id\":$it}" }
+            val root = try {
+                http.postFormJsonObject(NETEASE_DETAIL_URL, mapOf("c" to body), HttpHeaders.NETEASE)
+            } catch (e: AppException) {
+                if (byId.isEmpty()) throw AppException("获取完整歌单失败，请重试", e, retryable = true)
+                continue
+            }
+            byId.putAll(ExternalPlaylistParser.parseNeteaseSongsById(root))
+        }
+        if (byId.isEmpty()) return fallback
+        val ordered = trackIds.mapNotNull { byId[it] }
+        return ordered.ifEmpty { fallback }
+    }
+
     private fun neteaseUrl(id: String): String =
         "https://music.163.com/api/v6/playlist/detail?id=$id&n=1000"
 
@@ -123,5 +156,9 @@ class BiliExternalPlaylistRepository internal constructor(
 
         /** 连续搜索失败达到该次数后中止导入（避免无网络时空跑一遍歌单）。 */
         private const val MAX_CONSECUTIVE_FAILURES = 3
+
+        /** 网易云批量歌曲详情接口与每批数量（补齐全量歌单用）。 */
+        private const val NETEASE_DETAIL_URL = "https://music.163.com/api/v3/song/detail"
+        private const val NETEASE_DETAIL_BATCH = 100
     }
 }

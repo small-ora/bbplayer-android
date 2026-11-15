@@ -77,6 +77,47 @@ internal class HttpFetcher(
             ?: throw AppException("返回数据解析失败，请稍后重试", retryable = true)
     }
 
+    /**
+     * 表单 POST 并解析 JSON（网易云 `api/v3/song/detail` 批量歌曲详情用）。
+     */
+    suspend fun postFormJsonObject(
+        url: String,
+        form: Map<String, String>,
+        headers: Map<String, String> = emptyMap(),
+    ): JsonObject = withContext(Dispatchers.IO) {
+        val builder = Request.Builder().url(url).post(
+            okhttp3.FormBody.Builder().apply {
+                form.forEach { (key, value) -> add(key, value) }
+            }.build(),
+        )
+        headers.forEach { (key, value) -> builder.header(key, value) }
+        val request = try {
+            builder.build()
+        } catch (e: IllegalArgumentException) {
+            throw AppException("链接格式不正确", e, retryable = false)
+        }
+        val response = try {
+            client.newCall(request).execute()
+        } catch (e: IOException) {
+            throw AppException(e.toUserMessage(), e, retryable = true)
+        }
+        response.use { resp ->
+            val text = try {
+                resp.body?.string().orEmpty()
+            } catch (e: IOException) {
+                throw AppException(e.toUserMessage(), e, retryable = true)
+            }
+            if (!resp.isSuccessful) {
+                throw AppException(
+                    externalHttpMessage(resp.code),
+                    retryable = resp.code >= 500 || resp.code == 429 || resp.code == 412,
+                )
+            }
+            parseJsonObject(text)
+                ?: throw AppException("返回数据解析失败，请稍后重试", retryable = true)
+        }
+    }
+
     /** 跟随重定向并返回最终 URL（网易云 `163cn.tv` 短链解析用）。 */
     suspend fun followRedirect(
         url: String,

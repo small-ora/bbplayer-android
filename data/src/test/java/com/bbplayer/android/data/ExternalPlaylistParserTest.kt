@@ -271,3 +271,56 @@ class ExternalPlaylistParserTest {
         }
     }
 }
+
+// ---------------------------------------------------------------- v2.1: 全量 trackIds
+
+class NeteaseTrackIdsTest {
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    private fun root(text: String) = json.parseToJsonElement(text) as kotlinx.serialization.json.JsonObject
+
+    @Test
+    fun `track ids are kept in playlist order when detail only returns ten tracks`() {
+        val body = """
+            {"code":200,"playlist":{
+              "name":"170 首测试","trackCount":170,
+              "tracks":[{"id":11,"name":"A","ar":[{"name":"x"}],"al":{"name":"alb"},"dt":1000}],
+              "trackIds":[{"id":11},{"id":12},{"id":13}]
+            }}
+        """.trimIndent()
+        val parsed = root(body)
+        val ids = ExternalPlaylistParser.neteaseTrackIds(parsed)
+        org.junit.Assert.assertEquals(listOf(11L, 12L, 13L), ids)
+    }
+
+    @Test
+    fun `track ids fall back to detail tracks when trackIds missing`() {
+        val body = """
+            {"code":200,"playlist":{"name":"x","tracks":[{"id":21,"name":"A"},{"id":22,"name":"B"}]}}
+        """.trimIndent()
+        org.junit.Assert.assertEquals(listOf(21L, 22L), ExternalPlaylistParser.neteaseTrackIds(root(body)))
+    }
+
+    @Test
+    fun `batch song detail keeps ids and metadata`() {
+        val body = """
+            {"code":200,"songs":[
+              {"id":11,"name":"晴天","ar":[{"name":"周杰伦"}],"al":{"name":"叶惠美"},"dt":269000},
+              {"id":12,"name":"夜曲","ar":[{"name":"周杰伦"}],"al":{"name":"十一月的萧邦"},"dt":226000}
+            ]}
+        """.trimIndent()
+        val songs = ExternalPlaylistParser.parseNeteaseSongsById(root(body))
+        org.junit.Assert.assertEquals(2, songs.size)
+        org.junit.Assert.assertEquals("晴天", songs[11L]?.title)
+        org.junit.Assert.assertEquals("周杰伦", songs[11L]?.artist)
+        org.junit.Assert.assertEquals(269000L, songs[11L]?.durationMs)
+        org.junit.Assert.assertEquals("十一月的萧邦", songs[12L]?.album)
+    }
+
+    @Test
+    fun `batch song detail rejects business error`() {
+        org.junit.Assert.assertThrows(com.bbplayer.android.core.contracts.AppException::class.java) {
+            ExternalPlaylistParser.parseNeteaseSongsById(root("""{"code":-460,"message":"cheating"}"""))
+        }
+    }
+}

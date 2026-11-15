@@ -108,7 +108,40 @@ internal object ExternalPlaylistParser {
         )
     }
 
-    private fun neteaseTrack(raw: JsonObject): ExternalTrack? {
+    /**
+     * 网易云 `playlist/detail` 匿名响应里 `tracks` 只有前 10 首，
+     * `trackIds` 才是全量（按歌单顺序）。返回完整 id 列表用于二次拉取详情。
+     */
+    fun neteaseTrackIds(root: JsonObject): List<Long> {
+        val playlist = root.objOrNull("playlist") ?: return emptyList()
+        val ids = playlist.arrOrNull("trackIds").toObjectList()
+            .mapNotNull { it.longOrNull("id") }
+            .filter { it > 0L }
+        val tracks = playlist.arrOrNull("tracks").toObjectList()
+            .mapNotNull { it.longOrNull("id") }
+        // 极少数情况下 trackIds 缺失，退化为 tracks（仅前 10 首可用）。
+        return ids.ifEmpty { tracks }
+    }
+
+    /** 网易云 `api/v3/song/detail` 批量详情：`{ code:200, songs:[...] }`。 */
+    fun parseNeteaseSongs(root: JsonObject): List<ExternalTrack> =
+        parseNeteaseSongsById(root).values.toList()
+
+    /** 同 [parseNeteaseSongs]，但保留歌曲 id → 便于按 trackIds 原顺序还原。 */
+    fun parseNeteaseSongsById(root: JsonObject): Map<Long, ExternalTrack> {
+        val code = root.longOrNull("code")
+        if (code != null && code != 0L && code != 200L) {
+            throw AppException("获取网易云歌曲详情失败", retryable = true)
+        }
+        val result = LinkedHashMap<Long, ExternalTrack>()
+        root.arrOrNull("songs").toObjectList().forEach { raw ->
+            val id = raw.longOrNull("id") ?: return@forEach
+            neteaseTrack(raw)?.let { result[id] = it }
+        }
+        return result
+    }
+
+    internal fun neteaseTrack(raw: JsonObject): ExternalTrack? {
         val title = HtmlText.clean(raw.strOrNull("name")).takeIf { it.isNotBlank() } ?: return null
         val artists = raw.arrOrNull("ar")
             ?: raw.arrOrNull("artists")

@@ -87,3 +87,17 @@ TOTAL tests=311 failures=0 errors=0 skipped=0
 ## 6. 合入与发布
 
 - 本地提交在 `feat/v2-non-login`；审阅后合入 `main`、打 `v0.2.0` tag → GitHub Actions 自动构建并发布 Release（debug + release APK）。**未授权前不 push/不合并**（本包生成后如需我直接推送请说一声）。
+
+---
+
+## 7. v2.1 热修（用户反馈：网易云 170 首歌单只解析出 6 首）
+
+**根因**：网易云 `api/v6/playlist/detail` 在**匿名**请求下 `playlist.tracks` 只返回**前 10 首**，完整列表在 `playlist.trackIds`（170/480 条）。v2 初版解析器只读了 `tracks`，所以大歌单被截断（用户歌单恰好只有 6 首有公开元数据时，就显示 6 首）。
+
+**修复**：读取 `trackIds` 全量 → 用 `POST /api/v3/song/detail` 按 `c=[{"id":…}]` 分批（100/批）拉取完整歌曲详情 → 按 `trackIds` 原顺序重建；接口失败时有回退与中文错误提示。
+**验证**：
+- 单测：`data` 新增 4 例（trackIds 顺序/缺失回退/批量详情映射/业务错误），`data` 共 **119** 用例全绿；
+- 真机：125 首歌单解析显示「网易云音乐 · 125 首歌曲」；
+- 管道验证：480 首歌单 5 批详情请求全部返回，合计 480/480 首。
+
+版本：`v0.2.1`（GitHub Actions 自动构建 Release）。
