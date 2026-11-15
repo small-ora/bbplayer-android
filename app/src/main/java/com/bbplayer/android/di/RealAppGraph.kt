@@ -18,7 +18,14 @@ import com.bbplayer.android.core.contracts.SubtitleRepository
 import com.bbplayer.android.core.contracts.UpdateRepository
 import com.bbplayer.android.core.model.AudioQuality
 import com.bbplayer.android.core.model.LyricSource
+import com.bbplayer.android.data.BiliApi
+import com.bbplayer.android.data.BiliCollectionRepository
 import com.bbplayer.android.data.BiliCommentRepository
+import com.bbplayer.android.data.BiliFavoritesRepository
+import com.bbplayer.android.data.BiliUploaderRepository
+import com.bbplayer.android.data.BiliWatchLaterRepository
+import com.bbplayer.android.data.PlaybackReporterImpl
+import com.bbplayer.android.data.auth.BiliAuthRepository
 import com.bbplayer.android.data.BiliDiscoverRepository
 import com.bbplayer.android.data.BiliExternalPlaylistRepository
 import com.bbplayer.android.data.BiliMusicRepository
@@ -53,9 +60,13 @@ class RealAppGraph(context: Context, private val appScope: CoroutineScope) : App
         appScope.launch { preferencesRepository.lyricSource.collect { currentLyricSource = it } }
     }
 
-    override val musicRepository: MusicRepository = BiliMusicRepository(appContext).also {
-        runCatching { it.warmUp(appScope) }
-    }
+    /** Shared authenticated API client: cookies come from the process-wide AuthRegistry. */
+    private val biliApi: BiliApi = BiliApi(appContext)
+
+    override val musicRepository: MusicRepository = BiliMusicRepository(
+        biliApi,
+        highQualityAudio = preferencesRepository.highQualityAudio,
+    )
 
     override val libraryRepository: LibraryRepository = JsonLibraryRepository(appContext)
 
@@ -90,6 +101,25 @@ class RealAppGraph(context: Context, private val appScope: CoroutineScope) : App
     override val backupRepository: BackupRepository = ZipBackupRepository(appContext)
 
     override val networkCacheRepository: NetworkCacheRepository = BiliNetworkCache(appContext)
+
+    // ---- v5 account services ----
+    override val authRepository: com.bbplayer.android.core.contracts.AuthRepository =
+        BiliAuthRepository(appContext, appScope)
+
+    override val favoritesRepository: com.bbplayer.android.core.contracts.FavoritesRepository =
+        BiliFavoritesRepository(biliApi, authRepository)
+
+    override val collectionRepository: com.bbplayer.android.core.contracts.CollectionRepository =
+        BiliCollectionRepository(biliApi, authRepository)
+
+    override val watchLaterRepository: com.bbplayer.android.core.contracts.WatchLaterRepository =
+        BiliWatchLaterRepository(biliApi, authRepository)
+
+    override val uploaderRepository: com.bbplayer.android.core.contracts.UploaderRepository =
+        BiliUploaderRepository(biliApi, authRepository)
+
+    override val playbackReporter: com.bbplayer.android.core.contracts.PlaybackReporter =
+        PlaybackReporterImpl(biliApi, preferencesRepository)
 
     override val playbackController: PlaybackController = PlaybackControllerImpl(
         appContext = appContext,

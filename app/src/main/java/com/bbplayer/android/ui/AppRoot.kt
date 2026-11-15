@@ -46,6 +46,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.bbplayer.android.core.model.MiniPlayerStyle
 import com.bbplayer.android.core.model.PlaybackState
 import com.bbplayer.android.core.model.Track
@@ -55,7 +56,13 @@ import com.bbplayer.android.ui.components.BottomDock
 import com.bbplayer.android.ui.components.DockTab
 import com.bbplayer.android.ui.components.MiniPlayerBar
 import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
+import android.net.Uri
 import com.bbplayer.android.ui.screens.comments.CommentsScreen
+import com.bbplayer.android.ui.screens.library.CollectionDetailScreen
+import com.bbplayer.android.ui.screens.library.FavoriteFolderScreen
+import com.bbplayer.android.ui.screens.library.WatchLaterScreen
+import com.bbplayer.android.ui.screens.login.LoginScreen
+import com.bbplayer.android.ui.screens.uploader.UploaderScreen
 import com.bbplayer.android.ui.screens.discover.LeaderboardScreen
 import com.bbplayer.android.ui.screens.downloads.DownloadsScreen
 import com.bbplayer.android.ui.screens.history.HistoryScreen
@@ -83,8 +90,16 @@ object Routes {
     const val IMPORT_PLAYLIST = "import"
     const val LEADERBOARD = "leaderboard"
     const val HISTORY = "history"
+    const val LOGIN = "login"
+    const val WATCH_LATER = "watchlater"
+    const val FAVORITE_FOLDER = "favoriteFolder/{id}?title={title}"
+    const val COLLECTION_DETAIL = "collection/{id}?title={title}"
+    const val UPLOADER = "uploader/{mid}"
     fun playlist(id: String) = "playlist/$id"
     fun comments(bvid: String) = "comments/$bvid"
+    fun favoriteFolder(id: Long, title: String) = "favoriteFolder/$id?title=${Uri.encode(title)}"
+    fun collection(id: Long, title: String) = "collection/$id?title=${Uri.encode(title)}"
+    fun uploader(mid: Long) = "uploader/$mid"
 }
 
 private val tabs = listOf(
@@ -254,6 +269,7 @@ private fun AppNavHost(
     onOpenLeaderboard: () -> Unit,
     onOpenHistory: () -> Unit,
 ) {
+    val openLogin: () -> Unit = { navController.navigate(Routes.LOGIN) { launchSingleTop = true } }
     NavHost(
         navController = navController,
         startDestination = Routes.HOME,
@@ -277,6 +293,10 @@ private fun AppNavHost(
                 onPlayTrack = onPlayTrack,
                 onOpenImport = onOpenImport,
                 onOpenDownloads = onOpenDownloads,
+                onOpenLogin = openLogin,
+                onOpenFavoriteFolder = { id, title -> navController.navigate(Routes.favoriteFolder(id, title)) },
+                onOpenCollection = { id, title -> navController.navigate(Routes.collection(id, title)) },
+                onOpenWatchLater = { navController.navigate(Routes.WATCH_LATER) { launchSingleTop = true } },
             )
         }
         composable(Routes.PROFILE) {
@@ -287,16 +307,23 @@ private fun AppNavHost(
                 onOpenHistory = onOpenHistory,
                 onOpenDownloads = onOpenDownloads,
                 onOpenImport = onOpenImport,
+                onOpenLogin = openLogin,
             )
         }
         composable(Routes.PLAYER) {
             PlayerScreen(
                 onBack = { navController.popBackStack() },
                 onOpenComments = onOpenComments,
+                onOpenLogin = openLogin,
+                onOpenUploader = { mid -> navController.navigate(Routes.uploader(mid)) },
             )
         }
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() }, onOpenDownloads = onOpenDownloads)
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenDownloads = onOpenDownloads,
+                onOpenLogin = openLogin,
+            )
         }
         composable(Routes.PLAYLIST) { entry ->
             PlaylistDetailScreen(
@@ -337,6 +364,52 @@ private fun AppNavHost(
             CommentsScreen(
                 bvid = entry.arguments?.getString("bvid").orEmpty(),
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.LOGIN) {
+            LoginScreen(
+                onBack = { navController.popBackStack() },
+                onLoggedIn = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.WATCH_LATER) {
+            WatchLaterScreen(
+                onBack = { navController.popBackStack() },
+                onPlayTrack = onPlayTrack,
+                onOpenPlayer = onOpenPlayer,
+                onOpenLogin = openLogin,
+            )
+        }
+        composable(
+            route = Routes.FAVORITE_FOLDER,
+            arguments = listOf(navArgument("title") { defaultValue = "" }),
+        ) { entry ->
+            FavoriteFolderScreen(
+                folderId = entry.arguments?.getString("id")?.toLongOrNull() ?: 0L,
+                title = entry.arguments?.getString("title").orEmpty().ifBlank { "收藏夹" },
+                onBack = { navController.popBackStack() },
+                onPlayTrack = onPlayTrack,
+                onOpenPlayer = onOpenPlayer,
+            )
+        }
+        composable(
+            route = Routes.COLLECTION_DETAIL,
+            arguments = listOf(navArgument("title") { defaultValue = "" }),
+        ) { entry ->
+            CollectionDetailScreen(
+                seasonId = entry.arguments?.getString("id")?.toLongOrNull() ?: 0L,
+                title = entry.arguments?.getString("title").orEmpty().ifBlank { "合集" },
+                onBack = { navController.popBackStack() },
+                onPlayTrack = onPlayTrack,
+                onOpenPlayer = onOpenPlayer,
+            )
+        }
+        composable(Routes.UPLOADER) { entry ->
+            UploaderScreen(
+                mid = entry.arguments?.getString("mid")?.toLongOrNull() ?: 0L,
+                onBack = { navController.popBackStack() },
+                onPlayTrack = onPlayTrack,
+                onOpenLogin = openLogin,
             )
         }
     }

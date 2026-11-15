@@ -8,6 +8,7 @@ import coil3.request.crossfade
 import com.bbplayer.android.di.AppGraph
 import com.bbplayer.android.di.RealAppGraph
 import com.bbplayer.android.playback.PlaybackHistoryTracker
+import com.bbplayer.android.playback.PlaybackReportTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,6 +21,8 @@ class BbPlayerApp : Application() {
     val graph: AppGraph by lazy { RealAppGraph(this, appScope) }
 
     private val historyTracker: PlaybackHistoryTracker by lazy { PlaybackHistoryTracker(graph, appScope) }
+
+    private val reportTracker: PlaybackReportTracker by lazy { PlaybackReportTracker(graph, appScope) }
 
     /** Shared HTTP client for artwork; the Bilibili CDN expects a desktop UA + Referer. */
     val imageHttpClient: OkHttpClient by lazy {
@@ -48,6 +51,7 @@ class BbPlayerApp : Application() {
                 .build()
         }
         historyTracker.start()
+        reportTracker.start()
     }
 
     companion object {

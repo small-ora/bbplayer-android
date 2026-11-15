@@ -2,6 +2,7 @@ package com.bbplayer.android.ui.screens.library
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,15 +17,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.VideoLibrary
+import androidx.compose.material.icons.rounded.WatchLater
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,21 +50,34 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bbplayer.android.core.contracts.toUserMessage
+import com.bbplayer.android.core.model.BiliCollection
+import com.bbplayer.android.core.model.BiliUser
+import com.bbplayer.android.core.model.FavoriteFolder
 import com.bbplayer.android.core.model.Playlist
 import com.bbplayer.android.core.model.Track
+import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.CoverImage
 import com.bbplayer.android.ui.components.EmptyState
+import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LargeTitle
+import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.TrackRow
+import com.moriafly.salt.ui.Item
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
-import com.bbplayer.android.core.safeLaunch
 
-private enum class LibraryTab(val label: String) { PLAYLISTS("歌单"), FAVORITES("收藏"), RECENT("最近") }
+private enum class LibraryTab(val label: String) {
+    PLAYLISTS("歌单"),
+    FAVORITES("收藏"),
+    RECENT("最近"),
+    FOLDERS("收藏夹"),
+    COLLECTIONS("合集"),
+}
 
 @Composable
 fun LibraryScreen(
@@ -64,6 +86,10 @@ fun LibraryScreen(
     onPlayTrack: (List<Track>, Int) -> Unit,
     onOpenImport: () -> Unit = {},
     onOpenDownloads: () -> Unit = {},
+    onOpenLogin: () -> Unit = {},
+    onOpenFavoriteFolder: (Long, String) -> Unit = { _, _ -> },
+    onOpenCollection: (Long, String) -> Unit = { _, _ -> },
+    onOpenWatchLater: () -> Unit = {},
 ) {
     val graph = LocalAppGraph.current
     val scope = rememberCoroutineScope()
@@ -71,8 +97,36 @@ fun LibraryScreen(
     val favorites by graph.libraryRepository.favorites.collectAsStateWithLifecycle(initialValue = emptyList())
     val recent by graph.historyRepository.recent(50).collectAsStateWithLifecycle(initialValue = emptyList())
     val playback by graph.playbackController.state.collectAsStateWithLifecycle(initialValue = com.bbplayer.android.core.model.PlaybackState())
+    val session by graph.authRepository.session().collectAsStateWithLifecycle(initialValue = null as BiliUser?)
+    val loggedIn = session != null
     var tab by remember { mutableStateOf(LibraryTab.PLAYLISTS) }
     var showCreate by remember { mutableStateOf(false) }
+
+    // 收藏夹（B 站）只在需要且已登录时加载，退出登录后清空。
+    var folders by remember { mutableStateOf<List<FavoriteFolder>?>(null) }
+    var foldersError by remember { mutableStateOf<String?>(null) }
+    var foldersNonce by remember { mutableStateOf(0) }
+    LaunchedEffect(tab, loggedIn, foldersNonce) {
+        if (tab != LibraryTab.FOLDERS || !loggedIn) return@LaunchedEffect
+        folders = null
+        foldersError = null
+        graph.favoritesRepository.folders()
+            .onSuccess { folders = it }
+            .onFailure { foldersError = it.toUserMessage() }
+    }
+
+    // 我的合集（B 站）同样懒加载。
+    var collections by remember { mutableStateOf<List<BiliCollection>?>(null) }
+    var collectionsError by remember { mutableStateOf<String?>(null) }
+    var collectionsNonce by remember { mutableStateOf(0) }
+    LaunchedEffect(tab, loggedIn, collectionsNonce) {
+        if (tab != LibraryTab.COLLECTIONS || !loggedIn) return@LaunchedEffect
+        collections = null
+        collectionsError = null
+        graph.collectionRepository.myCollections()
+            .onSuccess { collections = it }
+            .onFailure { collectionsError = it.toUserMessage() }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -90,11 +144,26 @@ fun LibraryScreen(
         }
         item {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = SaltTheme.dimens.padding),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = SaltTheme.dimens.padding),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 LibraryTab.entries.forEach { t ->
                     SaltPill(text = t.label, selected = tab == t, onClick = { tab = t })
+                }
+            }
+        }
+        item {
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 10.dp)) {
+                RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                    Item(
+                        onClick = { if (loggedIn) onOpenWatchLater() else onOpenLogin() },
+                        text = "稍后再看",
+                        sub = if (loggedIn) "B 站稍后再看列表" else "登录后查看",
+                        iconPainter = rememberVectorPainter(Icons.Rounded.WatchLater),
+                    )
                 }
             }
         }
@@ -155,6 +224,70 @@ fun LibraryScreen(
                     }
                 }
             }
+            LibraryTab.FOLDERS -> {
+                val list = folders
+                when {
+                    !loggedIn -> item {
+                        LoginRequired(
+                            title = "收藏夹",
+                            icon = Icons.Rounded.Folder,
+                            onOpenLogin = onOpenLogin,
+                        )
+                    }
+                    foldersError != null -> item {
+                        ErrorState(message = foldersError!!, onRetry = { foldersNonce++ })
+                    }
+                    list == null -> item { LoadingState(text = "正在加载收藏夹…") }
+                    list.isEmpty() -> item {
+                        EmptyState(
+                            title = "还没有收藏夹",
+                            subtitle = "在 B 站网页端创建收藏夹后会显示在这里",
+                            icon = Icons.Rounded.Folder,
+                        )
+                    }
+                    else -> {
+                        item { Spacer(Modifier.height(6.dp)) }
+                        items(items = list, key = { it.id }) { folder ->
+                            FavoriteFolderRow(
+                                folder = folder,
+                                onClick = { onOpenFavoriteFolder(folder.id, folder.title) },
+                            )
+                        }
+                    }
+                }
+            }
+            LibraryTab.COLLECTIONS -> {
+                val list = collections
+                when {
+                    !loggedIn -> item {
+                        LoginRequired(
+                            title = "合集",
+                            icon = Icons.Rounded.VideoLibrary,
+                            onOpenLogin = onOpenLogin,
+                        )
+                    }
+                    collectionsError != null -> item {
+                        ErrorState(message = collectionsError!!, onRetry = { collectionsNonce++ })
+                    }
+                    list == null -> item { LoadingState(text = "正在加载合集…") }
+                    list.isEmpty() -> item {
+                        EmptyState(
+                            title = "还没有合集",
+                            subtitle = "B 站「合集 / 系列」会显示在这里",
+                            icon = Icons.Rounded.VideoLibrary,
+                        )
+                    }
+                    else -> {
+                        item { Spacer(Modifier.height(6.dp)) }
+                        items(items = list, key = { it.id }) { collection ->
+                            CollectionRow(
+                                collection = collection,
+                                onClick = { onOpenCollection(collection.id, collection.title) },
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -165,6 +298,104 @@ fun LibraryScreen(
                 showCreate = false
                 scope.safeLaunch { graph.libraryRepository.createPlaylist(name) }
             },
+        )
+    }
+}
+
+@Composable
+private fun LoginRequired(title: String, icon: ImageVector, onOpenLogin: () -> Unit) {
+    EmptyState(
+        title = "登录后查看$title",
+        subtitle = "登录 Bilibili 账号后即可同步",
+        icon = icon,
+        action = "登录 Bilibili",
+        onAction = onOpenLogin,
+    )
+}
+
+@Composable
+private fun FavoriteFolderRow(folder: FavoriteFolder, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CoverImage(url = folder.coverUrl, modifier = Modifier.size(54.dp), corner = 10.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = folder.title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (folder.isDefault) {
+                    Spacer(Modifier.width(6.dp))
+                    SaltPill(text = "默认")
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "${folder.mediaCount} 个视频",
+                color = SaltTheme.colors.subText,
+                fontSize = SaltTheme.textStyles.sub.fontSize,
+            )
+        }
+        Icon(
+            Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = SaltTheme.colors.subText,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
+@Composable
+private fun CollectionRow(collection: BiliCollection, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CoverImage(url = collection.coverUrl, modifier = Modifier.size(54.dp), corner = 10.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = collection.title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 16.sp,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = if (collection.description.isBlank()) {
+                    "${collection.count} 个视频"
+                } else {
+                    collection.description
+                },
+                color = SaltTheme.colors.subText,
+                fontSize = SaltTheme.textStyles.sub.fontSize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            text = "${collection.count}",
+            color = SaltTheme.colors.subText,
+            fontSize = SaltTheme.textStyles.sub.fontSize,
+        )
+        Spacer(Modifier.width(4.dp))
+        Icon(
+            Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = SaltTheme.colors.subText,
+            modifier = Modifier.size(18.dp),
         )
     }
 }
@@ -304,4 +535,3 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
         }
     }
 }
-
