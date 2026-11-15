@@ -116,6 +116,11 @@ class DataStorePreferences(context: Context) : PreferencesRepository {
         (it[Keys.IMPORT_BATCH_SIZE] ?: 50).coerceIn(10, 200)
     }
 
+    override val highQualityAudio: Flow<Boolean> = dataStore.data.map { it[Keys.HIGH_QUALITY_AUDIO] ?: false }
+
+    override val reportPlaybackProgress: Flow<Boolean> =
+        dataStore.data.map { it[Keys.REPORT_PLAYBACK_PROGRESS] ?: false }
+
     override suspend fun setPlayerBackgroundStyle(style: PlayerBackgroundStyle) {
         dataStore.edit { it[Keys.PLAYER_BACKGROUND_STYLE] = style.name }
     }
@@ -172,6 +177,14 @@ class DataStorePreferences(context: Context) : PreferencesRepository {
         dataStore.edit { it[Keys.IMPORT_BATCH_SIZE] = size.coerceIn(10, 200) }
     }
 
+    override suspend fun setHighQualityAudio(enabled: Boolean) {
+        dataStore.edit { it[Keys.HIGH_QUALITY_AUDIO] = enabled }
+    }
+
+    override suspend fun setReportPlaybackProgress(enabled: Boolean) {
+        dataStore.edit { it[Keys.REPORT_PLAYBACK_PROGRESS] = enabled }
+    }
+
     override suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { it[Keys.THEME_MODE] = mode.name }
     }
@@ -223,6 +236,8 @@ class DataStorePreferences(context: Context) : PreferencesRepository {
         val AUTO_CHECK_UPDATE = booleanPreferencesKey("auto_check_update")
         val LYRIC_SOURCE = stringPreferencesKey("lyric_source")
         val IMPORT_BATCH_SIZE = intPreferencesKey("import_batch_size")
+        val HIGH_QUALITY_AUDIO = booleanPreferencesKey("high_quality_audio")
+        val REPORT_PLAYBACK_PROGRESS = booleanPreferencesKey("report_playback_progress")
     }
 
     private companion object {

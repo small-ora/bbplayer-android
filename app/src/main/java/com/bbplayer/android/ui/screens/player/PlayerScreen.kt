@@ -581,6 +581,8 @@ private fun QualityBadge(quality: AudioQuality) {
     ) {
         Text(
             text = when (quality) {
+                AudioQuality.HI_RES -> "HR"
+                AudioQuality.DOLBY -> "DB"
                 AudioQuality.Q192 -> "HQ"
                 AudioQuality.Q128 -> "SQ"
                 AudioQuality.Q64 -> "LQ"

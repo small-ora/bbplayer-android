@@ -134,6 +134,13 @@ interface PreferencesRepository {
 
     suspend fun setLyricSource(source: com.bbplayer.android.core.model.LyricSource)
     suspend fun setImportBatchSize(size: Int)
+
+    // ---- v5: account-related settings ----
+    val highQualityAudio: Flow<Boolean>
+    val reportPlaybackProgress: Flow<Boolean>
+
+    suspend fun setHighQualityAudio(enabled: Boolean)
+    suspend fun setReportPlaybackProgress(enabled: Boolean)
 }
 
 /** Lyrics acquisition, caching and manual editing. */

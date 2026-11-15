@@ -69,6 +69,62 @@ object StubRepositories {
             override suspend fun clear() { task = null }
         }
 
+    val auth: com.bbplayer.android.core.contracts.AuthRepository =
+        object : com.bbplayer.android.core.contracts.AuthRepository {
+            override fun session() = kotlinx.coroutines.flow.flowOf(null)
+            override suspend fun generateQrCode() =
+                Result.failure<com.bbplayer.android.core.model.QrCodeInfo>(notReady("登录"))
+            override suspend fun pollQrCode(qrKey: String) =
+                Result.failure<com.bbplayer.android.core.model.QrPollResult>(notReady("登录"))
+            override suspend fun loginWithCookie(rawCookie: String) =
+                Result.failure<com.bbplayer.android.core.model.BiliUser>(notReady("登录"))
+            override suspend fun refreshUser() = Result.success(null)
+            override suspend fun logout() {}
+            override fun cookieHeader(): String? = null
+            override fun cookieValue(name: String): String? = null
+            override fun csrfToken(): String? = null
+            override fun isLoggedIn(): Boolean = false
+        }
+
+    val favorites: com.bbplayer.android.core.contracts.FavoritesRepository =
+        object : com.bbplayer.android.core.contracts.FavoritesRepository {
+            override suspend fun folders() = Result.failure<List<com.bbplayer.android.core.model.FavoriteFolder>>(notReady("收藏夹"))
+            override suspend fun folderTracks(mediaId: Long, page: Int, pageSize: Int) =
+                Result.failure<com.bbplayer.android.core.model.TrackPage>(notReady("收藏夹"))
+            override suspend fun updateFavorite(aid: Long, addTo: List<Long>, removeFrom: List<Long>) =
+                Result.failure<Unit>(notReady("收藏"))
+            override suspend fun isFavorited(aid: Long) = Result.failure<List<Long>>(notReady("收藏"))
+        }
+
+    val collections: com.bbplayer.android.core.contracts.CollectionRepository =
+        object : com.bbplayer.android.core.contracts.CollectionRepository {
+            override suspend fun myCollections() = Result.failure<List<com.bbplayer.android.core.model.BiliCollection>>(notReady("合集"))
+            override suspend fun collectionTracks(seasonId: Long, page: Int) =
+                Result.failure<com.bbplayer.android.core.model.TrackPage>(notReady("合集"))
+        }
+
+    val watchLater: com.bbplayer.android.core.contracts.WatchLaterRepository =
+        object : com.bbplayer.android.core.contracts.WatchLaterRepository {
+            override suspend fun list() = Result.failure<List<com.bbplayer.android.core.model.Track>>(notReady("稍后再看"))
+            override suspend fun add(aid: Long, cid: Long?) = Result.failure<Unit>(notReady("稍后再看"))
+            override suspend fun remove(aid: Long) = Result.failure<Unit>(notReady("稍后再看"))
+            override suspend fun clear() = Result.failure<Unit>(notReady("稍后再看"))
+        }
+
+    val uploader: com.bbplayer.android.core.contracts.UploaderRepository =
+        object : com.bbplayer.android.core.contracts.UploaderRepository {
+            override suspend fun info(mid: Long) = Result.failure<com.bbplayer.android.core.model.UploaderInfo>(notReady("UP 主"))
+            override suspend fun videos(mid: Long, page: Int, keyword: String) =
+                Result.failure<com.bbplayer.android.core.model.TrackPage>(notReady("UP 主"))
+            override suspend fun setFollow(mid: Long, follow: Boolean) = Result.failure<Unit>(notReady("关注"))
+        }
+
+    val playbackReporter: com.bbplayer.android.core.contracts.PlaybackReporter =
+        object : com.bbplayer.android.core.contracts.PlaybackReporter {
+            override val enabled = kotlinx.coroutines.flow.flowOf(false)
+            override suspend fun report(track: com.bbplayer.android.core.model.Track, progressMs: Long) = Result.success(Unit)
+        }
+
     val backup: BackupRepository = object : BackupRepository {
         override suspend fun exportZip() = Result.failure<File>(notReady("备份"))
         override suspend fun importZip(file: File) = Result.failure<Int>(notReady("恢复"))
