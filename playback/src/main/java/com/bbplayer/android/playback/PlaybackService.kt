@@ -7,9 +7,16 @@ import androidx.media3.common.util.BitmapLoader
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
  * Foreground shell for background playback.
@@ -24,6 +31,10 @@ import androidx.media3.session.MediaSessionService
 class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private var bitmapLoader: BitmapLoader? = null
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var lyricLineTicker: Job? = null
+    private var lastLyricLine: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -49,16 +60,42 @@ class PlaybackService : MediaSessionService() {
         }
         sessionActivityPendingIntent()?.let(sessionBuilder::setSessionActivity)
 
+        // Status-bar lyric line: the second notification row reads the current
+        // lyric line at build time; the ticker below refreshes it on change.
+        setMediaNotificationProvider(LyricNotificationProvider(this))
+
         val session = sessionBuilder.build()
         mediaSession = session
         addSession(session)
 
-        setMediaNotificationProvider(
-            DefaultMediaNotificationProvider(this).apply {
-                // White silhouette icon bundled by the playback module.
-                setSmallIcon(R.drawable.ic_stat_bbplayer)
-            },
-        )
+        PlaybackServiceHolder.setLyricLineRefresher { triggerNotificationUpdateSafely() }
+        startLyricLineTicker()
+    }
+
+    /**
+     * Polls the current lyric line every 500 ms and asks Media3 to rebuild the
+     * notification when it changes. Cheap (one string compare) and independent
+     * from the lyrics UI, so either side can come and go.
+     */
+    private fun startLyricLineTicker() {
+        lyricLineTicker?.cancel()
+        lastLyricLine = StatusBarLyricLine.current()
+        lyricLineTicker = serviceScope.launch {
+            while (isActive) {
+                delay(LYRIC_LINE_POLL_MS)
+                if (mediaSession == null) break
+                val line = StatusBarLyricLine.current()
+                if (line != lastLyricLine) {
+                    lastLyricLine = line
+                    triggerNotificationUpdateSafely()
+                }
+            }
+        }
+    }
+
+    private fun triggerNotificationUpdateSafely() {
+        if (mediaSession == null) return
+        runCatching { triggerNotificationUpdate() }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
@@ -73,6 +110,10 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        lyricLineTicker?.cancel()
+        lyricLineTicker = null
+        PlaybackServiceHolder.setLyricLineRefresher(null)
+        serviceScope.cancel()
         mediaSession?.release()
         mediaSession = null
         bitmapLoader = null
@@ -87,6 +128,10 @@ class PlaybackService : MediaSessionService() {
             launchIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+    }
+
+    private companion object {
+        const val LYRIC_LINE_POLL_MS = 500L
     }
 }
 
@@ -116,5 +161,18 @@ object PlaybackServiceHolder {
             this.player = null
             this.artworkDataSourceFactory = null
         }
+    }
+
+    @Volatile
+    private var lyricLineRefresher: (() -> Unit)? = null
+
+    /** Called by [PlaybackService] so the controller can refresh the notification. */
+    fun setLyricLineRefresher(refresher: (() -> Unit)?) {
+        this.lyricLineRefresher = refresher
+    }
+
+    /** Force an immediate notification refresh for a new lyric line (SPEC G5). */
+    fun notifyLyricLineChanged() {
+        lyricLineRefresher?.invoke()
     }
 }

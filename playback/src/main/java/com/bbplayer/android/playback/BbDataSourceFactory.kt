@@ -1,10 +1,12 @@
 package com.bbplayer.android.playback
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.TransferListener
@@ -30,17 +32,28 @@ import okhttp3.OkHttpClient
  */
 class BbDataSourceFactory(
     private val streamResolver: BiliStreamResolver,
+    appContext: Context? = null,
     private val okHttpClient: OkHttpClient = defaultOkHttpClient(),
 ) : DataSource.Factory {
     private val upstreamFactory: DataSource.Factory = OkHttpDataSource.Factory(okHttpClient)
         .setUserAgent(PlaybackConfig.DESKTOP_USER_AGENT)
         .setDefaultRequestProperties(PlaybackConfig.STREAM_HEADERS)
 
+    /**
+     * Playback-side factory: [DefaultDataSource] keeps `file://` (offline
+     * downloads, SPEC C3) working and delegates `https://` to OkHttp, while
+     * `bbplayer://` internal URIs are still resolved lazily by
+     * [BbLazyResolver] before DefaultDataSource ever sees them.
+     */
+    private val playbackFactory: DataSource.Factory = appContext
+        ?.let { DefaultDataSource.Factory(it, upstreamFactory) }
+        ?: upstreamFactory
+
     /** Plain OkHttp factory used by the notification bitmap loader. */
     val artworkDataSourceFactory: DataSource.Factory get() = upstreamFactory
 
     override fun createDataSource(): DataSource =
-        BbFallbackDataSource(upstreamFactory, streamResolver)
+        BbFallbackDataSource(playbackFactory, streamResolver)
 
     private class BbFallbackDataSource(
         private val upstreamFactory: DataSource.Factory,

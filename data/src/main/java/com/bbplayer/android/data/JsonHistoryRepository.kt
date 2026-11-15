@@ -180,4 +180,46 @@ class JsonHistoryRepository(
         private const val HISTORY_FILE = "history.json"
         private const val RESUME_FILE = "resume.json"
     }
+
+    // ---------------- v2 insights ----------------
+
+    override fun allHistory(): Flow<List<com.bbplayer.android.core.model.HistoryEntry>> = history
+        .map { HistoryStats.sortedRecent(it.entries, it.entries.size) }
+        .onStart { ensureLoaded() }
+        .distinctUntilChanged()
+
+    override fun ranking(limit: Int): Flow<List<com.bbplayer.android.core.model.ListeningRank>> = history
+        .onStart { ensureLoaded() }
+        .map { data ->
+        val entries = data.entries
+        entries.groupBy { it.track.key }
+            .map { (_, plays) ->
+                com.bbplayer.android.core.model.ListeningRank(
+                    track = plays.maxByOrNull { it.playedAt }!!.track,
+                    playCount = plays.size,
+                    listenedMs = plays.sumOf { it.listenedMs },
+                )
+            }
+            .sortedWith(compareByDescending<com.bbplayer.android.core.model.ListeningRank> { it.playCount }.thenByDescending { it.listenedMs })
+            .take(limit)
+    }
+
+    override fun historyByDay(days: Int): Flow<List<com.bbplayer.android.core.model.DailyHistory>> = history
+        .onStart { ensureLoaded() }
+        .map { data ->
+        val entries = data.entries
+        val cutoff = System.currentTimeMillis() - days * 86_400_000L
+        entries.filter { it.playedAt >= cutoff }
+            .groupBy { entry ->
+                java.time.Instant.ofEpochMilli(entry.playedAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
+            }
+            .map { (date, list) ->
+                com.bbplayer.android.core.model.DailyHistory(
+                    date = date,
+                    entries = list.sortedByDescending { it.playedAt },
+                    listenedMs = list.sumOf { it.listenedMs },
+                )
+            }
+            .sortedByDescending { it.date }
+    }
 }

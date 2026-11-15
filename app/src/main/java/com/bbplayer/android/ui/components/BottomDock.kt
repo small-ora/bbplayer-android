@@ -34,6 +34,7 @@ fun BottomDock(
     onTogglePlay: () -> Unit,
     onOpenQueue: () -> Unit,
     modifier: Modifier = Modifier,
+    showMiniPlayer: Boolean = true,
 ) {
     Column(
         modifier = modifier
@@ -43,7 +44,7 @@ fun BottomDock(
             .background(SaltTheme.colors.popup)
             .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(28.dp)),
     ) {
-        if (playbackState.track != null) {
+        if (showMiniPlayer && playbackState.track != null) {
             MiniPlayerBar(
                 state = playbackState,
                 onOpenPlayer = onOpenPlayer,

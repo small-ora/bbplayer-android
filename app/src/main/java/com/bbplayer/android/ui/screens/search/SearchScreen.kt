@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +41,7 @@ import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Search
 
 @Composable
 fun SearchScreen(
@@ -54,6 +58,20 @@ fun SearchScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var history by remember { mutableStateOf(historyStore.load()) }
     var searchNonce by remember { mutableStateOf(0) }
+    var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var hotKeywords by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        graph.discoverRepository.hotKeywords().onSuccess { hotKeywords = it }
+    }
+    LaunchedEffect(query) {
+        if (query.isBlank()) {
+            suggestions = emptyList()
+            return@LaunchedEffect
+        }
+        kotlinx.coroutines.delay(320)
+        graph.discoverRepository.suggestions(query).onSuccess { suggestions = it }
+    }
     val playback by graph.playbackController.state.collectAsStateWithLifecycle(initialValue = com.bbplayer.android.core.model.PlaybackState())
 
     fun submit(text: String) {
@@ -93,7 +111,68 @@ fun SearchScreen(
                 onSearch = { submit(it) },
             )
         }
+        if (query.isNotBlank() && suggestions.isNotEmpty() && query != submittedQuery) {
+            item {
+                Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
+                    suggestions.take(8).forEach { suggestion ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    query = suggestion
+                                    submit(suggestion)
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            androidx.compose.material3.Icon(
+                                Icons.Rounded.Search,
+                                null,
+                                tint = SaltTheme.colors.subText,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                text = suggestion,
+                                color = SaltTheme.colors.text,
+                                fontSize = 14.sp,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+        }
         if (submittedQuery.isEmpty()) {
+            if (hotKeywords.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(
+                            start = SaltTheme.dimens.padding,
+                            end = SaltTheme.dimens.padding,
+                            top = 18.dp,
+                            bottom = 8.dp,
+                        ),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("B 站热搜", fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                    }
+                }
+                item {
+                    androidx.compose.foundation.lazy.LazyRow(
+                        contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(count = hotKeywords.size, key = { "hot_$it" }) { index ->
+                            SaltPill(text = hotKeywords[index], onClick = {
+                                query = hotKeywords[index]
+                                submit(hotKeywords[index])
+                            })
+                        }
+                    }
+                }
+            }
             if (history.isNotEmpty()) {
                 item {
                     Row(

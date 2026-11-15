@@ -7,8 +7,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 
-/** A provider lyric payload: original LRC plus an optional separate translation track. */
-internal data class LyricPayload(val lrc: String, val translation: String? = null)
+/**
+ * A provider lyric payload: original LRC plus an optional separate translation track and, for providers that support
+ * per-word timing, the raw verbatim formats ([yrc] = NetEase YRC, [qrc] = QQ QRC).
+ */
+internal data class LyricPayload(
+    val lrc: String,
+    val translation: String? = null,
+    val yrc: String? = null,
+    val qrc: String? = null,
+) {
+    /** No usable main track at all (some NetEase responses only carry `yrc`). */
+    val isEmpty: Boolean
+        get() = lrc.isBlank() && yrc.isNullOrBlank() && qrc.isNullOrBlank()
+}
 
 /**
  * QQ Music anonymous endpoints (read-only, no cookie/login).
@@ -16,8 +28,9 @@ internal data class LyricPayload(val lrc: String, val translation: String? = nul
  * Search: `GET https://c.y.qq.com/soso/fcgi-bin/client_search_cp?format=json&p=1&n=10&w=<query>&t=0` with
  * `Referer: https://y.qq.com/`.
  * Lyric:  `GET https://i.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=<mid>&g_tk=5381&format=json&
- *         inCharset=utf8&outCharset=utf-8&nobase64=1` with the same Referer. The response is JSON with `lyric` and
- * (optionally) `trans` fields, HTML-entity escaped (`&#10;` = newline) and sometimes wrapped in a JSONP callback.
+ *         inCharset=utf8&outCharset=utf-8&nobase64=1&qrc=1` with the same Referer. The response is JSON with
+ * (optionally) `lyric`/`trans` and, when available, a `qrc` verbatim field; strings are HTML-entity escaped
+ * (`&#10;` = newline) and sometimes wrapped in a JSONP callback.
  */
 internal object QqMusicApi {
 
@@ -32,7 +45,7 @@ internal object QqMusicApi {
 
     fun lyricUrl(songMid: String): String =
         "$LYRIC_ENDPOINT?songmid=${urlEncode(songMid)}&g_tk=5381&format=json" +
-            "&inCharset=utf8&outCharset=utf-8&nobase64=1"
+            "&inCharset=utf8&outCharset=utf-8&nobase64=1&qrc=1"
 
     suspend fun search(client: OkHttpClient, query: String): List<LyricCandidate> {
         val body = LyricsHttp.getString(client, searchUrl(query), REFERER)
@@ -70,17 +83,35 @@ internal object QqMusicApi {
         }
     }
 
-    /** Parses the lyric response; returns null when the provider reports an error or has no lyric. */
+    /**
+     * Parses the lyric response; returns null when the provider reports an error or has no lyric at all.
+     * The optional per-word `qrc` field is decoded (base64 tolerated) and kept on [LyricPayload.qrc].
+     */
     fun parseLyric(body: String): LyricPayload? {
         val root = LyricsJson.parseObject(body) ?: return null
         val retCode = root["retcode"].asIntOrNull() ?: root["code"].asIntOrNull()
         if (retCode != null && retCode != 0) return null
-        val lyric = root["lyric"].asTextOrNull()?.let(::unescapeHtmlEntities)
-        if (lyric.isNullOrBlank()) return null
+        val lyric = root["lyric"].asTextOrNull()?.let(::unescapeHtmlEntities)?.takeIf { it.isNotBlank() }
         val translation = root["trans"].asTextOrNull()
             ?.let(::unescapeHtmlEntities)
             ?.takeIf { it.isNotBlank() }
-        return LyricPayload(lrc = lyric, translation = translation)
+        val qrc = (root["qrc"].asTextOrNull() ?: root["data"].asObjectOrNull()?.get("qrc").asTextOrNull())
+            ?.let(::unescapeHtmlEntities)
+            ?.let(::decodeQrc)
+            ?.takeIf { it.isNotBlank() }
+        if (lyric == null && qrc == null) return null
+        return LyricPayload(lrc = lyric.orEmpty(), translation = translation, qrc = qrc)
+    }
+
+    /** QQ sometimes returns the QRC body base64-encoded; plain text (which always contains `[`) is passed through. */
+    fun decodeQrc(raw: String): String {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty() || trimmed.contains('[')) return raw
+        val compact = trimmed.filterNot { it == '\n' || it == '\r' }
+        return runCatching {
+            val decoded = String(java.util.Base64.getDecoder().decode(compact), Charsets.UTF_8)
+            if (decoded.contains('[')) decoded else raw
+        }.getOrDefault(raw)
     }
 
     /** Decodes the HTML entities QQ uses inside its JSON strings (`&#10;`, `&quot;`, ...). */

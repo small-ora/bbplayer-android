@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -60,6 +62,8 @@ fun LibraryScreen(
     onOpenPlaylist: (String) -> Unit,
     onOpenPlayer: () -> Unit,
     onPlayTrack: (List<Track>, Int) -> Unit,
+    onOpenImport: () -> Unit = {},
+    onOpenDownloads: () -> Unit = {},
 ) {
     val graph = LocalAppGraph.current
     val scope = rememberCoroutineScope()
@@ -78,6 +82,8 @@ fun LibraryScreen(
             LargeTitle(
                 title = "音乐库",
                 actions = {
+                    IconAction(Icons.Rounded.Download, "已下载", onClick = onOpenDownloads)
+                    IconAction(Icons.Rounded.PlaylistAdd, "导入歌单", onClick = onOpenImport)
                     IconAction(Icons.Rounded.Add, "新建歌单", onClick = { showCreate = true })
                 },
             )

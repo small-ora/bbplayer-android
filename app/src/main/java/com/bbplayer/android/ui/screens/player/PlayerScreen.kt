@@ -63,7 +63,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.bbplayer.android.core.contracts.toUserMessage
+import android.widget.Toast
 import com.bbplayer.android.core.model.AudioQuality
+import com.bbplayer.android.core.model.DownloadStatus
+import com.bbplayer.android.core.model.LyricVisualStyle
+import com.bbplayer.android.core.model.PlayerBackgroundStyle
 import com.bbplayer.android.core.model.Lyrics
 import com.bbplayer.android.core.model.PlayMode
 import com.bbplayer.android.core.model.PlaybackState
@@ -72,6 +76,9 @@ import com.bbplayer.android.di.AppGraph
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.CoverImage
 import com.bbplayer.android.ui.components.LoadingState
+import com.bbplayer.android.ui.lyrics.DesktopLyricsService
+import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
+import com.bbplayer.android.ui.share.ShareCard
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.IconAction
@@ -85,7 +92,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerScreen(onBack: () -> Unit) {
+fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
     val graph = LocalAppGraph.current
     val state by graph.playbackController.state.collectAsStateWithLifecycle(initialValue = PlaybackState())
     val track = state.track
@@ -116,6 +123,15 @@ fun PlayerScreen(onBack: () -> Unit) {
     val quality by prefs.audioQuality.collectAsStateWithLifecycle(initialValue = AudioQuality.Q192)
     val fontScale by prefs.lyricsFontScale.collectAsStateWithLifecycle(initialValue = 1f)
     val prefsOffset by prefs.lyricsOffsetMs.collectAsStateWithLifecycle(initialValue = 0)
+    val backgroundStyle by prefs.playerBackgroundStyle.collectAsStateWithLifecycle(initialValue = PlayerBackgroundStyle.GRADIENT)
+    val lyricStyle by prefs.lyricVisualStyle.collectAsStateWithLifecycle(initialValue = LyricVisualStyle.MODERN)
+    val verbatim by prefs.verbatimLyrics.collectAsStateWithLifecycle(initialValue = true)
+    val showTranslation by prefs.showTranslation.collectAsStateWithLifecycle(initialValue = true)
+    val desktopLyricsOn by prefs.desktopLyricsEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val downloads by graph.downloadRepository.entries.collectAsStateWithLifecycle(initialValue = emptyList())
+    val downloadEntry = downloads.firstOrNull { it.track.key == track.key }
+    var trackOffset by remember(track.key) { mutableStateOf(0) }
+    LaunchedEffect(track.key) { trackOffset = runCatching { graph.lyricsRepository.getTrackOffset(track.key) }.getOrDefault(0) }
 
     var lyrics by remember(track.key) { mutableStateOf<Lyrics?>(null) }
     var lyricsLoading by remember(track.key) { mutableStateOf(true) }
@@ -138,35 +154,72 @@ fun PlayerScreen(onBack: () -> Unit) {
     var isFavorite by remember(track.key) { mutableStateOf(false) }
     LaunchedEffect(track.key) { isFavorite = graph.libraryRepository.isFavorite(track.key) }
 
-    val effectiveLyrics = remember(lyrics, prefsOffset) {
-        lyrics?.copy(offsetMs = (lyrics?.offsetMs ?: 0) + prefsOffset)
+    val effectiveLyrics = remember(lyrics, prefsOffset, trackOffset) {
+        lyrics?.copy(offsetMs = (lyrics?.offsetMs ?: 0) + prefsOffset + trackOffset)
     }
 
+    // Desktop overlay hides while the in-app lyrics page is visible.
+    androidx.compose.runtime.DisposableEffect(showLyrics) {
+        NowPlayingLyrics.inAppLyricsVisible.value = showLyrics
+        onDispose { }
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { NowPlayingLyrics.inAppLyricsVisible.value = false }
+    }
+
+    // Publish the current line for the desktop lyrics overlay and the media notification.
+    LaunchedEffect(effectiveLyrics) { NowPlayingLyrics.setLyrics(track.key, effectiveLyrics) }
+    LaunchedEffect(state.positionMs, effectiveLyrics) {
+        NowPlayingLyrics.update(state.positionMs)
+    }
+    val currentLine = NowPlayingLyrics.snapshot.collectAsStateWithLifecycle().value
+
+    val pureWhite = backgroundStyle == PlayerBackgroundStyle.PURE_WHITE
+    val onPlayerColor = if (pureWhite) Color(0xFF111111) else Color.White
+    val onPlayerSecondary = if (pureWhite) Color(0x99000000) else Color.White.copy(alpha = 0.6f)
     Box(Modifier.fillMaxSize()) {
-        // ---- background: blurred artwork wash + scrim (Salt Player treatment) ----
+        // ---- background: gradient / solid / pure white ----
         val base = wash.firstOrNull() ?: SaltTheme.colors.highlight
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            base.copy(alpha = 0.95f),
-                            base.copy(alpha = 0.55f),
-                            Color.Black.copy(alpha = 0.9f),
+        when (backgroundStyle) {
+            PlayerBackgroundStyle.PURE_WHITE -> Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+            )
+            PlayerBackgroundStyle.SOLID -> Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(base.copy(alpha = 0.92f), base.copy(alpha = 0.75f))
                         )
                     )
+            )
+            PlayerBackgroundStyle.GRADIENT -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    base.copy(alpha = 0.95f),
+                                    base.copy(alpha = 0.55f),
+                                    Color.Black.copy(alpha = 0.9f),
+                                )
+                            )
+                        )
                 )
-        )
-        AsyncImage(
-            model = track.coverUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(90.dp)
-                .background(Color.Black.copy(alpha = 0.25f)),
-        )
+                AsyncImage(
+                    model = track.coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(90.dp)
+                        .background(Color.Black.copy(alpha = 0.25f)),
+                )
+            }
+        }
 
         Column(
             Modifier
@@ -249,6 +302,9 @@ fun PlayerScreen(onBack: () -> Unit) {
                                 positionMs = state.positionMs,
                                 fontScale = fontScale,
                                 modifier = Modifier.weight(1f),
+                                style = lyricStyle,
+                                verbatim = verbatim,
+                                showTranslation = showTranslation,
                                 onSeekTo = { graph.playbackController.seekTo(it.coerceAtLeast(0)) },
                             )
                         }
@@ -259,19 +315,21 @@ fun PlayerScreen(onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             SaltPill(text = "−0.1s", onClick = {
-                                scope.safeLaunch { prefs.setLyricsOffsetMs((prefsOffset - 100).coerceIn(-3000, 3000)) }
+                                trackOffset = (trackOffset - 100).coerceIn(-3000, 3000)
+                                scope.safeLaunch { graph.lyricsRepository.setTrackOffset(track.key, trackOffset) }
                             })
                             Text(
-                                text = "偏移 $prefsOffset ms",
-                                color = Color.White.copy(alpha = 0.7f),
+                                text = "偏移 ${prefsOffset + trackOffset} ms",
+                                color = onPlayerSecondary,
                                 fontSize = 12.sp,
                                 modifier = Modifier.padding(horizontal = 14.dp),
                             )
                             SaltPill(text = "+0.1s", onClick = {
-                                scope.safeLaunch { prefs.setLyricsOffsetMs((prefsOffset + 100).coerceIn(-3000, 3000)) }
+                                trackOffset = (trackOffset + 100).coerceIn(-3000, 3000)
+                                scope.safeLaunch { graph.lyricsRepository.setTrackOffset(track.key, trackOffset) }
                             })
                         }
-                        MiniTransport(state = state, onPrev = { graph.playbackController.previous() }, onToggle = { graph.playbackController.playPause() }, onNext = { graph.playbackController.next() }, white = true)
+                        MiniTransport(state = state, onPrev = { graph.playbackController.previous() }, onToggle = { graph.playbackController.playPause() }, onNext = { graph.playbackController.next() }, white = !pureWhite)
                         Spacer(Modifier.height(6.dp))
                     }
                 } else {
@@ -290,6 +348,7 @@ fun PlayerScreen(onBack: () -> Unit) {
                         onModeClick = {
                             graph.playbackController.setPlayMode(state.playMode.next())
                         },
+                        pureWhite = pureWhite,
                     )
                 }
             }
@@ -332,15 +391,62 @@ fun PlayerScreen(onBack: () -> Unit) {
         )
         "more" -> OptionDialog(
             title = "更多",
-            options = listOf("添加到歌单", "搜索歌词", "粘贴 LRC 歌词", "重新加载音频"),
+            options = listOf(
+                "添加到歌单",
+                if (downloadEntry?.status == DownloadStatus.COMPLETED) "删除下载" else "下载到本地",
+                "查看评论",
+                "分享歌词卡片",
+                if (desktopLyricsOn) "关闭桌面歌词" else "开启桌面歌词",
+                "搜索歌词",
+                "粘贴 LRC 歌词",
+                "重新加载音频",
+            ),
             selectedIndex = -1,
             onSelect = { idx ->
                 sheet.value = null
                 when (idx) {
                     0 -> sheet.value = "playlist"
-                    1 -> sheet.value = "searchLyrics"
-                    2 -> sheet.value = "pasteLyrics"
-                    3 -> scope.launch { graph.playbackController.playQueue(state.queue, state.currentIndex) }
+                    1 -> scope.safeLaunch {
+                        val result: Result<Unit> = when (downloadEntry?.status) {
+                            DownloadStatus.COMPLETED -> graph.downloadRepository.remove(track.key)
+                            DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> {
+                                graph.downloadRepository.cancel(track.key)
+                                Result.success(Unit)
+                            }
+                            else -> graph.downloadRepository.enqueue(track)
+                        }
+                        result.onFailure {
+                            Toast.makeText(context, it.toUserMessage(), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    2 -> onOpenComments(track.bvid)
+                    3 -> scope.safeLaunch {
+                        val line = currentLine.text.ifBlank { track.displayTitle }
+                        val ok = ShareCard.share(context, track, line, currentLine.translation)
+                        Toast.makeText(context, if (ok) "已打开分享" else "生成分享卡片失败", Toast.LENGTH_SHORT).show()
+                    }
+                    4 -> scope.safeLaunch {
+                        val enable = !desktopLyricsOn
+                        prefs.setDesktopLyricsEnabled(enable)
+                        if (enable) {
+                            val hasOverlay = android.provider.Settings.canDrawOverlays(context)
+                            if (!hasOverlay) {
+                                Toast.makeText(context, "请在设置中授予「显示在其他应用上层」权限", Toast.LENGTH_LONG).show()
+                                val intent = android.content.Intent(
+                                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    android.net.Uri.parse("package:${context.packageName}"),
+                                )
+                                context.startActivity(intent)
+                            } else {
+                                DesktopLyricsService.start(context)
+                            }
+                        } else {
+                            DesktopLyricsService.stop(context)
+                        }
+                    }
+                    5 -> sheet.value = "searchLyrics"
+                    6 -> sheet.value = "pasteLyrics"
+                    7 -> scope.safeLaunch { graph.playbackController.playQueue(state.queue, state.currentIndex) }
                 }
             },
             onDismiss = { sheet.value = null },
@@ -380,7 +486,10 @@ private fun MainPlayerContent(
     onOpenQueue: () -> Unit,
     onShowSheet: (String) -> Unit,
     onModeClick: () -> Unit,
+    pureWhite: Boolean = false,
 ) {
+    val onPlayer = if (pureWhite) Color(0xFF111111) else Color.White
+    val onPlayerSecondary = if (pureWhite) Color(0x99000000) else Color.White.copy(alpha = 0.65f)
     Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.height(6.dp))
         Box(
@@ -404,7 +513,7 @@ private fun MainPlayerContent(
             Column(Modifier.weight(1f)) {
                 Text(
                     text = track.displayTitle,
-                    color = Color.White,
+                    color = onPlayer,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
@@ -414,7 +523,7 @@ private fun MainPlayerContent(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = track.uploader,
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = onPlayerSecondary,
                         fontSize = 13.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -428,7 +537,7 @@ private fun MainPlayerContent(
                 icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                 contentDescription = "收藏",
                 onClick = onToggleFavorite,
-                tint = if (isFavorite) Color(0xFFFF6B81) else Color.White.copy(alpha = 0.85f),
+                tint = if (isFavorite) Color(0xFFFF6B81) else onPlayer.copy(alpha = 0.85f),
                 size = 40,
             )
         }
@@ -437,9 +546,9 @@ private fun MainPlayerContent(
             positionMs = state.positionMs,
             durationMs = state.durationMs.coerceAtLeast(1),
             onSeek = onSeek,
-            activeColor = Color.White,
-            trackColor = Color.White.copy(alpha = 0.24f),
-            timeColor = Color.White.copy(alpha = 0.6f),
+            activeColor = onPlayer,
+            trackColor = onPlayer.copy(alpha = 0.24f),
+            timeColor = onPlayerSecondary,
         )
         Spacer(Modifier.height(10.dp))
         TransportRow(
@@ -447,7 +556,7 @@ private fun MainPlayerContent(
             onPrev = { /* handled by caller via lambda */ },
             onToggle = { },
             onNext = { },
-            white = true,
+            white = !pureWhite,
         )
         Spacer(Modifier.height(6.dp))
         BottomActions(

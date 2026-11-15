@@ -11,6 +11,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bbplayer.android.core.model.AccentPreset
+import com.bbplayer.android.core.model.PlayerBackgroundStyle
 import com.bbplayer.android.core.model.ThemeMode
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.AppRoot
@@ -33,8 +35,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by graph.preferencesRepository.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
             val dynamicColor by graph.preferencesRepository.dynamicColor.collectAsStateWithLifecycle(initialValue = true)
+            val accentPreset by graph.preferencesRepository.accentPreset.collectAsStateWithLifecycle(initialValue = AccentPreset.SALT)
+            val backgroundStyle by graph.preferencesRepository.playerBackgroundStyle.collectAsStateWithLifecycle(initialValue = PlayerBackgroundStyle.GRADIENT)
             CompositionLocalProvider(LocalAppGraph provides graph) {
-                BbTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
+                BbTheme(
+                    themeMode = themeMode,
+                    dynamicColor = dynamicColor,
+                    accentPreset = accentPreset,
+                    pureWhite = backgroundStyle == PlayerBackgroundStyle.PURE_WHITE,
+                ) {
                     AppRoot()
                 }
             }
