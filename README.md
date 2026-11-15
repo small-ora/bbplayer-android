@@ -10,6 +10,17 @@
 
 ## 功能
 
+### v5 新增（登录体系）
+
+- **B 站账号**：扫码登录（二维码由 App 生成并轮询）+ 手动 Cookie 粘贴；登录状态跨重启保持；可随时退出
+- **凭据安全**：Android Keystore AES-GCM 加密存本地，不打印 Cookie、不上传第三方；退出即清除；接口缓存按登录账号隔离
+- **收藏夹**：收藏夹列表与内容播放、播放页「收藏到 B 站收藏夹」（多选）、是否已收藏
+- **合集 / 系列**：我的合集列表与内容播放
+- **稍后再看**：列表、加入、移除、清空
+- **UP 主主页**：资料/粉丝数、视频列表、关注/取关（WBI 签名）
+- **高音质**：登录 + 开启后优先 FLAC/杜比（无权限自动回退）
+- **隐私**：可选「上报播放进度到 B 站历史」，默认关闭
+
 ### v4 新增（导入续跑 / 歌词偏好）
 
 - **歌单导入可暂停 / 续跑 / 分批**：任务持久化到本地，重启 App 后从断点继续；每批 20/50/100/200 首可调，每批落盘；命中 B 站 `-412` 自动停止并显示冷却倒计时，已匹配进度不丢
@@ -59,7 +70,7 @@
 环境：JDK 17、Android SDK（compileSdk 36 / build-tools 36）、Gradle 8.13（wrapper）。
 
 ```bash
-# 单元测试（data / playback / lyrics 三个模块，共 445 个用例）
+# 单元测试（data / playback / lyrics / app，共 614 个用例）
 ./gradlew :data:testDebugUnitTest :playback:testDebugUnitTest :lyrics:testDebugUnitTest
 
 # Debug APK

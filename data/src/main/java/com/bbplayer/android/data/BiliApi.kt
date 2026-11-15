@@ -2,7 +2,9 @@ package com.bbplayer.android.data
 
 import android.content.Context
 import com.bbplayer.android.core.contracts.AppException
+import com.bbplayer.android.core.contracts.AuthCookieProvider
 import com.bbplayer.android.core.contracts.toUserMessage
+import com.bbplayer.android.data.auth.AuthRegistry
 import com.bbplayer.android.data.cache.BiliCacheRegistry
 import com.bbplayer.android.data.cache.BiliCacheTtl
 import com.bbplayer.android.data.cache.CacheKey
@@ -11,6 +13,7 @@ import com.bbplayer.android.data.cache.HttpCacheStore
 import com.bbplayer.android.data.cache.InFlightDeduplicator
 import com.bbplayer.android.data.cache.RequestThrottle
 import com.bbplayer.android.data.cache.SecurityCooldown
+import com.bbplayer.android.data.cache.sha256Hex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,6 +26,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -49,6 +53,19 @@ internal object BiliHttpClient {
             .retryOnConnectionFailure(true)
             .followRedirects(true)
             .followSslRedirects(true)
+            // Defence in depth: never forward the account Cookie to a non-bilibili host,
+            // even if the server answers with a cross-host redirect (OkHttp only strips
+            // Authorization, not a manually-added Cookie header).
+            .addNetworkInterceptor { chain ->
+                val request = chain.request()
+                if (request.header("Cookie") != null &&
+                    !request.url.host.endsWith("bilibili.com", ignoreCase = true)
+                ) {
+                    chain.proceed(request.newBuilder().removeHeader("Cookie").build())
+                } else {
+                    chain.proceed(request)
+                }
+            }
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .header("User-Agent", DESKTOP_UA)
@@ -81,6 +98,15 @@ internal object BiliHttpClient {
  * 默认复用进程级共享实例（[BiliCacheRegistry]），因此多个仓储共用同一份缓存，
  * `BiliNetworkCache.clear()` 能清掉这里写入的所有条目。
  * 构造参数均可显式注入（测试 / 单实例隔离用）。
+ *
+ * ## 登录态（v5）
+ *
+ * 未显式传入 [authProvider] 时默认使用进程级 [AuthRegistry]；登录后请求会自动附带
+ * 登录 Cookie（`SESSDATA` / `bili_jct` / `DedeUserID` 等），并与 buvid3 合并成一个 `Cookie` 头。
+ * **登录态下的 GET 不写接口缓存**：这些响应是按账号个性化的，落盘既可能串号，
+ * 也会在收藏/稍后再看等写操作后读到过期数据；仅保留并发合并与节流。
+ * 缓存 key 仍附带登录身份标签（`u:<mid>` / Cookie 短 hash / `anon`），未登录缓存
+ * 永远不会被登录态复用（反向亦然）。
  */
 class BiliApi(
     context: Context,
@@ -90,9 +116,17 @@ class BiliApi(
     cache: HttpCacheStore? = null,
     private val throttle: RequestThrottle = BiliCacheRegistry.sharedThrottle(),
     deduplicator: InFlightDeduplicator = BiliCacheRegistry.sharedDeduplicator(),
+    private val authProvider: AuthCookieProvider? = null,
 ) {
 
     private val appContext = context.applicationContext
+
+    /**
+     * 实际使用的 Cookie 来源：显式注入优先，否则回退进程级 [AuthRegistry]。
+     * 这样即使调用方只写 `BiliApi(context)`，登录后也会自动带上 Cookie。
+     */
+    private val effectiveAuth: AuthCookieProvider = authProvider ?: AuthRegistry.shared(appContext)
+
     private val buvidFile = File(appContext.filesDir, "buvid3.txt")
     private val buvidMutex = Mutex()
 
@@ -175,13 +209,74 @@ class BiliApi(
         SecurityCooldown.remainingMs().takeIf { it > 0L }?.let { remaining ->
             throw AppException("请求被B站安全策略限制，请约 ${remaining / 1000} 秒后重试", retryable = true)
         }
+        // 登录态响应按账号个性化，不落盘（避免串号 + 写操作后读到旧数据）。
+        val cacheable = !isAuthenticated()
         requests.run(
-            key = CacheKey.of(path, params),
-            ttlMs = BiliCacheTtl.forBiliPath(path),
+            // 身份进入 key：登录 / 未登录 / 不同账号的缓存互不复用。
+            key = CacheKey.of(path, params, identity = authIdentity()),
+            ttlMs = if (cacheable) BiliCacheTtl.forBiliPath(path) else null,
             decode = { raw -> runCatching { json.parseToJsonElement(raw) }.getOrNull() },
             encode = { it.toString() },
         ) {
             fetchRaw(path, params, messageFor)
+        }
+    }
+
+    /**
+     * 表单 POST（写操作：收藏 / 稍后再看 / 关注等）。
+     *
+     * 与 [getRaw] 不同，**永不读写缓存**，也**不参与并发合并**（写操作不可合并），
+     * 只保留全局节流；登录 Cookie 与 GET 一致自动附带。
+     * `csrf` 默认由调用方放进表单；传 `withCsrf = true` 时从 `bili_jct` 自动注入。
+     */
+    suspend fun postForm(
+        path: String,
+        form: Map<String, String>,
+        messageFor: (Long, String?) -> String = ::apiMessage,
+        withCsrf: Boolean = false,
+    ): JsonObject = withContext(Dispatchers.IO) {
+        SecurityCooldown.remainingMs().takeIf { it > 0L }?.let { remaining ->
+            throw AppException("请求被B站安全策略限制，请约 ${remaining / 1000} 秒后重试", retryable = true)
+        }
+        throttle.acquire()
+        val effectiveForm = if (withCsrf) {
+            val csrf = effectiveAuth.csrfToken()?.takeIf { it.isNotBlank() }
+                ?: throw AppException("账号未登录，请先登录", retryable = false)
+            form + ("csrf" to csrf)
+        } else {
+            form
+        }
+        val body = FormBody.Builder().apply {
+            effectiveForm.forEach { (key, value) -> add(key, value) }
+        }.build()
+        val builder = Request.Builder().url((baseUrl + path).toHttpUrl()).post(body)
+        cookieHeader()?.let { builder.header("Cookie", it) }
+        executeJson(builder.build(), messageFor) as? JsonObject ?: JsonObject(emptyMap())
+    }
+
+    /** True 表示当前带登录 Cookie 请求（个性化响应，不走持久化缓存）。 */
+    private fun isAuthenticated(): Boolean = runCatching {
+        effectiveAuth.isLoggedIn() && !effectiveAuth.cookieHeader().isNullOrBlank()
+    }.getOrDefault(false)
+
+    /** 当前是否已登录（只读，不触发网络）。 */
+    fun isLoggedIn(): Boolean = effectiveAuth.isLoggedIn()
+
+    /** `bili_jct`：调用方自拼 POST 表单时可显式注入 `csrf`。 */
+    internal fun csrfToken(): String? = effectiveAuth.csrfToken()
+
+    /** 当前缓存身份标签（`u:<mid>` / Cookie 短 hash / `anon`，不含 Cookie 明文）。 */
+    internal fun authIdentity(): String = cacheIdentityFor(effectiveAuth)
+
+    /** 合并 buvid3 与登录 Cookie；没有登录态时只带 buvid3（与 v4 行为一致）。 */
+    private suspend fun cookieHeader(): String? {
+        val buvid = runCatching { ensureBuvid() }.getOrNull()?.takeIf { it.isNotBlank() }
+        val authCookie = runCatching { effectiveAuth.cookieHeader() }.getOrNull()?.trim().orEmpty()
+        return when {
+            authCookie.isBlank() -> buvid?.let { "buvid3=$it" }
+            authCookie.contains("buvid3=") -> authCookie
+            buvid == null -> authCookie
+            else -> "buvid3=$buvid; $authCookie"
         }
     }
 
@@ -191,15 +286,20 @@ class BiliApi(
         params: Map<String, String>,
         messageFor: (Long, String?) -> String,
     ): JsonElement {
-        val buvid = ensureBuvid()
         val urlBuilder = (baseUrl + path).toHttpUrl().newBuilder()
         params.forEach { (key, value) -> urlBuilder.addQueryParameter(key, value) }
         val requestBuilder = Request.Builder().url(urlBuilder.build()).get()
-        if (!buvid.isNullOrBlank()) {
-            requestBuilder.header("Cookie", "buvid3=$buvid")
-        }
+        cookieHeader()?.let { requestBuilder.header("Cookie", it) }
+        return executeJson(requestBuilder.build(), messageFor)
+    }
+
+    /** 统一执行请求：校验 2xx / `code`，返回 `data` 节点；错误映射成 [AppException]。 */
+    private fun executeJson(
+        request: Request,
+        messageFor: (Long, String?) -> String,
+    ): JsonElement {
         val response = try {
-            client.newCall(requestBuilder.build()).execute()
+            client.newCall(request).execute()
         } catch (e: IOException) {
             throw AppException(e.toUserMessage(), e, retryable = true)
         }
@@ -297,6 +397,17 @@ class BiliApi(
         /** 参数错误 / 无权限 / 不存在：重试没有意义。 */
         private val NON_RETRYABLE_CODES = setOf(-400L, -403L, -404L)
     }
+}
+
+/**
+ * 缓存身份标签（不含 Cookie 明文）：登录身份 `u:<mid>`，无 mid 时用 Cookie 短 hash，
+ * 未登录固定 `anon`。保证登录/未登录、不同账号的接口缓存互不复用。
+ */
+internal fun cacheIdentityFor(provider: AuthCookieProvider): String {
+    (provider as? AuthRegistry)?.let { return it.identityTag() }
+    provider.cookieValue("DedeUserID")?.takeIf { it.isNotBlank() }?.let { return "u:$it" }
+    provider.cookieHeader()?.takeIf { it.isNotBlank() }?.let { return "h:" + sha256Hex(it).take(12) }
+    return AuthRegistry.ANONYMOUS
 }
 
 /** B 站业务 code → 中文提示。 */

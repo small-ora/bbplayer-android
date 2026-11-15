@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -62,7 +65,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.bbplayer.android.util.BiliIds
 import com.bbplayer.android.core.contracts.toUserMessage
+import com.bbplayer.android.core.model.BiliUser
+import com.bbplayer.android.core.model.FavoriteFolder
 import android.widget.Toast
 import com.bbplayer.android.core.model.AudioQuality
 import com.bbplayer.android.core.model.DownloadStatus
@@ -92,7 +98,12 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
+fun PlayerScreen(
+    onBack: () -> Unit,
+    onOpenComments: (String) -> Unit = {},
+    onOpenLogin: () -> Unit = {},
+    onOpenUploader: (Long) -> Unit = {},
+) {
     val graph = LocalAppGraph.current
     val state by graph.playbackController.state.collectAsStateWithLifecycle(initialValue = PlaybackState())
     val track = state.track
@@ -118,6 +129,10 @@ fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
     val sheet = remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val session by graph.authRepository.session().collectAsStateWithLifecycle(initialValue = null as BiliUser?)
+    val loggedIn = session != null
+    var favoriteAid by remember(track.key) { mutableStateOf<Long?>(null) }
+    var watchLaterContains by remember(track.key) { mutableStateOf(false) }
 
     val prefs = graph.preferencesRepository
     val quality by prefs.audioQuality.collectAsStateWithLifecycle(initialValue = AudioQuality.Q192)
@@ -153,6 +168,16 @@ fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
 
     var isFavorite by remember(track.key) { mutableStateOf(false) }
     LaunchedEffect(track.key) { isFavorite = graph.libraryRepository.isFavorite(track.key) }
+
+    // Keep the 稍后再看 toggle in sync with the remote list when the account is logged in.
+    LaunchedEffect(track.key, loggedIn) {
+        watchLaterContains = false
+        if (!loggedIn) return@LaunchedEffect
+        val aid = BiliIds.aidOf(track.bvid) ?: return@LaunchedEffect
+        graph.watchLaterRepository.list().onSuccess { list ->
+            watchLaterContains = list.any { BiliIds.aidOf(it.bvid) == aid }
+        }
+    }
 
     val effectiveLyrics = remember(lyrics, prefsOffset, trackOffset) {
         lyrics?.copy(offsetMs = (lyrics?.offsetMs ?: 0) + prefsOffset + trackOffset)
@@ -393,6 +418,9 @@ fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
             title = "更多",
             options = listOf(
                 "添加到歌单",
+                "收藏到 B 站收藏夹",
+                if (watchLaterContains) "移出稍后再看" else "加入稍后再看",
+                "UP 主主页",
                 if (downloadEntry?.status == DownloadStatus.COMPLETED) "删除下载" else "下载到本地",
                 "查看评论",
                 "分享歌词卡片",
@@ -406,7 +434,69 @@ fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
                 sheet.value = null
                 when (idx) {
                     0 -> sheet.value = "playlist"
-                    1 -> scope.safeLaunch {
+                    1 -> {
+                        val aid = BiliIds.aidOf(track.bvid)
+                        when {
+                            !loggedIn -> {
+                                Toast.makeText(context, "请先登录 Bilibili 账号", Toast.LENGTH_SHORT).show()
+                                onOpenLogin()
+                            }
+                            aid == null -> Toast.makeText(
+                                context,
+                                "无法解析该视频的 aid，暂时不能收藏",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            else -> {
+                                favoriteAid = aid
+                                sheet.value = "favoritePicker"
+                            }
+                        }
+                    }
+                    2 -> {
+                        val aid = BiliIds.aidOf(track.bvid)
+                        when {
+                            !loggedIn -> {
+                                Toast.makeText(context, "请先登录 Bilibili 账号", Toast.LENGTH_SHORT).show()
+                                onOpenLogin()
+                            }
+                            aid == null -> Toast.makeText(
+                                context,
+                                "无法解析该视频的 aid，暂时不能加入稍后再看",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            else -> scope.safeLaunch(onError = {
+                                Toast.makeText(context, it.toUserMessage(), Toast.LENGTH_SHORT).show()
+                            }) {
+                                if (watchLaterContains) {
+                                    graph.watchLaterRepository.remove(aid)
+                                        .onSuccess {
+                                            watchLaterContains = false
+                                            Toast.makeText(context, "已移出稍后再看", Toast.LENGTH_SHORT).show()
+                                        }
+                                        .onFailure {
+                                            Toast.makeText(context, it.toUserMessage(), Toast.LENGTH_SHORT).show()
+                                        }
+                                } else {
+                                    graph.watchLaterRepository.add(aid, track.cid.takeIf { it > 0 })
+                                        .onSuccess {
+                                            watchLaterContains = true
+                                            Toast.makeText(context, "已加入稍后再看", Toast.LENGTH_SHORT).show()
+                                        }
+                                        .onFailure {
+                                            Toast.makeText(context, it.toUserMessage(), Toast.LENGTH_SHORT).show()
+                                        }
+                                }
+                            }
+                        }
+                    }
+                    3 -> {
+                        if (track.uploaderMid > 0) {
+                            onOpenUploader(track.uploaderMid)
+                        } else {
+                            Toast.makeText(context, "该视频没有 UP 主信息", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    4 -> scope.safeLaunch {
                         val result: Result<Unit> = when (downloadEntry?.status) {
                             DownloadStatus.COMPLETED -> graph.downloadRepository.remove(track.key)
                             DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> {
@@ -419,13 +509,13 @@ fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
                             Toast.makeText(context, it.toUserMessage(), Toast.LENGTH_SHORT).show()
                         }
                     }
-                    2 -> onOpenComments(track.bvid)
-                    3 -> scope.safeLaunch {
+                    5 -> onOpenComments(track.bvid)
+                    6 -> scope.safeLaunch {
                         val line = currentLine.text.ifBlank { track.displayTitle }
                         val ok = ShareCard.share(context, track, line, currentLine.translation)
                         Toast.makeText(context, if (ok) "已打开分享" else "生成分享卡片失败", Toast.LENGTH_SHORT).show()
                     }
-                    4 -> scope.safeLaunch {
+                    7 -> scope.safeLaunch {
                         val enable = !desktopLyricsOn
                         prefs.setDesktopLyricsEnabled(enable)
                         if (enable) {
@@ -444,15 +534,18 @@ fun PlayerScreen(onBack: () -> Unit, onOpenComments: (String) -> Unit = {}) {
                             DesktopLyricsService.stop(context)
                         }
                     }
-                    5 -> sheet.value = "searchLyrics"
-                    6 -> sheet.value = "pasteLyrics"
-                    7 -> scope.safeLaunch { graph.playbackController.playQueue(state.queue, state.currentIndex) }
+                    8 -> sheet.value = "searchLyrics"
+                    9 -> sheet.value = "pasteLyrics"
+                    10 -> scope.safeLaunch { graph.playbackController.playQueue(state.queue, state.currentIndex) }
                 }
             },
             onDismiss = { sheet.value = null },
             dark = true,
         )
         "playlist" -> AddToPlaylistDialog(graph = graph, track = track, onDismiss = { sheet.value = null })
+        "favoritePicker" -> favoriteAid?.let { aid ->
+            FavoritePickerDialog(graph = graph, aid = aid, onDismiss = { sheet.value = null })
+        }
         "searchLyrics" -> LyricsSearchDialog(
             graph = graph,
             track = track,
@@ -581,6 +674,8 @@ private fun QualityBadge(quality: AudioQuality) {
     ) {
         Text(
             text = when (quality) {
+                AudioQuality.HI_RES -> "HR"
+                AudioQuality.DOLBY -> "DB"
                 AudioQuality.Q192 -> "HQ"
                 AudioQuality.Q128 -> "SQ"
                 AudioQuality.Q64 -> "LQ"
@@ -678,8 +773,10 @@ private fun OptionDialog(
         Column(
             Modifier
                 .fillMaxWidth()
+                .heightIn(max = 560.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(if (dark) Color(0xFF262626) else SaltTheme.colors.popup)
+                .verticalScroll(rememberScrollState())
                 .padding(20.dp),
         ) {
             Text(title, color = if (dark) Color.White else SaltTheme.colors.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
@@ -763,6 +860,153 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, onDismiss: () -> 
     }
 }
 
+
+@Composable
+private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var folders by remember(aid) { mutableStateOf<List<FavoriteFolder>?>(null) }
+    var original by remember(aid) { mutableStateOf<Set<Long>>(emptySet()) }
+    var selected by remember(aid) { mutableStateOf<Set<Long>>(emptySet()) }
+    var error by remember(aid) { mutableStateOf<String?>(null) }
+    var saving by remember(aid) { mutableStateOf(false) }
+    var attempt by remember(aid) { mutableStateOf(0) }
+
+    LaunchedEffect(aid, attempt) {
+        folders = null
+        error = null
+        val folderResult = graph.favoritesRepository.folders()
+        if (folderResult.isFailure) {
+            error = folderResult.exceptionOrNull()?.toUserMessage() ?: "读取收藏夹失败，请重试"
+            return@LaunchedEffect
+        }
+        val favoriteResult = graph.favoritesRepository.isFavorited(aid)
+        if (favoriteResult.isFailure) {
+            error = favoriteResult.exceptionOrNull()?.toUserMessage() ?: "读取收藏状态失败，请重试"
+            return@LaunchedEffect
+        }
+        val ids = favoriteResult.getOrDefault(emptyList()).toSet()
+        folders = folderResult.getOrDefault(emptyList())
+        original = ids
+        selected = ids
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 560.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF262626))
+                .padding(20.dp),
+        ) {
+            Text("收藏到 B 站收藏夹", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(10.dp))
+            when {
+                error != null -> {
+                    Text(error!!, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                    Spacer(Modifier.height(10.dp))
+                    SaltPill(text = "重试", onClick = { attempt++ })
+                }
+                folders == null -> Text("正在读取收藏夹…", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                folders!!.isEmpty() -> Text(
+                    "还没有收藏夹，请先在 B 站网页端创建",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp,
+                )
+                else -> {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 360.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        folders!!.forEach { folder ->
+                            val checked = folder.id in selected
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        selected = if (checked) selected - folder.id else selected + folder.id
+                                    }
+                                    .padding(horizontal = 6.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    Modifier
+                                        .size(20.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(
+                                            if (checked) Color(0xFF7FB8FF) else Color.White.copy(alpha = 0.12f)
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (checked) {
+                                        Icon(
+                                            Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = Color(0xFF101010),
+                                            modifier = Modifier.size(15.dp),
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        folder.title,
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        "${folder.mediaCount} 个视频${if (folder.isDefault) " · 默认收藏夹" else ""}",
+                                        color = Color.White.copy(alpha = 0.5f),
+                                        fontSize = 11.sp,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        SaltPill(text = "取消", onClick = onDismiss)
+                        Spacer(Modifier.width(10.dp))
+                        SaltPill(
+                            text = if (saving) "保存中…" else "保存",
+                            selected = !saving,
+                            onClick = {
+                                if (!saving) {
+                                    val add = (selected - original).toList()
+                                    val remove = (original - selected).toList()
+                                    if (add.isEmpty() && remove.isEmpty()) {
+                                        Toast.makeText(context, "收藏夹未修改", Toast.LENGTH_SHORT).show()
+                                        onDismiss()
+                                    } else {
+                                        saving = true
+                                        scope.safeLaunch(onError = {
+                                            saving = false
+                                            error = it.toUserMessage()
+                                        }) {
+                                            graph.favoritesRepository.updateFavorite(aid, add, remove)
+                                                .onSuccess {
+                                                    Toast.makeText(context, "已更新收藏夹", Toast.LENGTH_SHORT).show()
+                                                    onDismiss()
+                                                }
+                                                .onFailure { error = it.toUserMessage() }
+                                            saving = false
+                                        }
+                                    }
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun PasteLyricsDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {

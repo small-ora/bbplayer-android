@@ -1,6 +1,7 @@
 package com.bbplayer.android.data
 
 import com.bbplayer.android.core.contracts.AppException
+import com.bbplayer.android.core.model.AudioQuality
 import com.bbplayer.android.core.model.AudioStream
 import com.bbplayer.android.core.model.SearchPage
 import com.bbplayer.android.core.model.Track
@@ -130,38 +131,39 @@ internal object BiliMapper {
 
     /**
      * `playurl` 接口 → AudioStream。
-     * 优先级：dash.audio（普通 AAC）> dash.dolby.audio > dash.flac.audio > durl（老视频回退）。
+     *
+     * - [preferHighQuality] = true（已登录且用户开启高音质）：`dash.flac.audio` →
+     *   `dash.dolby.audio` → 常规 AAC 最高档 → durl（老视频）；
+     * - false（未登录 / 未开启）：保持 v4 行为，只在 `dash.audio` 里取请求档位或最高 AAC；
+     *   不会因为服务端返回了 flac/dolby 就擅自升级档位。
+     *
+     * 返回的 `qualityId` 始终是**实际选中的档位**（30251/30250/30280…）。
      */
-    fun audioStream(data: JsonObject, requestedQualityId: Int): AudioStream {
+    fun audioStream(
+        data: JsonObject,
+        requestedQualityId: Int,
+        preferHighQuality: Boolean = false,
+    ): AudioStream {
         val dash = data.objOrNull("dash")
-        val candidates = mutableListOf<AudioCandidate>()
-        dash?.arrOrNull("audio").toObjectList().forEach { obj ->
-            audioCandidate(obj)?.let(candidates::add)
-        }
-        if (candidates.isEmpty()) {
-            dash?.objOrNull("dolby")?.let { dolby ->
-                val audio = dolby.objOrNull("audio")
-                if (audio != null) audioCandidate(audio)?.let(candidates::add)
-                dolby.arrOrNull("audio").toObjectList().forEach { obj ->
-                    audioCandidate(obj)?.let(candidates::add)
-                }
-            }
-        }
-        if (candidates.isEmpty()) {
-            dash?.objOrNull("flac")?.let { flac ->
-                when (val audio = flac.get("audio")) {
-                    is JsonObject -> audioCandidate(audio)?.let(candidates::add)
-                    is JsonArray -> audio.toObjectList().forEach { obj ->
-                        audioCandidate(obj)?.let(candidates::add)
-                    }
-
-                    else -> Unit
-                }
-            }
-        }
         val loudness = data.objOrNull("volume")?.doubleOrNull("measured_i", "measuredI")
-        if (candidates.isNotEmpty()) {
-            val chosen = AudioStreamSelector.select(candidates, requestedQualityId)
+        val aac = dash?.arrOrNull("audio").toObjectList().mapNotNull { audioCandidate(it) }
+        // 关闭高音质：按请求档位，不存在时取最高 AAC（与 v4 行为一致）。
+        val aacChosen = aac.takeIf { it.isNotEmpty() }
+            ?.let { AudioStreamSelector.select(it, requestedQualityId) }
+        // 开启高音质：无损优先；无损不可用时也必须回退到「最高 AAC」而不是用户请求的低档。
+        val highestAac = aac.maxByOrNull { it.qualityId }
+        val chosen = if (preferHighQuality) {
+            flacCandidates(dash).firstOrNull()
+                ?: dolbyCandidates(dash).firstOrNull()
+                ?: highestAac
+        } else {
+            // 保持 v4 行为：仅当服务端没有任何普通 AAC 时才回退 dolby/flac（老视频兼容）。
+            aacChosen
+                ?: dolbyCandidates(dash).firstOrNull()
+                ?: flacCandidates(dash).firstOrNull()
+        }
+
+        if (chosen != null) {
             return AudioStream(
                 url = chosen.url,
                 backupUrls = chosen.backupUrls,
@@ -184,10 +186,25 @@ internal object BiliMapper {
         )
     }
 
-    private fun audioCandidate(obj: JsonObject): AudioCandidate? {
+    /** `dash.flac.audio`（对象或数组）→ 无损候选；缺 id 时按 30251 标注。 */
+    private fun flacCandidates(dash: JsonObject?): List<AudioCandidate> =
+        candidatesOf(dash?.objOrNull("flac")?.get("audio"), AudioQuality.HI_RES.id)
+
+    /** `dash.dolby.audio`（对象或数组）→ 杜比候选；缺 id 时按 30250 标注。 */
+    private fun dolbyCandidates(dash: JsonObject?): List<AudioCandidate> =
+        candidatesOf(dash?.objOrNull("dolby")?.get("audio"), AudioQuality.DOLBY.id)
+
+    private fun candidatesOf(element: JsonElement?, fallbackQualityId: Int): List<AudioCandidate> =
+        when (element) {
+            is JsonObject -> listOfNotNull(audioCandidate(element, fallbackQualityId))
+            is JsonArray -> element.toObjectList().mapNotNull { audioCandidate(it, fallbackQualityId) }
+            else -> emptyList()
+        }
+
+    private fun audioCandidate(obj: JsonObject, fallbackQualityId: Int? = null): AudioCandidate? {
         val url = obj.strOrNull("baseUrl", "base_url", "url")?.takeIf { it.isNotBlank() } ?: return null
         return AudioCandidate(
-            qualityId = obj.intOrNull("id") ?: 0,
+            qualityId = obj.intOrNull("id")?.takeIf { it > 0 } ?: fallbackQualityId ?: 0,
             url = url,
             backupUrls = obj.stringList("backupUrl", "backup_url"),
         )

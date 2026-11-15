@@ -40,7 +40,9 @@ data class AudioStream(
 enum class AudioQuality(val id: Int, val label: String) {
     Q64(30216, "64K"),
     Q128(30232, "128K"),
-    Q192(30280, "192K");
+    Q192(30280, "192K"),
+    DOLBY(30250, "杜比全景声"),
+    HI_RES(30251, "Hi-Res 无损");
 
     companion object {
         fun fromId(id: Int): AudioQuality = entries.firstOrNull { it.id == id } ?: Q192

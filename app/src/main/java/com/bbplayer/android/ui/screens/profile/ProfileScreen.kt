@@ -18,24 +18,37 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
+import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.Format
 import com.bbplayer.android.core.model.DailyStat
 import com.bbplayer.android.core.model.ListeningSummary
 import com.bbplayer.android.core.model.Track
+import com.bbplayer.android.core.contracts.toUserMessage
+import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
+import com.bbplayer.android.ui.components.CoverImage
 import com.bbplayer.android.ui.components.LargeTitle
+import com.bbplayer.android.ui.components.SaltPill
 import com.moriafly.salt.ui.Item
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
@@ -51,16 +64,28 @@ fun ProfileScreen(
     onOpenHistory: () -> Unit = {},
     onOpenDownloads: () -> Unit = {},
     onOpenImport: () -> Unit = {},
+    onOpenLogin: () -> Unit = {},
 ) {
     val graph = LocalAppGraph.current
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val summary by graph.historyRepository.summary().collectAsStateWithLifecycle(initialValue = ListeningSummary())
     val daily by graph.historyRepository.dailyStats(84).collectAsStateWithLifecycle(initialValue = emptyList())
+    val session by graph.authRepository.session().collectAsStateWithLifecycle(initialValue = null as BiliUser?)
+    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 140.dp),
     ) {
         item { LargeTitle("我的") }
+        item {
+            AccountCard(
+                user = session,
+                onOpenLogin = onOpenLogin,
+                onLogout = { showLogoutConfirm = true },
+            )
+        }
         item {
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding)) {
                 RoundedColumn(
@@ -158,6 +183,119 @@ fun ProfileScreen(
                 Spacer(Modifier.height(4.dp))
                 Text("数据来自 Bilibili · 界面风格致敬椒盐音乐", color = SaltTheme.colors.subText.copy(alpha = 0.6f), fontSize = 11.sp)
             }
+        }
+    }
+
+    if (showLogoutConfirm) {
+        Dialog(onDismissRequest = { showLogoutConfirm = false }) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SaltTheme.colors.popup)
+                    .padding(20.dp),
+            ) {
+                Text("退出登录？", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "退出后将清除本机保存的加密凭据，收藏夹、合集与稍后再看需要重新登录才能查看。",
+                    color = SaltTheme.colors.subText,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                )
+                Spacer(Modifier.height(18.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    SaltPill(text = "取消", onClick = { showLogoutConfirm = false })
+                    Spacer(Modifier.size(10.dp))
+                    SaltPill(text = "退出登录", selected = true, onClick = {
+                        showLogoutConfirm = false
+                        scope.safeLaunch(onError = { Toast.makeText(context, it.toUserMessage(), Toast.LENGTH_SHORT).show() }) {
+                            graph.authRepository.logout()
+                            Toast.makeText(context, "已退出登录", Toast.LENGTH_SHORT).show()
+                        }
+                    })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -> Unit) {
+    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
+        RoundedColumn(
+            modifier = Modifier.fillMaxWidth(),
+            paddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            if (user == null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(52.dp).clip(RoundedCornerShape(26.dp))
+                            .background(SaltTheme.colors.subBackground),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        androidx.compose.material3.Icon(
+                            Icons.Rounded.Person, null,
+                            tint = SaltTheme.colors.subText,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    Spacer(Modifier.size(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("未登录", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "登录后同步收藏夹、合集、稍后再看与高音质",
+                            color = SaltTheme.colors.subText,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                        )
+                    }
+                    SaltPill(text = "登录 Bilibili", selected = true, onClick = onOpenLogin)
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CoverImage(
+                        url = user.avatarUrl,
+                        modifier = Modifier.size(52.dp),
+                        corner = 26.dp,
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                user.name,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            Spacer(Modifier.size(6.dp))
+                            SaltPill(text = "Lv.${user.level}")
+                            if (user.vip) {
+                                Spacer(Modifier.size(6.dp))
+                                SaltPill(text = "大会员")
+                            }
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            "UID ${user.mid}",
+                            color = SaltTheme.colors.subText,
+                            fontSize = 11.sp,
+                        )
+                    }
+                    Spacer(Modifier.size(8.dp))
+                    SaltPill(text = "退出登录", onClick = onLogout)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "凭据仅保存在本机 Keystore 加密存储，界面不会显示 Cookie。",
+                color = SaltTheme.colors.subText.copy(alpha = 0.7f),
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+            )
         }
     }
 }

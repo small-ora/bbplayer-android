@@ -1,0 +1,62 @@
+# 验收包 v5 — 登录体系（扫码 + Cookie）、收藏夹/合集/稍后再看/UP主、高音质、历史上报
+
+**级别**：L3（鉴权/凭据红线）· 手机端
+**状态**：**已实现、构建与单测通过；账号态 E2E 需用户用有效凭据复验**（见 §4）
+
+## 1. 用户决策（已确认）
+扫码登录 + Cookie 粘贴；收藏夹/合集/稍后再看/高音质/UP主/历史上报（默认关）；凭据 Keystore AES-GCM 加密、仅本地、退出即删除。
+
+## 2. 交付内容
+
+| 模块 | 内容 |
+| --- | --- |
+| 登录 | 扫码登录（zxing 渲染 + 2s 轮询 + 150s 过期 + 刷新）、Cookie 粘贴登录（服务端 nav 校验后才保存）、退出登录、启动恢复登录态 |
+| 凭据安全 | AndroidKeyStore AES-GCM 加密存本地（独立 SharedPreferences，base64(iv+ciphertext)）；不打印 Cookie；退出/校验失效清空 |
+| Cookie 注入 | 所有 `api.bilibili.com` 请求自动合并登录 Cookie（含 csrf 写操作）；缓存 key 带 `u:<mid>` 身份隔离，登录/匿名缓存不混用 |
+| 收藏夹 | 列表（含默认夹）、内容分页、播放、播放页「收藏到 B 站收藏夹」多选、是否已收藏 |
+| 合集/系列 | 我的合集列表、内容分页播放（seasons_series_list + seasons_archives_list，旧接口兜底） |
+| 稍后再看 | 列表、播放页「加入稍后再看」、移除、清空 |
+| UP 主 | 主页资料/粉丝数/关注或取关、视频分页（WBI 签名） |
+| 高音质 | 登录 + 设置开启后优先 FLAC/Dolby，失败回退最高 AAC；播放页 HR/DB 标识 |
+| 历史上报 | 设置开关（默认关）；开启且登录时每 20s 上报进度，失败静默 |
+| UI | 我的账号卡、登录页、音乐库收藏夹/合集/稍后再看入口、UP 主页、设置账号/高音质/隐私分组 |
+
+## 3. 验证证据
+
+- **单测**：data 344（v5 新增 88+）、app 2（bvid→aid）、playback 108、lyrics 160；全量门禁见 `.ai/evidence/final-gate-v5.log`。
+- **真机（未登录态）**：
+  - 我的页账号卡：未登录 + 登录入口 + 安全提示（`shots/v5-01-profile-account`）；
+  - 登录页：扫码二维码正常生成/渲染、"未扫码"态与 150s/刷新提示（`/tmp/v5-login.png` 已存档为 `shots/v5-02-login-qr.png`）；
+  - 音乐库：收藏夹/合集 tab、稍后再看入口，未登录显示「登录后查看」；
+  - 设置：账号分组（未登录 + 扫码/Cookie 入口）；
+  - 播放页更多菜单：收藏到 B 站收藏夹 / 加入稍后再看 / UP 主主页 已出现；
+  - **负向安全**：粘贴无效 Cookie 时服务端 nav 返回 `-101`，界面提示「Cookie 无效或已过期」，**不落盘**；logcat 全量搜索 `SESSDATA/bili_jct/DedeUserID` 命中 0。
+- **凭据红线的真机核查**：登录失败后 `files/`、`shared_prefs/` 无任何凭据文件；仅成功的凭据会写入加密存储。
+
+## 4. 账号态 E2E 尚未完成（需要你）
+你提供的 Cookie 经 B 站 `nav` 校验为 **未登录（-101）**，无法用于验证收藏夹/合集/稍后再看/UP主/高音质。请在以下任一方式提供有效凭据后复验：
+1. 打开 App → 我的 → 登录 Bilibili → **扫码登录**（最安全）；
+2. 或从已登录 bilibili.com 浏览器复制 **新鲜** 的 `SESSDATA; bili_jct; DedeUserID; DedeUserID__ckMd5` 粘贴到 Cookie 页。
+复验点：收藏夹列表与播放、加入稍后再看、UP主关注、设置开启高音质后播放页显示 HR/DB、开关历史记录上报。
+
+## 5. 已知限制
+- WBI 空间接口可能需要 `dm_img_*` 风控参数（未实现），UP 主页在部分网络下可能失败；失败有错误提示。
+- 收藏夹/合集接口为非公开接口，字段/形状变化需随 B 站调整（已做多形状兼容与兜底）。
+- 高音质依赖账号权限（大会员/版权），无权限时自动回退。
+- 手机验证码登录未做（极验）。
+- 平板不做；多账号切换不做。
+
+## 6. 安全审查
+见 `.ai/spec-android-native/SECURITY-REVIEW-v5.md`（独立 fresh subagent）：P0/P1 处置见该文件与提交记录。
+
+---
+
+## 7. 独立安全审查结果与处置（`.ai/spec-android-native/SECURITY-REVIEW-v5.md`）
+
+- 审查者：fresh subagent（未参与实现，未看实现过程）；审查对象：v5 全部工作区改动。
+- 结论：**P0/P1 = 0**，未发现影响安全性的问题；P2 加固建议 5 条。
+- 已核实：真 Keystore AES-GCM（随机 IV + 密文 IV 前置）、落盘无明文、密钥失效安全清空、logout 删密文+key、数据层无日志、凭据只发 api/passport.bilibili.com、写操作均带 csrf、WBI 合文档、无新增权限/cleartext、无 WebView/剪贴板。
+- 处置：
+  - **P2-1 已修**：`persist()` 检查 `store.save()` 结果，失败回滚内存态并返回「登录凭据保存失败，请重试」，不再假成功；
+  - **P2-4 已修**：OkHttp 新增 network interceptor，非 `*.bilibili.com` host 一律剥离 Cookie（防跨域重定向外发）；
+  - P2-2（运行期 -101 不即时清凭据）、P2-3（节流前身份采样的 TOCTOU）、P2-5（Keystore 无 instrumentation 测试）**记录为后续加固项**，不阻断本版验收。

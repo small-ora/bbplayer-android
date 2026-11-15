@@ -10,6 +10,9 @@ import com.bbplayer.android.core.model.AudioStream
 import com.bbplayer.android.core.model.SearchPage
 import com.bbplayer.android.core.model.Track
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 /**
@@ -27,10 +30,15 @@ import kotlinx.coroutines.launch
  */
 class BiliMusicRepository(
     private val api: BiliApi,
+    /** 设置里的「高音质」开关（默认关闭）；仅在已登录时生效。 */
+    private val highQualityAudio: Flow<Boolean> = flowOf(false),
 ) : MusicRepository {
 
     /** 便捷构造：由 AppContainer 直接调用。 */
-    constructor(context: Context) : this(BiliApi(context))
+    constructor(
+        context: Context,
+        highQualityAudio: Flow<Boolean> = flowOf(false),
+    ) : this(BiliApi(context), highQualityAudio)
 
     /**
      * 预热 buvid3（App 启动时调用可减少首次搜索的等待）。
@@ -96,6 +104,9 @@ class BiliMusicRepository(
         val requested = quality ?: AudioQuality.fromId(
             track.qualityId.takeIf { it > 0 } ?: AudioQuality.DEFAULT.id,
         )
+        // 高音质只在「已登录 + 用户开启」时尝试 FLAC/Dolby，否则保持最高 AAC。
+        val preferHighQuality = api.isLoggedIn() &&
+            runCatching { highQualityAudio.first() }.getOrDefault(false)
         // 搜索结果 / 排行数据的 Track 可能没有 cid，播放时用分 P 接口兜底。
         val cid = if (track.cid > 0) track.cid else resolveFirstCid(track.bvid)
         val data = api.getObject(
@@ -109,7 +120,7 @@ class BiliMusicRepository(
                 "qlt" to requested.id.toString(),
             ),
         )
-        BiliMapper.audioStream(data, requested.id)
+        BiliMapper.audioStream(data, requested.id, preferHighQuality = preferHighQuality)
     }
 
     override suspend fun getVideoDetail(bvid: String): Result<Track> = result {

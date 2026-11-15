@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bbplayer.android.core.model.AccentPreset
+import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.model.AudioQuality
 import com.bbplayer.android.core.model.LyricSource
 import com.bbplayer.android.core.model.LyricVisualStyle
@@ -54,7 +55,11 @@ import com.moriafly.salt.ui.Text
 import com.bbplayer.android.core.safeLaunch
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenDownloads: () -> Unit = {},
+    onOpenLogin: () -> Unit = {},
+) {
     val graph = LocalAppGraph.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -79,6 +84,9 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
     val autoUpdate by prefs.autoCheckUpdate.collectAsStateWithLifecycle(initialValue = true)
     val lyricSource by prefs.lyricSource.collectAsStateWithLifecycle(initialValue = LyricSource.AUTO)
     val importBatchSize by prefs.importBatchSize.collectAsStateWithLifecycle(initialValue = 50)
+    val highQuality by prefs.highQualityAudio.collectAsStateWithLifecycle(initialValue = false)
+    val reportProgress by prefs.reportPlaybackProgress.collectAsStateWithLifecycle(initialValue = false)
+    val session by graph.authRepository.session().collectAsStateWithLifecycle(initialValue = null as BiliUser?)
 
     var dialog by remember { mutableStateOf<String?>(null) }
     var toast by remember { mutableStateOf<String?>(null) }
@@ -108,6 +116,28 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
     ) {
         item { SmallTopBar(title = "设置", onBack = onBack) }
 
+        item { SettingsGroup("账号") }
+        item {
+            RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                val user = session
+                SettingRow(
+                    title = "Bilibili 账号",
+                    value = if (user == null) "未登录" else "${user.name} · Lv.${user.level}",
+                ) {}
+                if (user == null) {
+                    SettingRow("登录 Bilibili", "扫码登录 / Cookie 粘贴") { onOpenLogin() }
+                } else {
+                    SettingRow("退出登录", "清除本机加密凭据") {
+                        scope.safeLaunch(onError = { toast = it.toUserMessage() }) {
+                            graph.authRepository.logout()
+                            toast = "已退出登录"
+                        }
+                    }
+                }
+                SettingRow("凭据安全", "仅本机 Keystore 加密保存，界面不显示 Cookie") {}
+            }
+        }
+
         item { SettingsGroup("外观") }
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
@@ -130,6 +160,36 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
                 }
                 SettingSwitchRow("断点续播", "记住上次播放的位置", resume) {
                     scope.safeLaunch { prefs.setResumeOnStart(it) }
+                }
+                SettingSwitchRow(
+                    title = "高音质（登录后可用）",
+                    subtitle = "登录后优先 FLAC / 杜比，不可用时自动回退到最高 AAC",
+                    checked = highQuality,
+                ) { enabled ->
+                    if (enabled && session == null) {
+                        toast = "请先登录 Bilibili 账号"
+                        onOpenLogin()
+                    } else {
+                        scope.safeLaunch { prefs.setHighQualityAudio(enabled) }
+                    }
+                }
+            }
+        }
+
+        item { SettingsGroup("隐私") }
+        item {
+            RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                SettingSwitchRow(
+                    title = "上报播放进度到 B 站历史",
+                    subtitle = "默认关闭。开启且已登录时，播放进度会同步到 B 站播放历史；关闭后不发任何请求",
+                    checked = reportProgress,
+                ) { enabled ->
+                    if (enabled && session == null) {
+                        toast = "请先登录 Bilibili 账号"
+                        onOpenLogin()
+                    } else {
+                        scope.safeLaunch { prefs.setReportPlaybackProgress(enabled) }
+                    }
                 }
             }
         }
