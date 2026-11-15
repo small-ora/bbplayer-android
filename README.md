@@ -10,6 +10,13 @@
 
 ## 功能
 
+### v3 新增（缓存 / 逐字 / 元数据）
+
+- **接口缓存与限流**：搜索、详情、分 P、playurl、榜单、相关、联想/热搜、评论、字幕、外部歌单、更新检查统一缓存（TTL + LRU + 磁盘持久化，`filesDir/api_cache`）；同 key 并发合并；**请求节流 350ms±抖动**；命中缓存不再发请求；错误不缓存；设置 → 缓存可查看/清除
+- **风控保护**：命中 B 站 `-412` 后全局冷却 60 秒并给出友好提示；歌单批量匹配改为 1200ms±抖动、失败 30s 退避、连续风控自动中止
+- **真实逐字歌词**：QQ 音乐 QRC（hex 密文 → QQ 私有 Triple-DES 变体 + zlib）、网易云 YRC；无逐字时按行均匀估算并标记 `:estimated`，UI 逐字渐变对普通 LRC 也生效
+- **导出元数据**：导出的 `.m4a` 嵌入标题/艺术家/专辑/歌词/封面（MP4 iTunes atoms），保留原始标签，尾部数据原样复制不破坏播放
+
 ### v2 新增（非登录功能补齐）
 
 - **下载与离线**：歌曲下载（Range 断点续传、并发 1–3）、下载管理（进行中/已完成/失败、取消/删除/清空）、**无网络播放已下载曲目**、导出到 `Music/BBPlayer`（附同名 `.lrc`）
@@ -46,7 +53,7 @@
 环境：JDK 17、Android SDK（compileSdk 36 / build-tools 36）、Gradle 8.13（wrapper）。
 
 ```bash
-# 单元测试（data / playback / lyrics 三个模块，共 311 个用例）
+# 单元测试（data / playback / lyrics 三个模块，共 404 个用例）
 ./gradlew :data:testDebugUnitTest :playback:testDebugUnitTest :lyrics:testDebugUnitTest
 
 # Debug APK

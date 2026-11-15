@@ -80,6 +80,9 @@ class RealAppGraph(context: Context, private val appScope: CoroutineScope) : App
 
     override val backupRepository: BackupRepository = ZipBackupRepository(appContext)
 
+    override val networkCacheRepository: com.bbplayer.android.core.contracts.NetworkCacheRepository =
+        com.bbplayer.android.data.cache.BiliNetworkCache(appContext)
+
     override val playbackController: PlaybackController = PlaybackControllerImpl(
         appContext = appContext,
         scope = appScope,

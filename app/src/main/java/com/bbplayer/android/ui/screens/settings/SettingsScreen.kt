@@ -19,6 +19,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -170,6 +171,30 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
             }
         }
 
+        item { SettingsGroup("缓存") }
+        item {
+            RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                var cacheSize by remember { mutableStateOf(0L) }
+                var cacheCount by remember { mutableStateOf(0) }
+                LaunchedEffect(Unit) {
+                    cacheSize = graph.networkCacheRepository.sizeBytes()
+                    cacheCount = graph.networkCacheRepository.entryCount()
+                }
+                SettingRow(
+                    title = "接口缓存",
+                    value = "${cacheCount} 条 · ${formatBytes(cacheSize)}",
+                ) {}
+                SettingRow("清除接口缓存", "清空搜索/详情/歌词等接口缓存") {
+                    scope.safeLaunch {
+                        val cleared = graph.networkCacheRepository.clear()
+                        cacheSize = graph.networkCacheRepository.sizeBytes()
+                        cacheCount = graph.networkCacheRepository.entryCount()
+                        toast = "已清除 $cleared 条接口缓存"
+                    }
+                }
+            }
+        }
+
         item { SettingsGroup("关于") }
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
@@ -311,6 +336,12 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit = {}) {
             onDismiss = { dialog = null },
         )
     }
+}
+
+private fun formatBytes(bytes: Long): String = when {
+    bytes >= 1024L * 1024L -> String.format(java.util.Locale.US, "%.1f MB", bytes / 1024.0 / 1024.0)
+    bytes >= 1024L -> String.format(java.util.Locale.US, "%.0f KB", bytes / 1024.0)
+    else -> "$bytes B"
 }
 
 @Composable
