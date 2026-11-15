@@ -10,19 +10,28 @@ import java.security.MessageDigest
  * - 参数按 key 排序（调用方传 Map 的顺序不影响结果）；
  * - key / value 统一 URL 编码（中文、空格等差异被归一）；
  * - `buvid3` / `buvid4` / `cookie` / `csrf` 等身份参数不进 key（每次启动都会变，
- *   且与内容无关，写进 key 会让缓存永久失效）。
+ *   且与内容无关，写进 key 会让缓存永久失效）；
+ * - 登录身份由 [of] 的 `identity` 显式传入（`u:<mid>` / Cookie 短 hash / `anon`），
+ *   **未登录与不同账号的接口缓存绝不互相复用**。identity 本身不含 Cookie 明文。
  */
 internal object CacheKey {
 
     private val IGNORED_PARAMS = setOf("buvid3", "buvid4", "cookie", "csrf", "csrf_token")
 
-    /** `endpoint + 规范化查询串`，例如 `/x/web-interface/view?bvid=BV1xx`。 */
-    fun of(path: String, params: Map<String, String>): String {
+    /**
+     * `[身份] endpoint + 规范化查询串`，例如 `[u:42] /x/web-interface/view?bvid=BV1xx`。
+     *
+     * [identity] 为空表示匿名语义（与 `anon` 不同，保留给非 B 站接口/测试），
+     * 登录态统一传 `u:<mid>` 或 Cookie 短 hash。
+     */
+    fun of(path: String, params: Map<String, String>, identity: String? = null): String {
         val query = params.entries
             .filter { it.key.isNotBlank() && it.key.lowercase() !in IGNORED_PARAMS }
             .sortedBy { it.key }
             .joinToString("&") { (key, value) -> "${encode(key)}=${encode(value)}" }
-        return if (query.isEmpty()) path else "$path?$query"
+        val base = if (query.isEmpty()) path else "$path?$query"
+        val tag = identity?.trim()?.takeIf { it.isNotEmpty() } ?: return base
+        return "[$tag] $base"
     }
 
     /** 完整 URL 场景（外站接口 / 短链），`scheme` 用于区分请求类型。 */
