@@ -10,3 +10,7 @@ captures/
 *.aab
 .ai/evidence/
 .ai/*/evidence/
+
+.ai/recon/saltplayer/
+.ai/**/evidence/
+.ai/scripts/../evidence/
