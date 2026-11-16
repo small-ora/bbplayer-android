@@ -206,7 +206,7 @@ fun LibraryScreen(
                 )
             } else {
                 LargeTitle(
-                    title = "音乐库",
+                    title = "曲库",
                     actions = {
                         IconAction(Icons.Rounded.Download, "已下载", onClick = onOpenDownloads)
                         IconAction(Icons.Rounded.PlaylistAdd, "导入歌单", onClick = onOpenImport)

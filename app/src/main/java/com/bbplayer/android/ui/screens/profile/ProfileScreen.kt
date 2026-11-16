@@ -109,7 +109,10 @@ fun ProfileScreen(
         }
         item {
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 12.dp)) {
-                RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                RoundedColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    paddingValues = PaddingValues(0.dp),
+                ) {
                     ProfileEntryRow(
                         icon = Icons.Rounded.BarChart,
                         title = "收听排行",
@@ -189,8 +192,9 @@ fun ProfileScreen(
 private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
     RoundedColumn(
         modifier = Modifier.fillMaxWidth(),
-        paddingValues = PaddingValues(16.dp),
+        paddingValues = PaddingValues(0.dp),
     ) {
+        Column(Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("累计收听", color = SaltTheme.colors.subText, fontSize = BbTokens.CaptionSize)
@@ -218,6 +222,7 @@ private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
             color = SaltTheme.colors.subText.copy(alpha = BbTokens.CaptionAlpha),
             fontSize = BbTokens.CaptionSize,
         )
+        }
     }
 }
 
@@ -326,8 +331,9 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
     Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
         RoundedColumn(
             modifier = Modifier.fillMaxWidth(),
-            paddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+            paddingValues = PaddingValues(0.dp),
         ) {
+          Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
             if (user == null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -397,6 +403,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
             )
+          }
         }
     }
 }

@@ -289,10 +289,10 @@ fun PlayerScreen(
             }
 
             // ---- top bar ----
-            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(
                     Icons.Rounded.KeyboardArrowDown, "收起", onClick = onBack,
-                    tint = onPlayerColor, size = 40,
+                    tint = onPlayerColor, size = 36,
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -315,7 +315,7 @@ fun PlayerScreen(
                 }
                 IconAction(
                     Icons.Rounded.MoreHoriz, "更多", onClick = { sheet.value = "more" },
-                    tint = onPlayerColor, size = 40,
+                    tint = onPlayerColor, size = 36,
                 )
             }
 
@@ -357,22 +357,39 @@ fun PlayerScreen(
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 4.dp),
             ) {
+                // 标题 + 副标题合并在一行块内，收藏红心常驻右侧并垂直居中；
+                // 这样底部固定区更紧凑，封面能接近「屏宽 84%」（AC10）。
                 Row(
-                    Modifier.fillMaxWidth().padding(top = 10.dp),
+                    Modifier.fillMaxWidth().padding(top = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = track.displayTitle,
-                        color = onPlayerColor,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Clip,
-                        // 长标题单行跑马灯，不再折成两行。
-                        modifier = Modifier.weight(1f).basicMarquee(),
-                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = track.displayTitle,
+                            color = onPlayerColor,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip,
+                            // 长标题单行跑马灯，不折行。
+                            modifier = Modifier.fillMaxWidth().basicMarquee(),
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = track.uploader,
+                                color = onPlayerSecondary,
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            QualityBadge(quality = quality, pureWhite = pureWhite)
+                        }
+                    }
                     Spacer(Modifier.width(4.dp))
                     IconAction(
                         icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
@@ -381,24 +398,11 @@ fun PlayerScreen(
                             scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
                         },
                         tint = if (isFavorite) Color(0xFFFF6B81) else onPlayerColor.copy(alpha = 0.85f),
-                        // 热区 48dp，与标题垂直居中。
+                        // 热区 48dp，与标题块垂直居中。
                         size = 48,
                     )
                 }
-                Spacer(Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = track.uploader,
-                        color = onPlayerSecondary,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    QualityBadge(quality = quality, pureWhite = pureWhite)
-                }
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(6.dp))
                 SeekLine(
                     positionMs = state.positionMs,
                     durationMs = state.durationMs.coerceAtLeast(1),
@@ -406,8 +410,9 @@ fun PlayerScreen(
                     activeColor = onPlayerColor,
                     trackColor = onPlayerColor.copy(alpha = 0.24f),
                     timeColor = onPlayerSecondary,
+                    touchHeight = 18.dp,
                 )
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(4.dp))
                 TransportRow(
                     state = state,
                     onPrev = { },
@@ -415,7 +420,7 @@ fun PlayerScreen(
                     onNext = { },
                     pureWhite = pureWhite,
                 )
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(2.dp))
                 BottomActions(
                     state = state,
                     quality = quality,
@@ -796,7 +801,7 @@ private fun BottomActions(
     onOpenQueue: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -810,12 +815,12 @@ private fun BottomActions(
             contentDescription = state.playMode.label,
             onClick = onModeClick,
             tint = if (state.playMode in listOf(PlayMode.REPEAT_ONE, PlayMode.SHUFFLE)) Color.White else Color.White.copy(alpha = 0.65f),
-            size = 38,
+            size = 32,
         )
-        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
-        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
-        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 38)
-        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
+        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
+        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
+        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 32)
+        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
     }
 }
 

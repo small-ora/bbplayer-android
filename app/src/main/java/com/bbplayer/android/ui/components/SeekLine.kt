@@ -43,6 +43,8 @@ fun SeekLine(
     trackColor: Color = SaltTheme.colors.subText.copy(alpha = 0.18f),
     showTimes: Boolean = true,
     timeColor: Color = SaltTheme.colors.subText,
+    /** 进度条可拖动热区高度（播放页需要把更多竖向空间留给封面）。 */
+    touchHeight: androidx.compose.ui.unit.Dp = 24.dp,
 ) {
     val density = LocalDensity.current.density
     var widthPx by remember { mutableFloatStateOf(1f) }
@@ -56,7 +58,7 @@ fun SeekLine(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(24.dp)
+                .height(touchHeight)
                 .onSizeChanged {
                     size = it
                     widthPx = it.width.toFloat()
