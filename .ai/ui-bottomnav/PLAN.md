@@ -38,3 +38,20 @@
 ## 执行记录
 
 - （实现中追加）
+
+## 执行记录（Lead）
+
+- P0–P6 全部完成。并行 5 队友（home/library/profile/player/padding），写范围互不重叠；
+  共享骨架（AppRoot/Headers/theme/MiniPlayer/BottomNavBar）由 Lead 独占。
+- 环境事实：会话沙箱 `workspace-write` 禁止写 `/root/.gradle` 与 `/root/.android`；
+  统一改用 `GRADLE_USER_HOME=/root/bbplayer/.gradle/user-home`
+  与 `ANDROID_USER_HOME=/root/bbplayer/.gradle/android-user-home`（gitignored）。
+- 集成后真机（MI 6，360×640dp，gesture nav）冒烟发现并修复 3 处：
+  1) 我的页卡片内边距：SaltUI `RoundedColumn(paddingValues=…)` 是**卡片外**留白，
+     导致热力图/文字贴边 → 改为卡片内 `Column(Modifier.padding(16.dp))`。
+  2) 曲库页标题「音乐库」与 Tab「曲库」不一致 → 统一「曲库」。
+  3) 播放器封面被底部固定区挤压（264dp/73%）→ 标题+副标题合并、压缩间距，
+     播放态 306dp = 屏宽 85%，暂停态 297dp = 82.4%，均落在 AC10 区间。
+- 全量门禁 `:app:assembleDebug + app/data/playback/lyrics 单测 --rerun-tasks`：exit 0（见 evidence/final-gate.log）。
+- 真机冒烟截图：`.ai/ui-bottomnav/evidence/*.png`（发现/曲库/我的/播放/二级页/深色/滚到底/批量管理）。
+- 未能真机覆盖：宽屏 ≥600dp NavRail 分支（无平板设备）；歌词/评论页未重排（非目标）。

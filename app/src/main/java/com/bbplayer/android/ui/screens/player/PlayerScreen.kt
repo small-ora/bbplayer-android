@@ -681,15 +681,16 @@ private val PlayerCommentColors = SaltColors(
 )
 @Composable
 private fun CoverPage(track: Track, state: PlaybackState) {
-    // AC10：封面宽 = 屏宽 84%，再与可用高度取 min，小窗/横屏也不溢出；圆角 16dp，无白边/描边。
+    // AC10：播放态封面宽 = 屏宽 85%，暂停态 0.97 缩放后仍 ≥82%，二者都落在 82%–85%；
+    // 再与可用高度取 min，小窗/横屏也不溢出；圆角 16dp，无白边/描边。
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val coverScale = animateFloatAsState(
-            targetValue = if (state.isPlaying) 1f else 0.94f,
+            targetValue = if (state.isPlaying) 1f else 0.97f,
             animationSpec = tween(400),
             label = "coverScale",
         )
-        val side = minOf(screenWidth * 0.84f, maxHeight)
+        val side = minOf(screenWidth * 0.85f, maxHeight)
         CoverImage(
             url = track.coverUrl,
             modifier = Modifier.size(side).androidxScale(coverScale.value),
