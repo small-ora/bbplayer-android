@@ -94,6 +94,17 @@ class JsonLibraryRepository(
         return data.value.playlists.firstOrNull { it.id == id }
     }
 
+    override suspend fun markPlaylistPlayed(id: String) {
+        val now = clock()
+        mutate { current ->
+            current.copy(
+                playlists = current.playlists.map { playlist ->
+                    if (playlist.id == id) playlist.copy(lastPlayedAt = now) else playlist
+                },
+            ) to Unit
+        }
+    }
+
     override suspend fun addTrack(playlistId: String, track: Track): Boolean = mutate { current ->
         val playlist = current.playlists.firstOrNull { it.id == playlistId }
         if (playlist == null || playlist.tracks.any { it.key == track.key }) {

@@ -111,12 +111,14 @@ object Routes {
     fun uploader(mid: Long) = "uploader/$mid"
 }
 
+// 搜索不再放进菜单：首页已有搜索框（重复入口）。搜索页仍作为内部页面由首页搜索框进入。
 private val tabs = listOf(
     NavTab("首页", Icons.Rounded.Home),
-    NavTab("搜索", Icons.Rounded.Search),
     NavTab("音乐库", Icons.Rounded.LibraryMusic),
     NavTab("我的", Icons.Rounded.Person),
 )
+private val navTabRoutes = listOf(Routes.HOME, Routes.LIBRARY, Routes.PROFILE)
+// 「是否主 tab 页」仍包含搜索页：这样搜索页也保留底部迷你播放器。
 private val tabRoutes = listOf(Routes.HOME, Routes.SEARCH, Routes.LIBRARY, Routes.PROFILE)
 
 /** Secondary destinations in the side drawer's "更多" section (pushed pages, not tabs). */
@@ -246,11 +248,11 @@ fun AppRoot() {
 
     BoxWithConstraints(Modifier.fillMaxSize().background(SaltTheme.colors.background)) {
         val twoPane = wideScreen || maxWidth >= 600.dp
-        val selectedTab = tabRoutes.indexOf(route).coerceAtLeast(0)
+        val selectedTab = navTabRoutes.indexOf(route)
         Row(Modifier.fillMaxSize()) {
             if (twoPane) {
                 NavRail(tabs = tabs, selectedIndex = selectedTab, onSelect = { index ->
-                    navController.switchTab(tabRoutes[index])
+                    navController.switchTab(navTabRoutes[index])
                 })
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -283,7 +285,7 @@ fun AppRoot() {
                                     tabs = tabs,
                                     selectedIndex = selectedTab,
                                     onSelectTab = { index ->
-                                        navController.switchTab(tabRoutes[index])
+                                        navController.switchTab(navTabRoutes[index])
                                         scope.launch { drawerState.close() }
                                     },
                                     secondary = moreEntries,
@@ -334,6 +336,9 @@ private fun AppNavHost(
                 onOpenPlayer = onOpenPlayer,
                 onPlayTrack = onPlayTrack,
                 onOpenLeaderboard = onOpenLeaderboard,
+                onOpenHistory = onOpenHistory,
+                onOpenLibrary = { navController.switchTab(Routes.LIBRARY) },
+                onOpenPlaylist = { navController.navigate(Routes.playlist(it)) },
             )
         }
         composable(Routes.SEARCH) {

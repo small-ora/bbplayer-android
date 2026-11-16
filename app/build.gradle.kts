@@ -26,8 +26,8 @@ android {
         applicationId = "com.bbplayer.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.7.3"
+        versionCode = 12
+        versionName = "0.7.4"
     }
 
     signingConfigs {

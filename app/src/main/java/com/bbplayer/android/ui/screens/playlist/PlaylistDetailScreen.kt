@@ -71,6 +71,7 @@ fun PlaylistDetailScreen(
                     Spacer(Modifier.size(12.dp))
                     if (!playlist?.tracks.isNullOrEmpty()) {
                         SaltPill(text = "播放全部", selected = true, onClick = {
+                            scope.safeLaunch { graph.libraryRepository.markPlaylistPlayed(playlistId) }
                             onPlayTrack(playlist!!.tracks, 0)
                         })
                     }
@@ -86,7 +87,10 @@ fun PlaylistDetailScreen(
                 TrackRow(
                     track = track,
                     isCurrent = playback.track?.key == track.key,
-                    onClick = { onPlayTrack(tracks, idx) },
+                    onClick = {
+                        scope.safeLaunch { graph.libraryRepository.markPlaylistPlayed(playlistId) }
+                        onPlayTrack(tracks, idx)
+                    },
                     onMoreClick = {
                         scope.safeLaunch { graph.libraryRepository.removeTrack(playlistId, track.key) }
                     },

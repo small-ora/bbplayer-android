@@ -47,6 +47,8 @@ interface LibraryRepository {
     suspend fun renamePlaylist(id: String, name: String)
     suspend fun deletePlaylist(id: String)
     suspend fun getPlaylist(id: String): Playlist?
+    /** 记录歌单最近一次播放时间（首页「最近播放的歌单」）。 */
+    suspend fun markPlaylistPlayed(id: String)
 
     /** Returns false when the track already exists in the playlist. */
     suspend fun addTrack(playlistId: String, track: Track): Boolean

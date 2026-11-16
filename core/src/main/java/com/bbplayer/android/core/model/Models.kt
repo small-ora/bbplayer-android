@@ -69,6 +69,8 @@ data class Playlist(
     val name: String,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    /** 最近一次从该歌单开始播放的时间（0 = 从未播放），首页「最近播放的歌单」用。 */
+    val lastPlayedAt: Long = 0L,
     val tracks: List<Track> = emptyList(),
 ) {
     val coverUrls: List<String> get() = tracks.asSequence().map { it.coverUrl }.filter { it.isNotBlank() }.take(4).toList()

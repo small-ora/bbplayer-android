@@ -180,7 +180,10 @@ fun LibraryScreen(
                             playlist = playlist,
                             onClick = { onOpenPlaylist(playlist.id) },
                             onPlay = {
-                                if (playlist.tracks.isNotEmpty()) onPlayTrack(playlist.tracks, 0)
+                                if (playlist.tracks.isNotEmpty()) {
+                                    scope.safeLaunch { graph.libraryRepository.markPlaylistPlayed(playlist.id) }
+                                    onPlayTrack(playlist.tracks, 0)
+                                }
                             },
                             onDelete = { scope.safeLaunch { graph.libraryRepository.deletePlaylist(playlist.id) } },
                             onRename = { newName ->
