@@ -3,7 +3,7 @@
 **级别**：L2（跨 31 文件、信息架构变更、含产品取舍；见 SPEC 分级说明）
 **已执行阶段**：0 勘察 → 1 隔离分支 → 2 SPEC 冻结 → 3 PLAN → 4 实现（并行 5 写者）→ 5 自检（全量门禁 + 真机冒烟）→ 6 独立审查（2 位 fresh 审查者）→ 7 验收包
 **跳过阶段及理由**：8 合入（按工作流默认不 push / 不合入，等人工授权）；CI 未触发（未 push）；无 VCS 例外（git 仓库，localhost 分支）
-**状态**：**等待人工验收**（代码已本地提交、门禁绿、真机截图齐；尚未 push / 未合入）
+**状态**：**人工验收已通过（2026-11-16）→ 已提交 main 并发布 v0.8.0**（release/CI 结果见 §11 回填）
 
 ## 1. 一句话结果
 
@@ -20,11 +20,11 @@ Header 与 16:9 视频卡；曲库页三胶囊改为 MoreVert + M3 ModalBottomSh
 | 分支 | `feat/ui-bottomnav-refresh`（main 未动） |
 | BASE | `c415b02` |
 | SPEC_BASE / SPEC_PATH | `7d5f18d` / `.ai/ui-bottomnav/SPEC.md`（实现期间 SPEC 未改动：`git diff 7d5f18d..HEAD -- .ai/ui-bottomnav/SPEC.md` 为空） |
-| 最终 HEAD | `47bbb5a`（11 个本地 commit） |
+| 最终 HEAD | 见 `git log --oneline v0.7.4..v0.8.0`（发布 commit 含 versionCode 13 / versionName 0.8.0） |
 | DIFF_CMD | `git diff c415b02..HEAD`（31 files，+1492 / −904） |
 | LOG_CMD | `git log --oneline c415b02..HEAD` |
 | ENFORCEMENT | `prompt-only`（无 pre-commit / 无 required check；本流程靠自觉 + 证据） |
-| CI | 未触发（未 push）；不能写成"CI 通过" |
+| CI | push main / tag v0.8.0 触发 `.github/workflows/android.yml`；结果回填见 §11 |
 | 全量门禁 | `cd /root/bbplayer && ANDROID_USER_HOME=.gradle/android-user-home GRADLE_USER_HOME=.gradle/user-home ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest :data:testDebugUnitTest :playback:testDebugUnitTest :lyrics:testDebugUnitTest --rerun-tasks` → `BUILD SUCCESSFUL / 138 tasks executed / exit 0`（`evidence/final-gate.log`） |
 | 真机冒烟 | MI 6 `5c17d7b9`，安装最终 debug APK 启动无崩溃；证据 `evidence/01–12*.png` |
 
@@ -101,8 +101,15 @@ Header 与 16:9 视频卡；曲库页三胶囊改为 MoreVert + M3 ModalBottomSh
 
 ## 10. 结论
 
-- [x] 保留检查点（分支 `feat/ui-bottomnav-refresh`，本地 commit，等待授权）
-- [ ] 授权 push / 开 PR
+- [x] 保留检查点（分支 `feat/ui-bottomnav-refresh`，本地 commit）
+- [x] 授权 push / 合入（2026-11-16 人工验收通过）
 - [ ] 修改后通过（请指出页面/细节）
 - [ ] 打回
 - [ ] 无法验收（请说明环境/证据缺口）
+
+## 11. 发布记录（v0.8.0）
+
+- 版本：`versionCode 13` / `versionName 0.8.0`（包名 `com.bbplayer.android`，固定 release 签名沿用 v0.7.1+）
+- 合并方式：`git checkout main && git merge feat/ui-bottomnav-refresh` → `git push origin main`
+- Release：annotated tag `v0.8.0` → CI `Publish GitHub Release` 自动附 `app-release.apk`
+- 发布结果：<!-- CI_RESULT -->
