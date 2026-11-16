@@ -18,5 +18,6 @@
 - 真机 dump：`最近播放的歌单`、`音乐库` 跳转、`TestList` 卡片、热门 6 首
 - 全量门禁：`assembleDebug + assembleRelease + app/data/playback/lyrics 单测` exit 0
 
-## 发布
-- 版本 0.7.4 / code 12；tag `v0.7.4` → CI Release（固定签名，可直接覆盖升级）。
+## 发布（已完成）
+- 版本 0.7.4 / code 12；main `f09d8a2`；tag `v0.7.4` → CI success
+- Release：https://github.com/small-ora/bbplayer-android/releases/tag/v0.7.4 （`app-release.apk`，固定签名，可直接覆盖升级）
