@@ -117,8 +117,8 @@ jobs:
       - name: Create / update release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/bbplayer-android-release/app-release.apk
-            artifacts/bbplayer-android-debug/*.apk
+          # 只发布固定签名的 release APK：debug APK 是每次构建都不同的调试签名，
+          # 提供给用户会造成「与已安装应用签名不同」，只保留在 workflow artifacts 里给开发用。
+          files: artifacts/bbplayer-android-release/app-release.apk
           generate_release_notes: true
           fail_on_unmatched_files: true
