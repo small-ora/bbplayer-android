@@ -1,7 +1,7 @@
 # 验收包 v7 — 播放页三页横滑（封面 / 歌词 / 评论），歌词偏移统一到设置
 
 **级别**：L2（播放页 UI/手势重构）· 分支：`feat/player-pager`（基于 main `0d502f8` v0.6.0）
-**状态**：**已实现、构建/单测通过、真机验证通过、独立审查 PASS（4 条 P2 已修复）；未合入 main、未发布（等你授权）**
+**状态**：**已实现、构建/单测通过、真机验证通过、独立审查 PASS（4 条 P2 已修复）；已合入 main 并发布 v0.7.0**
 
 ## 1. 用户需求
 
@@ -34,14 +34,24 @@
 - 审查者：fresh subagent `b093caa9-39dd-4edd-a40e-1ba38945cfab`（未参与实现、只读），依据 SPEC `ec63a1a`，对象 `0d502f8..ba78efe`。
 - 结论：**REVIEW_V7_RESULT: PASS**（无 P0/P1；4 条 P2 建议，均已修复并真机复验，见 §7）。
 
-## 5. 风险与回滚
+## 5. 发布记录（v0.7.0）
 
-- 回滚：`git revert ba78efe`（或丢弃 `feat/player-pager` 分支）；未改数据层/偏好键，回退无数据迁移。
+| 项 | 值 |
+|---|---|
+| 版本 | versionCode **8** / versionName **0.7.0** |
+| 分支 | `feat/player-pager` → merge 到 `main` |
+| 提交 | `feat(player): 三页横滑…`（ba78efe）、`fix(player): 审查 P2 修复…`（2ea88c6）、`chore(release): v0.7.0` |
+| Tag | `v0.7.0`（annotated）→ 推送 main + tag 触发 GitHub Actions，自动创建 GitHub Release（含 debug / release APK） |
+| 产物 | debug `app/build/outputs/apk/debug/app-debug.apk`；release `app/build/outputs/apk/release/app-release-unsigned.apk`（未签名） |
+
+## 6. 风险与回滚
+
+- 回滚：`git revert 2ea88c6 ba78efe` 或回到 `v0.6.0`；未改数据层/偏好键，回退无数据迁移。
 - 逐曲歌词偏移（v2）的播放页调整入口已移除；**旧值仍会读取叠加生效**（不静默丢弃），但当前没有 UI 可修改/清除逐曲偏移，全局偏移在设置里调。
 - 评论页内嵌后，播放页外已无入口进入独立评论路由（路由保留，未删除）。
 - pager 手势与 `SeekLine` 横向拖拽：真机验证 seek 生效且不误翻页；`LyricsPanel` 垂直滚动正常。
 
-## 6. 我替你做的判断与假设（可否决）
+## 7. 我替你做的判断与假设（可否决）
 
 1. 歌词页保留迷你播放控制（上一首/播放/下一首），只去掉「调整按钮」（按「展示用」理解为去掉偏移调节）。
 2. 评论页做成不透明圆角卡片（保证浅/深色可读），而非透在封面渐变上。
@@ -49,7 +59,7 @@
 4. 更多菜单「查看评论」保留为跳页快捷方式（不是重复配置）。
 5. 未自动合入 main、未发布新版本（等你授权；如需发布建议 v0.7.0）。
 
-## 7. 独立审查结论与处置
+## 8. 独立审查结论与处置
 
 审查结论 **PASS**（无 P0/P1）。4 条 P2 处置如下（提交 `fix(player): 独立审查 P2 修复…`）：
 
@@ -63,7 +73,7 @@
 - 审查者已核对无问题：三页顺序与默认页、pager 布局、歌词面板参数与 seek 一致性、桌面歌词可见性恢复、embedded 评论复用逻辑、SeekLine 与 pager 手势优先级、各入口 index、无测试/CI 削弱、无新增依赖。
 - 修复后门禁：`assembleDebug + app/data/playback/lyrics 单测` → exit 0（615 tests / 0 fail / 0 skip；`.ai/evidence/v7/gate.log`）。
 
-## 8. 证据索引
+## 9. 证据索引
 
 - 门禁：`.ai/evidence/v7/gate.log`
 - 截图：`02-player-cover.png`、`03-player-lyrics.png`、`04-player-comments.png`、`05-lyrics-via-button.png`、`06-comments-via-menu.png`、`07-seek-drag-no-page-change.png`、`08-comments-scrolled.png`、`09-settings-lyrics-offset.png`、`10-settings-offset-plus.png`、`11-cover-after-p2.png`、`12-comments-state-retained.png`、`13-pure-white-player.png`
