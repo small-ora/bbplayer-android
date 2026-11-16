@@ -1,7 +1,7 @@
 # 验收包 v7.1 — 固定发布签名（修复「与已安装应用签名不同」）
 
 **级别**：L2（构建/CI/分发链路）· 直接合入 `main`（基于 `410dce2` v0.7.0 的补丁）
-**状态**：**已实现并本地验证；待合入 main + 发布 v0.7.1（CI/Release 验证结果见 §4）**
+**状态**：**已合入 main 并发布 v0.7.1；CI 全绿、Release 资产签名已复验（见 §4）**
 
 ## 1. 现象与根因
 
@@ -28,9 +28,13 @@
   `dumpsys package com.bbplayer.android` → versionName=0.7.1；与旧调试包 `com.bbplayer.android.debug` 可共存
 - 业务回归：release 包首次启动正常（通知权限弹窗 → 首页）
 
-## 4. CI / Release 验证（发布后回填）
+## 4. CI / Release 验证（已回填）
 
-- 待回填。
+- **tag CI**：[Android CI #43784531150](https://github.com/small-ora/bbplayer-android/actions/runs/43784531150)（v0.7.1 / 1f7f037）→ **completed success**（单元测试 + `assembleDebug` + **secrets 解码 keystore 签名 `assembleRelease`** + `apksigner verify` 全通过）；main 同提交 CI 亦 success（#43784527747）。
+- **GitHub Release**：https://github.com/small-ora/bbplayer-android/releases/tag/v0.7.1
+  - 资产：`app-release.apk`（4.23 MB，包名 `com.bbplayer.android`，versionCode 9 / 0.7.1）
+  - 下载后本地复验 `apksigner verify --print-certs` → **SHA-256 `fff168510791d8ab56b2c1308155ea5ceef2ad498b20bdb495bf4819e4f1d7f4`**，与本地固定 keystore 完全一致
+  - 已从 v0.7.1 Release 删除 `app-debug.apk` 资产；CI workflow 同步改为 Release 只发布签名 `app-release.apk`（提交 `e94687d`），debug APK 仅留在 workflow artifacts，避免用户再次安装调试签名包
 
 ## 5. 用户迁移步骤（旧版 → v0.7.1）
 
