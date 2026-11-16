@@ -141,7 +141,7 @@ fun HomeScreen(
         // ---- 最近播放的歌单 ----
         if (recentPlayedPlaylists.isNotEmpty()) {
             item {
-                SectionHeader(title = "最近播放的歌单", action = "音乐库", onAction = onOpenLibrary)
+                SectionHeader(title = "最近播放的歌单", action = "曲库", onAction = onOpenLibrary)
             }
             item {
                 LazyRow(
@@ -160,7 +160,7 @@ fun HomeScreen(
         } else if (myPlaylists.isNotEmpty()) {
             // 还没有播放过歌单时，先展示本地歌单，避免新用户看不到这个模块
             item {
-                SectionHeader(title = "我的歌单", action = "音乐库", onAction = onOpenLibrary)
+                SectionHeader(title = "我的歌单", action = "曲库", onAction = onOpenLibrary)
             }
             item {
                 LazyRow(
@@ -180,7 +180,7 @@ fun HomeScreen(
 
         // ---- 我的收藏 ----
         if (favoriteTracks.isNotEmpty()) {
-            item { SectionHeader(title = "我的收藏", action = "音乐库", onAction = onOpenLibrary) }
+            item { SectionHeader(title = "我的收藏", action = "曲库", onAction = onOpenLibrary) }
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
