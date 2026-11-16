@@ -41,7 +41,6 @@ import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.model.AudioQuality
 import com.bbplayer.android.core.model.LyricSource
 import com.bbplayer.android.core.model.LyricVisualStyle
-import com.bbplayer.android.core.model.MiniPlayerStyle
 import com.bbplayer.android.core.model.PlayerBackgroundStyle
 import com.bbplayer.android.core.model.ReleaseInfo
 import com.bbplayer.android.core.model.ThemeMode
@@ -54,6 +53,7 @@ import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import com.bbplayer.android.core.safeLaunch
+import com.bbplayer.android.ui.theme.BbTokens
 
 @Composable
 fun SettingsScreen(
@@ -75,7 +75,6 @@ fun SettingsScreen(
     val fontScale by prefs.lyricsFontScale.collectAsStateWithLifecycle(initialValue = 1f)
     val lyricOffset by prefs.lyricsOffsetMs.collectAsStateWithLifecycle(initialValue = 0)
     val backgroundStyle by prefs.playerBackgroundStyle.collectAsStateWithLifecycle(initialValue = PlayerBackgroundStyle.GRADIENT)
-    val miniStyle by prefs.miniPlayerStyle.collectAsStateWithLifecycle(initialValue = MiniPlayerStyle.DOCK)
     val accent by prefs.accentPreset.collectAsStateWithLifecycle(initialValue = AccentPreset.SALT)
     val lyricStyle by prefs.lyricVisualStyle.collectAsStateWithLifecycle(initialValue = LyricVisualStyle.MODERN)
     val verbatim by prefs.verbatimLyrics.collectAsStateWithLifecycle(initialValue = true)
@@ -130,7 +129,7 @@ fun SettingsScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 40.dp),
+        contentPadding = PaddingValues(bottom = BbTokens.SecondaryContentBottomPadding),
     ) {
         item { SmallTopBar(title = "设置", onBack = onBack) }
 
@@ -167,7 +166,6 @@ fun SettingsScreen(
                     SettingRow("强调色", accent.label) { dialog = "accent" }
                 }
                 SettingRow("播放器背景", backgroundStyle.label) { dialog = "bgStyle" }
-                SettingRow("迷你播放器", miniStyle.label) { dialog = "miniStyle" }
             }
         }
 
@@ -336,16 +334,6 @@ fun SettingsScreen(
             selectedIndex = PlayerBackgroundStyle.entries.indexOf(backgroundStyle),
             onSelect = { idx ->
                 scope.safeLaunch { prefs.setPlayerBackgroundStyle(PlayerBackgroundStyle.entries[idx]) }
-                dialog = null
-            },
-            onDismiss = { dialog = null },
-        )
-        "miniStyle" -> OptionDialog(
-            title = "迷你播放器样式",
-            options = MiniPlayerStyle.entries.map { it.label },
-            selectedIndex = MiniPlayerStyle.entries.indexOf(miniStyle),
-            onSelect = { idx ->
-                scope.safeLaunch { prefs.setMiniPlayerStyle(MiniPlayerStyle.entries[idx]) }
                 dialog = null
             },
             onDismiss = { dialog = null },

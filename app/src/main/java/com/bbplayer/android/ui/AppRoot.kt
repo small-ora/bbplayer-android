@@ -1,5 +1,14 @@
 package com.bbplayer.android.ui
 
+import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,7 +17,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,35 +25,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.PlaylistAdd
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -56,34 +51,31 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.bbplayer.android.core.model.MiniPlayerStyle
 import com.bbplayer.android.core.model.PlaybackState
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
-import com.bbplayer.android.ui.components.AppDrawerSheet
-import com.bbplayer.android.ui.components.BottomPlayerBar
-import com.bbplayer.android.ui.components.LocalOpenMenu
-import com.bbplayer.android.ui.components.NavEntry
-import com.bbplayer.android.ui.components.NavTab
+import com.bbplayer.android.ui.components.BbBottomNavBar
+import com.bbplayer.android.ui.components.MainTab
+import com.bbplayer.android.ui.components.MiniPlayer
 import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
-import android.net.Uri
-import com.bbplayer.android.ui.screens.library.CollectionDetailScreen
-import com.bbplayer.android.ui.screens.library.FavoriteFolderScreen
-import com.bbplayer.android.ui.screens.library.WatchLaterScreen
-import com.bbplayer.android.ui.screens.login.LoginScreen
-import com.bbplayer.android.ui.screens.uploader.UploaderScreen
 import com.bbplayer.android.ui.screens.discover.LeaderboardScreen
 import com.bbplayer.android.ui.screens.downloads.DownloadsScreen
 import com.bbplayer.android.ui.screens.history.HistoryScreen
 import com.bbplayer.android.ui.screens.home.HomeScreen
 import com.bbplayer.android.ui.screens.playlistimport.ImportPlaylistScreen
+import com.bbplayer.android.ui.screens.library.CollectionDetailScreen
+import com.bbplayer.android.ui.screens.library.FavoriteFolderScreen
 import com.bbplayer.android.ui.screens.library.LibraryScreen
+import com.bbplayer.android.ui.screens.library.WatchLaterScreen
+import com.bbplayer.android.ui.screens.login.LoginScreen
 import com.bbplayer.android.ui.screens.player.PlayerScreen
 import com.bbplayer.android.ui.screens.playlist.PlaylistDetailScreen
 import com.bbplayer.android.ui.screens.profile.ProfileScreen
 import com.bbplayer.android.ui.screens.search.SearchScreen
 import com.bbplayer.android.ui.screens.settings.SettingsScreen
+import com.bbplayer.android.ui.screens.uploader.UploaderScreen
+import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -111,24 +103,13 @@ object Routes {
     fun uploader(mid: Long) = "uploader/$mid"
 }
 
-// 搜索不再放进菜单：首页已有搜索框（重复入口）。搜索页仍作为内部页面由首页搜索框进入。
-private val tabs = listOf(
-    NavTab("首页", Icons.Rounded.Home),
-    NavTab("音乐库", Icons.Rounded.LibraryMusic),
-    NavTab("我的", Icons.Rounded.Person),
+/** 底部导航 3 个核心 Tab（需求 §1）：发现（原首页）/ 曲库（原音乐库）/ 我的（原个人中心）。 */
+private val mainTabs = listOf(
+    MainTab("发现", Routes.HOME, Icons.Rounded.Home),
+    MainTab("曲库", Routes.LIBRARY, Icons.Rounded.LibraryMusic),
+    MainTab("我的", Routes.PROFILE, Icons.Rounded.Person),
 )
-private val navTabRoutes = listOf(Routes.HOME, Routes.LIBRARY, Routes.PROFILE)
-// 「是否主 tab 页」仍包含搜索页：这样搜索页也保留底部迷你播放器。
-private val tabRoutes = listOf(Routes.HOME, Routes.SEARCH, Routes.LIBRARY, Routes.PROFILE)
-
-/** Secondary destinations in the side drawer's "更多" section (pushed pages, not tabs). */
-private val moreEntries = listOf(
-    NavEntry("排行榜", Icons.Rounded.BarChart, Routes.LEADERBOARD),
-    NavEntry("收听历史", Icons.Rounded.History, Routes.HISTORY),
-    NavEntry("已下载", Icons.Rounded.Download, Routes.DOWNLOADS),
-    NavEntry("导入歌单", Icons.Rounded.PlaylistAdd, Routes.IMPORT_PLAYLIST),
-    NavEntry("设置", Icons.Rounded.Settings, Routes.SETTINGS),
-)
+private val rootRoutes = listOf(Routes.HOME, Routes.LIBRARY, Routes.PROFILE)
 
 @Composable
 fun AppRoot() {
@@ -138,8 +119,6 @@ fun AppRoot() {
     val playback by graph.playbackController.state.collectAsStateWithLifecycle(initialValue = PlaybackState())
     val backStackEntry by navController.currentBackStackEntryAsState()
     val route = backStackEntry?.destination?.route
-    val isTab = route in tabRoutes
-    val miniStyle by graph.preferencesRepository.miniPlayerStyle.collectAsStateWithLifecycle(initialValue = MiniPlayerStyle.DOCK)
     val statusBarLyric by graph.preferencesRepository.statusBarLyricLine.collectAsStateWithLifecycle(initialValue = true)
 
     // Keep lyrics + current line available app-wide (desktop lyrics / notification lyric line),
@@ -212,99 +191,83 @@ fun AppRoot() {
     val configuration = LocalConfiguration.current
     val wideScreen = configuration.screenWidthDp >= 600
     val onPlay: (List<Track>, Int) -> Unit = { tracks, index -> playTracks(tracks, index) }
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val openMenu: () -> Unit = remember(drawerState) {
-        { scope.launch { drawerState.open() } }
-    }
 
-    val navHost: @Composable () -> Unit = {
-        AppNavHost(
-            navController = navController,
-            playbackState = playback,
-            onOpenPlayer = ::openPlayer,
-            onPlayTrack = onPlay,
-            onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
-            onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
-            onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
-            onOpenHistory = { navController.navigate(Routes.HISTORY) },
-        )
-    }
-
-    // Bottom bar = music transport controls only (Salt Player style). Navigation lives in the
-    // drawer (phone) / rail (wide screen). Hidden on the player screen and pushed pages.
-    val playerBar: @Composable (Modifier, MiniPlayerStyle) -> Unit = { barModifier, barStyle ->
-        if (isTab && playback.track != null) {
-            BottomPlayerBar(
-                state = playback,
-                style = barStyle,
-                onOpenPlayer = ::openPlayer,
-                onTogglePlay = { graph.playbackController.playPause() },
-                onPrevious = { graph.playbackController.previous() },
-                onNext = { graph.playbackController.next() },
-                modifier = barModifier,
-            )
-        }
-    }
+    // 根 Tab 页显示底部导航；二级页（搜索/详情/设置…）底部导航下滑隐藏。
+    val isRootTab = route in rootRoutes
+    val selectedRoute = if (route == Routes.SEARCH) Routes.HOME else route
+    // 二级页迷你播放器仍然常驻；播放页不显示（播放页自身就是全屏播放器）。
+    val showMiniPlayer = playback.track != null && route != Routes.PLAYER
 
     BoxWithConstraints(Modifier.fillMaxSize().background(SaltTheme.colors.background)) {
         val twoPane = wideScreen || maxWidth >= 600.dp
-        val selectedTab = navTabRoutes.indexOf(route)
         Row(Modifier.fillMaxSize()) {
             if (twoPane) {
-                NavRail(tabs = tabs, selectedIndex = selectedTab, onSelect = { index ->
-                    navController.switchTab(navTabRoutes[index])
-                })
+                NavRail(
+                    tabs = mainTabs,
+                    selectedRoute = selectedRoute,
+                    onSelect = { navController.switchTab(it) },
+                )
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
+                AppNavHost(
+                    navController = navController,
+                    playbackState = playback,
+                    onOpenPlayer = ::openPlayer,
+                    onPlayTrack = onPlay,
+                    onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
+                    onOpenImport = { navController.navigate(Routes.IMPORT_PLAYLIST) },
+                    onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) },
+                    onOpenHistory = { navController.navigate(Routes.HISTORY) },
+                )
+
                 if (twoPane) {
-                    navHost()
-                    playerBar(
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .navigationBarsPadding()
-                            .padding(bottom = 10.dp)
-                            .fillMaxWidth(0.72f),
-                        MiniPlayerStyle.FLOAT,
-                    )
+                    // 宽屏：底部导航收敛为左侧 rail；迷你播放器悬浮在内容底部。
+                    if (showMiniPlayer) {
+                        MiniPlayer(
+                            state = playback,
+                            onOpenPlayer = ::openPlayer,
+                            onTogglePlay = { graph.playbackController.playPause() },
+                            onNext = { graph.playbackController.next() },
+                            onPrevious = { graph.playbackController.previous() },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
+                                .padding(bottom = BbTokens.MiniPlayerGap)
+                                .widthIn(max = 560.dp),
+                        )
+                    }
                 } else {
-                    // Navigation lives in a side drawer (opened by the top-left hamburger), so the
-                    // bottom bar can be dedicated to music transport controls.
-                    CompositionLocalProvider(
-                        LocalOpenMenu provides openMenu,
+                    // 手机：迷你播放器悬浮在底部导航正上方；进二级页时导航下滑隐藏、播放器下沉贴底。
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .navigationBarsPadding(),
                     ) {
-                        ModalNavigationDrawer(
-                            drawerState = drawerState,
-                            // M3 gates scrim-tap-to-close on gesturesEnabled: enable gestures only
-                            // while open (also enables edge-swipe dismiss with predictive back),
-                            // keep them off while closed so horizontal lists/seek bars work.
-                            gesturesEnabled = drawerState.isOpen,
-                            scrimColor = Color.Black.copy(alpha = 0.32f),
-                            drawerContent = {
-                                AppDrawerSheet(
-                                    drawerState = drawerState,
-                                    tabs = tabs,
-                                    selectedIndex = selectedTab,
-                                    onSelectTab = { index ->
-                                        navController.switchTab(navTabRoutes[index])
-                                        scope.launch { drawerState.close() }
-                                    },
-                                    secondary = moreEntries,
-                                    onOpenSecondary = { target ->
-                                        navController.navigate(target) { launchSingleTop = true }
-                                        scope.launch { drawerState.close() }
-                                    },
-                                )
-                            },
+                        if (showMiniPlayer) {
+                            val gap by animateDpAsState(
+                                targetValue = if (isRootTab) BbTokens.MiniPlayerGap else 0.dp,
+                                label = "miniGap",
+                            )
+                            MiniPlayer(
+                                state = playback,
+                                onOpenPlayer = ::openPlayer,
+                                onTogglePlay = { graph.playbackController.playPause() },
+                                onNext = { graph.playbackController.next() },
+                                onPrevious = { graph.playbackController.previous() },
+                                modifier = Modifier.padding(bottom = gap),
+                            )
+                        }
+                        AnimatedVisibility(
+                            visible = isRootTab,
+                            enter = expandVertically(expandFrom = Alignment.Bottom) + fadeIn(),
+                            exit = shrinkVertically(shrinkTowards = Alignment.Bottom) + fadeOut(),
                         ) {
-                            Box(Modifier.fillMaxSize()) {
-                                navHost()
-                                playerBar(
-                                    Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .navigationBarsPadding(),
-                                    miniStyle,
-                                )
-                            }
+                            BbBottomNavBar(
+                                tabs = mainTabs,
+                                selectedRoute = selectedRoute,
+                                onSelect = { navController.switchTab(it) },
+                            )
                         }
                     }
                 }
@@ -332,7 +295,7 @@ private fun AppNavHost(
     ) {
         composable(Routes.HOME) {
             HomeScreen(
-                onOpenSearch = { navController.switchTab(Routes.SEARCH) },
+                onOpenSearch = { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
                 onOpenPlayer = onOpenPlayer,
                 onPlayTrack = onPlayTrack,
                 onOpenLeaderboard = onOpenLeaderboard,
@@ -368,7 +331,14 @@ private fun AppNavHost(
                 onOpenLogin = openLogin,
             )
         }
-        composable(Routes.PLAYER) {
+        // 全屏播放器：从底部平滑展开 / 收起（迷你播放器点击或向上拖拽触发）。
+        composable(
+            route = Routes.PLAYER,
+            enterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
+            exitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() },
+            popEnterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
+            popExitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() },
+        ) {
             PlayerScreen(
                 onBack = { navController.popBackStack() },
                 onOpenLogin = openLogin,
@@ -466,8 +436,9 @@ private fun AppNavHost(
     }
 }
 
+/** 宽屏（≥600dp）常驻左侧导航栏（窄屏用底部导航）。 */
 @Composable
-private fun NavRail(tabs: List<NavTab>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+private fun NavRail(tabs: List<MainTab>, selectedRoute: String?, onSelect: (String) -> Unit) {
     Column(
         Modifier
             .width(72.dp)
@@ -478,16 +449,16 @@ private fun NavRail(tabs: List<NavTab>, selectedIndex: Int, onSelect: (Int) -> U
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        tabs.forEachIndexed { index, tab ->
-            val selected = index == selectedIndex
+        tabs.forEach { tab ->
+            val selected = tab.route == selectedRoute
             Box(
                 Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(BbTokens.CardCorner))
                     .background(
                         if (selected) SaltTheme.colors.highlight.copy(alpha = 0.14f) else SaltTheme.colors.subBackground
                     )
-                    .clickable { onSelect(index) },
+                    .clickable { onSelect(tab.route) },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -507,14 +478,4 @@ private fun NavHostController.switchTab(route: String) {
         launchSingleTop = true
         restoreState = true
     }
-}
-
-/** LocalView.context 在 MIUI/主题包装下可能不是 Activity，逐层解包。 */
-private fun android.content.Context.findActivity(): android.app.Activity? {
-    var ctx: android.content.Context? = this
-    while (ctx is android.content.ContextWrapper) {
-        if (ctx is android.app.Activity) return ctx
-        ctx = ctx.baseContext
-    }
-    return ctx as? android.app.Activity
 }
