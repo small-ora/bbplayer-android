@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -7,6 +8,16 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// 固定发布签名：CI 用 GitHub Actions secrets 注入环境变量；本地可放仓库根目录 keystore.properties（已 gitignore）。
+// 这样 v0.7.1 起的 release APK 签名固定，可覆盖升级（旧版本为调试/未签名，需要一次性换装）。
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().also { props ->
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { props.load(it) }
+}
+fun signingValue(envName: String, propName: String): String? =
+    System.getenv(envName)?.takeIf { it.isNotBlank() } ?: keystoreProps.getProperty(propName)
+val releaseStorePath = signingValue("RELEASE_STORE_FILE", "storeFile")
+
 android {
     namespace = "com.bbplayer.android"
     compileSdk = 36
@@ -15,8 +26,19 @@ android {
         applicationId = "com.bbplayer.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.7.0"
+        versionCode = 9
+        versionName = "0.7.1"
+    }
+
+    signingConfigs {
+        create("release") {
+            if (!releaseStorePath.isNullOrBlank()) {
+                storeFile = file(releaseStorePath)
+                storePassword = signingValue("RELEASE_STORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("RELEASE_KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("RELEASE_KEY_PASSWORD", "keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -24,6 +46,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 未提供签名材料时回退为未签名（本地无 keystore 也能构建）；CI 一定会注入。
+            signingConfig = signingConfigs.getByName("release").takeIf { it.storeFile != null }
         }
         debug {
             applicationIdSuffix = ".debug"

@@ -14,3 +14,7 @@ captures/
 .ai/recon/saltplayer/
 .ai/**/evidence/
 .ai/scripts/../evidence/
+keystore.properties
+*.jks
+*.keystore
+signing/

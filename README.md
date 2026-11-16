@@ -10,6 +10,12 @@
 
 ## 功能
 
+### v7.1 修复（安装 / 签名）
+
+- **固定发布签名**：从 v0.7.1 起，GitHub Release 只提供用固定 release keystore 签名的 `app-release.apk`（包名 `com.bbplayer.android`），后续版本可直接覆盖升级，不再出现「与已安装应用签名不同」
+- **旧版本迁移（一次性）**：v0.7.0 及更早 Release 里是调试签名 APK（包名 `com.bbplayer.android.debug`，且每次 CI 构建签名都不同）与未签名 release，无法直接覆盖升级。迁移步骤：旧版「设置 → 数据 → 导出备份」→ 安装新版 `app-release.apk` → 新版「设置 → 数据 → 从备份恢复」（两个包名不同，可共存，也可确认数据迁移后卸载旧版）
+- **CI 签名校验**：构建流水线用仓库 secrets 解码 keystore 签名 release APK，并用 `apksigner verify` 校验证书
+
 ### v7 新增（播放页三页横滑）
 
 - **播放页横滑**：进入播放页默认「封面」页，左滑依次切换到「歌词」「评论」，右滑反向；顶部 3 点页码指示
@@ -92,8 +98,13 @@
 # 产物：app/build/outputs/apk/debug/app-debug.apk，安装包名 com.bbplayer.android.debug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-# Release（未签名，需自备签名配置）
+# Release（CI 用固定签名；本地无签名材料时产出未签名 APK）
 ./gradlew :app:assembleRelease
+
+# 本地带签名构建：在仓库根目录放 keystore.properties（已 gitignore）：
+#   storeFile=/绝对路径/bbplayer-release.jks
+#   storePassword=…  keyAlias=bbplayer  keyPassword=…
+
 ```
 
 > 首次运行会请求通知权限（Android 13+），用于媒体播放通知；拒绝后仍可前台播放。
