@@ -112,4 +112,9 @@ Header 与 16:9 视频卡；曲库页三胶囊改为 MoreVert + M3 ModalBottomSh
 - 版本：`versionCode 13` / `versionName 0.8.0`（包名 `com.bbplayer.android`，固定 release 签名沿用 v0.7.1+）
 - 合并方式：`git checkout main && git merge feat/ui-bottomnav-refresh` → `git push origin main`
 - Release：annotated tag `v0.8.0` → CI `Publish GitHub Release` 自动附 `app-release.apk`
-- 发布结果：<!-- CI_RESULT -->
+- 发布结果：✅ 2026-11-16
+  - Release：https://github.com/small-ora/bbplayer-android/releases/tag/v0.8.0
+  - 资产：`app-release.apk`（4,454,611 B，固定 release 签名；CI `Verify release signature` 通过）
+  - CI（tag）：Android CI run `43832493278` success（单测 → debug APK → signed release APK → Release）
+  - CI（main）：Android CI run `43832488764` success
+  - 产物校验：`aapt2 dump badging` → versionCode 13 / versionName 0.8.0（debug 与 release 均一致）
