@@ -118,3 +118,11 @@ Header 与 16:9 视频卡；曲库页三胶囊改为 MoreVert + M3 ModalBottomSh
   - CI（tag）：Android CI run `43832493278` success（单测 → debug APK → signed release APK → Release）
   - CI（main）：Android CI run `43832488764` success
   - 产物校验：`aapt2 dump badging` → versionCode 13 / versionName 0.8.0（debug 与 release 均一致）
+
+## 12. v0.8.1 补丁发布记录
+
+- 触发：人工验收反馈「系统手势条（小白条）那一块透出列表内容」（0.8.0 在 navigationBars inset 较大的手机上暴露）
+- 根因：底部 chrome（导航栏 + 迷你播放器）外层只有 `navigationBarsPadding()`，inset 区域内绘制的是页面内容；页面列表底边 padding 只保证不遮挡可点内容，不负责铺底
+- 修复：`AppRoot.kt` 底部 chrome 在 `navigationBarsPadding()` **之前**加 `background(SaltTheme.colors.background)`（background 为外层 modifier，覆盖含 inset 的整条区域）；宽屏迷你播放器包进带背景的 Box
+- 验证：真机用 36dp 模拟 navigationBars inset（临时 padding）截图确认 strip 为纯背景无内容透出；撤销模拟后全量门禁 exit 0（debug+release+四模块单测 --rerun-tasks）
+- Release：<!-- V081_RESULT -->
