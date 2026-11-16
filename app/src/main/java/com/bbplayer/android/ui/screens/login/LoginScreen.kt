@@ -81,8 +81,6 @@ fun LoginScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = SaltTheme.dimens.padding),
         ) {
-            // 登录页是二级页：底部迷你播放器常驻，滚到底时留出安全内边距（AC6）。
-            Spacer(Modifier.height(BbTokens.SecondaryContentBottomPadding))
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LoginTab.entries.forEach { item ->
@@ -94,7 +92,8 @@ fun LoginScreen(
                 LoginTab.QR -> QrLoginSection(onLoggedIn = onLoggedIn)
                 LoginTab.COOKIE -> CookieLoginSection(onLoggedIn = onLoggedIn)
             }
-            Spacer(Modifier.height(36.dp))
+            // 登录页是二级页：底部迷你播放器常驻，滚到底时留出安全内边距（AC6）。
+            Spacer(Modifier.height(BbTokens.SecondaryContentBottomPadding))
         }
     }
 }

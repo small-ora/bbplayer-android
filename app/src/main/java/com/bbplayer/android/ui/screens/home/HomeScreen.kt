@@ -1,6 +1,7 @@
 package com.bbplayer.android.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -107,7 +109,7 @@ fun HomeScreen(
 
     LazyColumn(
         // 保留整体状态栏避让：滚动时列表内容不会绘制到透明状态栏下（与曲库/我的行为一致）。
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
+        modifier = Modifier.fillMaxSize().statusBarsPadding().clipToBounds(),
         contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
         // ---- 顶部：M3 SearchBar 形态 Header（替代「发现音乐」大标题）----
@@ -235,6 +237,10 @@ private fun HomeSearchHeader(
     onOpenSearch: () -> Unit,
     onRefresh: () -> Unit,
 ) {
+    // 纯白（墨水屏）主题下 background == subBackground，SearchBar 会"消失"；
+    // 此时补一条发丝描边，正常主题保持无描边（视觉不变）。
+    val searchShape = RoundedCornerShape(50)
+    val needHairline = SaltTheme.colors.subBackground == SaltTheme.colors.background
     SearchBar(
         inputField = {
             Row(
@@ -265,8 +271,14 @@ private fun HomeSearchHeader(
         },
         expanded = false,
         onExpandedChange = { if (it) onOpenSearch() },
-        modifier = modifier,
-        shape = RoundedCornerShape(50),
+        modifier = modifier.then(
+            if (needHairline) {
+                Modifier.border(0.5.dp, SaltTheme.colors.stroke, searchShape)
+            } else {
+                Modifier
+            }
+        ),
+        shape = searchShape,
         // SaltUI 没有为 M3 组件提供 MaterialTheme，这里手动取 Salt token，避免深色模式下变成默认亮色。
         colors = SearchBarDefaults.colors(
             containerColor = SaltTheme.colors.subBackground,
