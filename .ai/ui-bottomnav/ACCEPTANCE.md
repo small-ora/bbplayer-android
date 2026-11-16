@@ -125,4 +125,8 @@ Header 与 16:9 视频卡；曲库页三胶囊改为 MoreVert + M3 ModalBottomSh
 - 根因：底部 chrome（导航栏 + 迷你播放器）外层只有 `navigationBarsPadding()`，inset 区域内绘制的是页面内容；页面列表底边 padding 只保证不遮挡可点内容，不负责铺底
 - 修复：`AppRoot.kt` 底部 chrome 在 `navigationBarsPadding()` **之前**加 `background(SaltTheme.colors.background)`（background 为外层 modifier，覆盖含 inset 的整条区域）；宽屏迷你播放器包进带背景的 Box
 - 验证：真机用 36dp 模拟 navigationBars inset（临时 padding）截图确认 strip 为纯背景无内容透出；撤销模拟后全量门禁 exit 0（debug+release+四模块单测 --rerun-tasks）
-- Release：<!-- V081_RESULT -->
+- Release：✅ 2026-11-16 — https://github.com/small-ora/bbplayer-android/releases/tag/v0.8.1
+  - 资产：`app-release.apk`（4,454,611 B，固定 release 签名；CI `Verify release signature` 通过）
+  - 下载包校验：`aapt2 dump badging` → versionCode 14 / versionName 0.8.1；sha256 `1e3fa62158e988d027959af5c03f485b4eadf3e4d91a7502c83872ffef3e1bc2`
+  - CI（tag）：Android CI run `43835906713` success（单测 → debug → signed release → Release）
+  - CI（main）：Android CI run `43835899658` success
