@@ -81,11 +81,11 @@ import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.Item
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
-import kotlinx.coroutines.launch
 
 private enum class LibraryTab(val label: String) {
     PLAYLISTS("歌单"),
@@ -131,6 +131,8 @@ fun LibraryScreen(
     // ---- 批量管理（AC8）：仅曲库页「歌单」Tab 的多选 + 批量删除 ----
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    // 批量删除前二次确认（独立审查 P2：全选+删除不应两击即永久丢失）
+    var pendingBatchDelete by remember { mutableStateOf<List<String>>(emptyList()) }
     fun exitSelection() {
         selectionMode = false
         selectedIds = emptySet()
@@ -168,7 +170,7 @@ fun LibraryScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = BbTokens.RootContentBottomPadding),
+        contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
         item {
             if (selectionMode && tab == LibraryTab.PLAYLISTS) {
@@ -190,14 +192,7 @@ fun LibraryScreen(
                                 text = "删除",
                                 enabled = selectedIds.isNotEmpty(),
                                 onClick = {
-                                    val ids = selectedIds.toList()
-                                    if (ids.isNotEmpty()) {
-                                        // 先退出多选再逐个删除，UI 立即恢复普通态。
-                                        exitSelection()
-                                        scope.safeLaunch {
-                                            ids.forEach { id -> graph.libraryRepository.deletePlaylist(id) }
-                                        }
-                                    }
+                                    if (selectedIds.isNotEmpty()) pendingBatchDelete = selectedIds.toList()
                                 },
                             )
                             SelectionHeaderAction(text = "取消", onClick = { exitSelection() })
@@ -401,6 +396,24 @@ fun LibraryScreen(
         )
     }
 
+    if (pendingBatchDelete.isNotEmpty()) {
+        BatchDeleteConfirmDialog(
+            count = pendingBatchDelete.size,
+            onDismiss = { pendingBatchDelete = emptyList() },
+            onConfirm = {
+                val ids = pendingBatchDelete
+                pendingBatchDelete = emptyList()
+                if (ids.isNotEmpty()) {
+                    // 先退出多选再逐个删除，UI 立即恢复普通态。
+                    exitSelection()
+                    scope.safeLaunch {
+                        ids.forEach { id -> graph.libraryRepository.deletePlaylist(id) }
+                    }
+                }
+            },
+        )
+    }
+
     if (showCreate) {
         CreatePlaylistDialog(
             onDismiss = { showCreate = false },
@@ -446,19 +459,15 @@ private fun PlaylistActionsSheet(
     onDelete: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
-    // 收起动画期间防连点，避免重复播放/重复删除。
+    // 防连点：一次弹层只接受一个操作。
     var acting by remember { mutableStateOf(false) }
-    // 先播完收起动画再执行操作，避免弹层硬切；onDismiss 只负责关状态。
+    // 独立审查 P2：不要依赖 hide() 的完成回调（弹层中途被移除时协程会被取消，动作静默丢失）。
+    // 先关状态再执行动作；BottomSheet 随状态移除，操作一定落地。
     fun dismissThen(action: () -> Unit) {
         if (acting) return
         acting = true
-        scope.launch { sheetState.hide() }.invokeOnCompletion {
-            if (!sheetState.isVisible) {
-                onDismiss()
-                action()
-            }
-        }
+        onDismiss()
+        action()
     }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -747,6 +756,34 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
                 SaltPill(text = "创建", selected = name.isNotBlank(), onClick = {
                     if (name.isNotBlank()) onCreate(name.trim())
                 })
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatchDeleteConfirmDialog(count: Int, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(SaltTheme.colors.popup)
+                .padding(20.dp),
+        ) {
+            Text("删除 $count 个歌单？", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "只会删除本机歌单，不会影响 B 站内容；删除后无法撤销。",
+                color = SaltTheme.colors.subText,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                SaltPill(text = "取消", onClick = onDismiss)
+                Spacer(Modifier.width(10.dp))
+                SaltPill(text = "删除", selected = true, onClick = onConfirm)
             }
         }
     }

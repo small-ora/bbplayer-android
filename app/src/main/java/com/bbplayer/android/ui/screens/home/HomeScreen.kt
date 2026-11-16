@@ -53,6 +53,7 @@ import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SectionHeader
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -105,15 +106,15 @@ fun HomeScreen(
     val hotTracks = trending.take(6)
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = BbTokens.RootContentBottomPadding),
+        // 保留整体状态栏避让：滚动时列表内容不会绘制到透明状态栏下（与曲库/我的行为一致）。
+        modifier = Modifier.fillMaxSize().statusBarsPadding(),
+        contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
         // ---- 顶部：M3 SearchBar 形态 Header（替代「发现音乐」大标题）----
         item {
             HomeSearchHeader(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
                 onOpenSearch = onOpenSearch,
                 onRefresh = { refreshKey++ },
