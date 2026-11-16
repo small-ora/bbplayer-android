@@ -223,18 +223,26 @@ fun AppRoot() {
                 if (twoPane) {
                     // 宽屏：底部导航收敛为左侧 rail；迷你播放器悬浮在内容底部。
                     if (showMiniPlayer) {
-                        MiniPlayer(
-                            state = playback,
-                            onOpenPlayer = ::openPlayer,
-                            onTogglePlay = { graph.playbackController.playPause() },
-                            onNext = { graph.playbackController.next() },
-                            onPrevious = { graph.playbackController.previous() },
+                        // 系统手势条 inset 区域也铺底色：否则页面内容会从小白条下面透出来。
+                        Box(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .navigationBarsPadding()
-                                .padding(bottom = BbTokens.MiniPlayerGap)
-                                .widthIn(max = 560.dp),
-                        )
+                                .fillMaxWidth()
+                                .background(SaltTheme.colors.background)
+                                .navigationBarsPadding(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            MiniPlayer(
+                                state = playback,
+                                onOpenPlayer = ::openPlayer,
+                                onTogglePlay = { graph.playbackController.playPause() },
+                                onNext = { graph.playbackController.next() },
+                                onPrevious = { graph.playbackController.previous() },
+                                modifier = Modifier
+                                    .widthIn(max = 560.dp)
+                                    .padding(bottom = BbTokens.MiniPlayerGap),
+                            )
+                        }
                     }
                 } else {
                     // 手机：迷你播放器悬浮在底部导航正上方；进二级页时导航下滑隐藏、播放器下沉贴底。
@@ -242,6 +250,9 @@ fun AppRoot() {
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
+                            // 先铺满整条底部 chrome（含系统手势条 inset）再避让 inset：
+                            // 页面内容不会再从系统手势条（小白条）下方透出来。
+                            .background(SaltTheme.colors.background)
                             .navigationBarsPadding(),
                     ) {
                         if (showMiniPlayer) {
