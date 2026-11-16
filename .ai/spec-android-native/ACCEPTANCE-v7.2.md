@@ -1,7 +1,7 @@
 # 验收包 v7.2 — 横滑收敛到内容区 / 状态栏连贯 / 导出备份修复
 
 **级别**：L2 · 分支 `feat/player-fixed-controls`（基于 `5088f44` v0.7.1）· 目标版本 versionCode 10 / 0.7.2
-**状态**：已实现、真机验证通过、全量门禁绿；待合入 main + 发布 v0.7.2
+**状态**：已实现、真机验证通过、全量门禁绿；**已合入 main 并发布 v0.7.2**（CI #43789084301 success）
 
 ## 1. 用户需求
 1. 播放页横滑只作用于「状态栏下方、歌曲名上方」的内容区（封面/歌词/评论）；歌名及以下控件固定；去掉播放控件下的「歌词」按钮。
@@ -38,8 +38,9 @@
 | 项 | 值 |
 |---|---|
 | 版本 | versionCode **10** / versionName **0.7.2** |
-| Tag | `v0.7.2` → push main+tag 触发 CI，Release 只附固定签名 `app-release.apk` |
-| 产物 | debug + release（固定签名，与 v0.7.1 同密钥，可直接覆盖升级） |
+| Tag / main | `v0.7.2` → `b2290f9`；[CI #43789084301](https://github.com/small-ora/bbplayer-android/actions/runs/43789084301) success |
+| Release | https://github.com/small-ora/bbplayer-android/releases/tag/v0.7.2 （资产仅 `app-release.apk`，4.23 MB，固定签名；`aapt2` 校验 versionCode 10 / 0.7.2；SHA-256 与 v0.7.1 同一证书，可直接覆盖升级） |
+| 产物 | debug + release（固定签名，与 v0.7.1 同密钥） |
 
 ## 5. 风险 / 回滚
 - 回滚：`git revert` 本提交，或回到 `v0.7.1`；无数据迁移、无偏好键变更。
