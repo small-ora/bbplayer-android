@@ -37,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,6 +61,7 @@ import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
@@ -84,8 +86,8 @@ fun ProfileScreen(
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = BbTokens.RootContentBottomPadding),
+        modifier = Modifier.fillMaxSize().statusBarsPadding().clipToBounds(),
+        contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
         item {
             LargeTitle(
