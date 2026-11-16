@@ -10,6 +10,17 @@
 
 ## 功能
 
+### v8 新增（底部导航 / 悬浮迷你播放器 / 全应用 UI 重构）
+
+- **底部 3 Tab 导航**：废弃左侧抽屉与汉堡菜单，改为「发现 / 曲库 / 我的」底部导航栏（避让系统手势条）；进入二级页时底栏下滑隐藏，迷你播放器下沉贴底常驻
+- **悬浮胶囊迷你播放器**：悬浮在底部导航正上方（左右 12dp、16dp 圆角、64dp 高）；40dp 封面 + 单行跑马灯标题 + UP 主；右侧仅播放/暂停与下一首（48dp 热区）；底部内置 2dp 进度条；点按/上滑平滑展开全屏播放器，保留左右滑切歌
+- **发现页**：去掉「发现音乐」大标题与收听统计卡，顶部改为 Material 3 SearchBar（占位「搜索音乐 / BV号 / 链接」）；最近播放与收藏视频卡改为 16:9 封面、12dp 圆角、标题最多 2 行
+- **曲库页**：歌单行 [播放][重命名][删除] 三胶囊收敛为 MoreVert + M3 底部操作弹层（立即播放 / 重命名 / 批量管理 / 删除）；批量管理支持多选与二次确认删除；无悬浮 FAB，功能操作收敛顶部
+- **我的页**：累计收听时长、播放次数、12 周听歌热力图合并为一张仪表板卡片（左指标右紧凑点阵）；收听排行 / 播放历史 / 已下载 / 导入歌单统一为「圆形浅色图标底托 + Chevron」的 ripple 列表卡；设置入口移至右上角齿轮
+- **全屏播放器**：封面放大至屏宽的 82%–85%（16dp 圆角、高斯模糊背景衬托、无白边高光）；标题单行跑马灯 + 右侧常驻红心；副标题为 UP 主 + 音质标签；主播放键放大为 72dp + 半透明圆形底板；底部功能栏 `navigationBarsPadding` 避让系统手势条
+- **视觉规范**：Material You 动态取色；浅色背景 `#F8F9FA`、卡片表面 `#EDF2F7`、卡片圆角统一 16dp、字阶 20sp Bold / 14sp / 12sp（60% 灰）；深色与纯白主题同步回归
+- 全量门禁（app assemble + data/playback/lyrics 单测）通过；版本 0.8.0
+
 ### v7.4 新增（首页模块化 / 最近播放歌单 / 菜单精简）
 
 - **首页新增「最近播放的歌单」**：记录歌单最近一次播放时间，用 2×2 封面拼图 + 歌单名 + 「N 首 · 最近播放」展示；点击进入歌单
@@ -99,13 +110,13 @@
 
 ## 截图
 
-| 首页 | 播放器 | 歌词 |
+| 发现 | 播放器 | 歌词 |
 | --- | --- | --- |
-| ![home](.ai/evidence/shots/13-restore.png) | ![player](.ai/evidence/shots/15-add-to-playlist.png) | ![lyrics](.ai/evidence/shots/17-lyrics-offset.png) |
+| ![home](docs/screenshots/01-home.png) | ![player](docs/screenshots/02-player.png) | ![lyrics](docs/screenshots/03-lyrics.png) |
 
-| 音乐库 | 我的 | 设置 |
+| 曲库 | 我的 | 设置 |
 | --- | --- | --- |
-| ![library](.ai/evidence/shots/14-library-playlist.png) | ![profile](.ai/evidence/shots/07-profile.png) | ![settings](.ai/evidence/shots/08-settings.png) |
+| ![library](docs/screenshots/04-library.png) | ![profile](docs/screenshots/05-profile.png) | ![settings](docs/screenshots/14-settings-v2.png) |
 
 ## 构建 & 运行
 

@@ -43,6 +43,7 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import java.time.LocalDate
@@ -69,7 +70,7 @@ fun HistoryScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 40.dp),
+        contentPadding = PaddingValues(bottom = BbTokens.SecondaryContentBottomPadding),
     ) {
         item {
             SmallTopBar(

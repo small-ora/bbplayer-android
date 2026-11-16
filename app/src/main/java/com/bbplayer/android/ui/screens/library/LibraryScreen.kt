@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,14 +25,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material.icons.rounded.WatchLater
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,7 +52,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -67,6 +81,8 @@ import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.Item
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
@@ -103,6 +119,30 @@ fun LibraryScreen(
     var tab by remember { mutableStateOf(LibraryTab.PLAYLISTS) }
     var showCreate by remember { mutableStateOf(false) }
 
+    // ---- 歌单操作（AC8）：MoreVert → ModalBottomSheet，重命名复用既有 Dialog ----
+    var sheetPlaylistId by remember { mutableStateOf<String?>(null) }
+    var renamePlaylistId by remember { mutableStateOf<String?>(null) }
+    val sheetPlaylist = sheetPlaylistId?.let { id -> playlists.firstOrNull { it.id == id } }
+    val renamePlaylist = renamePlaylistId?.let { id -> playlists.firstOrNull { it.id == id } }
+    // 目标歌单已被删除（例如另一端刷新）时自动收起，避免空引用。
+    if (sheetPlaylistId != null && sheetPlaylist == null) {
+        LaunchedEffect(sheetPlaylistId) { sheetPlaylistId = null }
+    }
+
+    // ---- 批量管理（AC8）：仅曲库页「歌单」Tab 的多选 + 批量删除 ----
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    // 批量删除前二次确认（独立审查 P2：全选+删除不应两击即永久丢失）
+    var pendingBatchDelete by remember { mutableStateOf<List<String>>(emptyList()) }
+    fun exitSelection() {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
+    // 切换到其它 Tab 时退出多选，避免选择态泄漏到收藏/最近等列表。
+    LaunchedEffect(tab) {
+        if (tab != LibraryTab.PLAYLISTS) exitSelection()
+    }
+
     // 收藏夹（B 站）只在需要且已登录时加载，退出登录后清空。
     var folders by remember { mutableStateOf<List<FavoriteFolder>?>(null) }
     var foldersError by remember { mutableStateOf<String?>(null) }
@@ -130,18 +170,46 @@ fun LibraryScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 140.dp),
+        modifier = Modifier.fillMaxSize().statusBarsPadding().clipToBounds(),
+        contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
         item {
-            LargeTitle(
-                title = "音乐库",
-                actions = {
-                    IconAction(Icons.Rounded.Download, "已下载", onClick = onOpenDownloads)
-                    IconAction(Icons.Rounded.PlaylistAdd, "导入歌单", onClick = onOpenImport)
-                    IconAction(Icons.Rounded.Add, "新建歌单", onClick = { showCreate = true })
-                },
-            )
+            if (selectionMode && tab == LibraryTab.PLAYLISTS) {
+                LargeTitle(
+                    title = "已选 ${selectedIds.size}",
+                    actions = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SelectionHeaderAction(
+                                text = "全选",
+                                onClick = {
+                                    selectedIds = if (selectedIds.size == playlists.size) {
+                                        emptySet()
+                                    } else {
+                                        playlists.map { it.id }.toSet()
+                                    }
+                                },
+                            )
+                            SelectionHeaderAction(
+                                text = "删除",
+                                enabled = selectedIds.isNotEmpty(),
+                                onClick = {
+                                    if (selectedIds.isNotEmpty()) pendingBatchDelete = selectedIds.toList()
+                                },
+                            )
+                            SelectionHeaderAction(text = "取消", onClick = { exitSelection() })
+                        }
+                    },
+                )
+            } else {
+                LargeTitle(
+                    title = "曲库",
+                    actions = {
+                        IconAction(Icons.Rounded.Download, "已下载", onClick = onOpenDownloads)
+                        IconAction(Icons.Rounded.PlaylistAdd, "导入歌单", onClick = onOpenImport)
+                        IconAction(Icons.Rounded.Add, "新建歌单", onClick = { showCreate = true })
+                    },
+                )
+            }
         }
         item {
             Row(
@@ -178,17 +246,17 @@ fun LibraryScreen(
                         val playlist = playlists[idx]
                         PlaylistRow(
                             playlist = playlist,
-                            onClick = { onOpenPlaylist(playlist.id) },
-                            onPlay = {
-                                if (playlist.tracks.isNotEmpty()) {
-                                    scope.safeLaunch { graph.libraryRepository.markPlaylistPlayed(playlist.id) }
-                                    onPlayTrack(playlist.tracks, 0)
+                            selectionMode = selectionMode,
+                            selected = playlist.id in selectedIds,
+                            onClick = {
+                                if (selectionMode) {
+                                    selectedIds = selectedIds.toggle(playlist.id)
+                                } else {
+                                    onOpenPlaylist(playlist.id)
                                 }
                             },
-                            onDelete = { scope.safeLaunch { graph.libraryRepository.deletePlaylist(playlist.id) } },
-                            onRename = { newName ->
-                                scope.safeLaunch { graph.libraryRepository.renamePlaylist(playlist.id, newName) }
-                            },
+                            onToggleSelected = { selectedIds = selectedIds.toggle(playlist.id) },
+                            onMore = { sheetPlaylistId = playlist.id },
                         )
                     }
                 }
@@ -295,6 +363,58 @@ fun LibraryScreen(
         }
     }
 
+    // ---- 歌单操作弹层（立即播放 / 重命名 / 批量管理 / 删除） ----
+    val sheet = sheetPlaylist
+    if (sheet != null) {
+        PlaylistActionsSheet(
+            playlistName = sheet.name,
+            canPlay = sheet.tracks.isNotEmpty(),
+            onDismiss = { sheetPlaylistId = null },
+            onPlayNow = {
+                // 与旧「播放」胶囊完全一致：记录播放时间 + 从头播放。
+                scope.safeLaunch { graph.libraryRepository.markPlaylistPlayed(sheet.id) }
+                onPlayTrack(sheet.tracks, 0)
+            },
+            onRename = { renamePlaylistId = sheet.id },
+            onBatchManage = {
+                selectionMode = true
+                selectedIds = emptySet()
+            },
+            onDelete = {
+                scope.safeLaunch { graph.libraryRepository.deletePlaylist(sheet.id) }
+            },
+        )
+    }
+
+    if (renamePlaylist != null) {
+        RenamePlaylistDialog(
+            current = renamePlaylist.name,
+            onDismiss = { renamePlaylistId = null },
+            onConfirm = { name ->
+                renamePlaylistId = null
+                scope.safeLaunch { graph.libraryRepository.renamePlaylist(renamePlaylist.id, name) }
+            },
+        )
+    }
+
+    if (pendingBatchDelete.isNotEmpty()) {
+        BatchDeleteConfirmDialog(
+            count = pendingBatchDelete.size,
+            onDismiss = { pendingBatchDelete = emptyList() },
+            onConfirm = {
+                val ids = pendingBatchDelete
+                pendingBatchDelete = emptyList()
+                if (ids.isNotEmpty()) {
+                    // 先退出多选再逐个删除，UI 立即恢复普通态。
+                    exitSelection()
+                    scope.safeLaunch {
+                        ids.forEach { id -> graph.libraryRepository.deletePlaylist(id) }
+                    }
+                }
+            },
+        )
+    }
+
     if (showCreate) {
         CreatePlaylistDialog(
             onDismiss = { showCreate = false },
@@ -303,6 +423,96 @@ fun LibraryScreen(
                 scope.safeLaunch { graph.libraryRepository.createPlaylist(name) }
             },
         )
+    }
+}
+
+private fun Set<String>.toggle(id: String): Set<String> =
+    if (id in this) this - id else this + id
+
+@Composable
+private fun SelectionHeaderAction(text: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(50))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = if (enabled) SaltTheme.colors.highlight else SaltTheme.colors.subText.copy(alpha = 0.4f),
+            fontSize = 13.sp,
+            maxLines = 1,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlaylistActionsSheet(
+    playlistName: String,
+    canPlay: Boolean,
+    onDismiss: () -> Unit,
+    onPlayNow: () -> Unit,
+    onRename: () -> Unit,
+    onBatchManage: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // 防连点：一次弹层只接受一个操作。
+    var acting by remember { mutableStateOf(false) }
+    // 独立审查 P2：不要依赖 hide() 的完成回调（弹层中途被移除时协程会被取消，动作静默丢失）。
+    // 先关状态再执行动作；BottomSheet 随状态移除，操作一定落地。
+    fun dismissThen(action: () -> Unit) {
+        if (acting) return
+        acting = true
+        onDismiss()
+        action()
+    }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = SaltTheme.colors.background,
+        contentColor = SaltTheme.colors.text,
+        scrimColor = Color.Black.copy(alpha = 0.4f),
+    ) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
+            Text(
+                text = playlistName,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+            )
+            SheetActionRow(Icons.Rounded.PlayArrow, "立即播放", enabled = canPlay, onClick = { dismissThen(onPlayNow) })
+            SheetActionRow(Icons.Rounded.Edit, "重命名", onClick = { dismissThen(onRename) })
+            SheetActionRow(Icons.Rounded.Checklist, "批量管理", onClick = { dismissThen(onBatchManage) })
+            SheetActionRow(Icons.Rounded.Delete, "删除", onClick = { dismissThen(onDelete) })
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun SheetActionRow(
+    icon: ImageVector,
+    text: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val contentColor = if (enabled) SaltTheme.colors.text else SaltTheme.colors.subText.copy(alpha = 0.4f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(16.dp))
+        Text(text = text, color = contentColor, fontSize = 15.sp)
     }
 }
 
@@ -407,12 +617,12 @@ private fun CollectionRow(collection: BiliCollection, onClick: () -> Unit) {
 @Composable
 private fun PlaylistRow(
     playlist: Playlist,
+    selectionMode: Boolean,
+    selected: Boolean,
     onClick: () -> Unit,
-    onPlay: () -> Unit,
-    onDelete: () -> Unit,
-    onRename: (String) -> Unit,
+    onToggleSelected: () -> Unit,
+    onMore: () -> Unit,
 ) {
-    var showRename by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -420,6 +630,18 @@ private fun PlaylistRow(
             .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (selectionMode) {
+            Checkbox(
+                checked = selected,
+                onCheckedChange = { onToggleSelected() },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = SaltTheme.colors.highlight,
+                    checkmarkColor = SaltTheme.colors.onHighlight,
+                    uncheckedColor = SaltTheme.colors.subText,
+                ),
+            )
+            Spacer(Modifier.width(4.dp))
+        }
         Box(Modifier.size(54.dp)) {
             CoverImage(
                 url = playlist.coverUrls.firstOrNull().orEmpty(),
@@ -437,23 +659,23 @@ private fun PlaylistRow(
                 fontSize = SaltTheme.textStyles.sub.fontSize,
             )
         }
-        if (playlist.tracks.isNotEmpty()) {
-            SaltPill(text = "播放", onClick = onPlay)
+        if (!selectionMode) {
+            // 48dp 热区（AC8）：单个 MoreVert 取代旧的 [播放][重命名][删除] 三胶囊。
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onMore),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = "歌单更多操作",
+                    tint = SaltTheme.colors.subText,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
-        Spacer(Modifier.width(8.dp))
-        SaltPill(text = "重命名", onClick = { showRename = true })
-        Spacer(Modifier.width(8.dp))
-        SaltPill(text = "删除", onClick = onDelete)
-    }
-    if (showRename) {
-        RenamePlaylistDialog(
-            current = playlist.name,
-            onDismiss = { showRename = false },
-            onConfirm = { name ->
-                showRename = false
-                onRename(name)
-            },
-        )
     }
 }
 
@@ -535,6 +757,34 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
                 SaltPill(text = "创建", selected = name.isNotBlank(), onClick = {
                     if (name.isNotBlank()) onCreate(name.trim())
                 })
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatchDeleteConfirmDialog(count: Int, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(SaltTheme.colors.popup)
+                .padding(20.dp),
+        ) {
+            Text("删除 $count 个歌单？", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "只会删除本机歌单，不会影响 B 站内容；删除后无法撤销。",
+                color = SaltTheme.colors.subText,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                SaltPill(text = "取消", onClick = onDismiss)
+                Spacer(Modifier.width(10.dp))
+                SaltPill(text = "删除", selected = true, onClick = onConfirm)
             }
         }
     }

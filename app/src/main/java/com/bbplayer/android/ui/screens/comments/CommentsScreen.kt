@@ -45,6 +45,7 @@ import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -197,7 +198,7 @@ fun CommentsScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(bottom = if (embedded) 16.dp else 40.dp),
+        contentPadding = PaddingValues(bottom = if (embedded) 16.dp else BbTokens.SecondaryContentBottomPadding),
     ) {
         if (embedded) {
             item {

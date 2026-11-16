@@ -48,6 +48,7 @@ import com.bbplayer.android.core.model.QrCodeInfo
 import com.bbplayer.android.core.model.QrPollState
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
+import com.bbplayer.android.ui.theme.BbTokens
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.google.zxing.BarcodeFormat
@@ -91,7 +92,8 @@ fun LoginScreen(
                 LoginTab.QR -> QrLoginSection(onLoggedIn = onLoggedIn)
                 LoginTab.COOKIE -> CookieLoginSection(onLoggedIn = onLoggedIn)
             }
-            Spacer(Modifier.height(36.dp))
+            // 登录页是二级页：底部迷你播放器常驻，滚到底时留出安全内边距（AC6）。
+            Spacer(Modifier.height(BbTokens.SecondaryContentBottomPadding))
         }
     }
 }

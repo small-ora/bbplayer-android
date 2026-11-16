@@ -1,6 +1,7 @@
 package com.bbplayer.android.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,10 +23,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,26 +37,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bbplayer.android.core.Format
 import com.bbplayer.android.core.contracts.toUserMessage
-import com.bbplayer.android.core.model.ListeningSummary
 import com.bbplayer.android.core.model.Playlist
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.CoverImage
 import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.IconAction
-import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SectionHeader
 import com.bbplayer.android.ui.components.TrackRow
-import com.moriafly.salt.ui.RoundedColumn
+import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -67,7 +71,6 @@ fun HomeScreen(
 ) {
     val graph = LocalAppGraph.current
     val history by graph.historyRepository.recent(20).collectAsStateWithLifecycle(initialValue = emptyList())
-    val summary by graph.historyRepository.summary().collectAsStateWithLifecycle(initialValue = ListeningSummary())
     val playlists by graph.libraryRepository.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val favorites by graph.libraryRepository.favorites.collectAsStateWithLifecycle(initialValue = emptyList())
     val playback by graph.playbackController.state.collectAsStateWithLifecycle(initialValue = com.bbplayer.android.core.model.PlaybackState())
@@ -105,38 +108,19 @@ fun HomeScreen(
     val hotTracks = trending.take(6)
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 140.dp),
+        // 保留整体状态栏避让：滚动时列表内容不会绘制到透明状态栏下（与曲库/我的行为一致）。
+        modifier = Modifier.fillMaxSize().statusBarsPadding().clipToBounds(),
+        contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
+        // ---- 顶部：M3 SearchBar 形态 Header（替代「发现音乐」大标题）----
         item {
-            LargeTitle(
-                title = "发现音乐",
-                subtitle = "从 B 站听见喜欢的歌",
-                actions = {
-                    IconAction(Icons.Rounded.Refresh, "刷新", onClick = { refreshKey++ })
-                },
-            )
-        }
-        item {
-            Row(
+            HomeSearchHeader(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = SaltTheme.dimens.padding)
-                    .height(46.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(SaltTheme.colors.subBackground)
-                    .clickable(onClick = onOpenSearch)
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Rounded.Search, null, tint = SaltTheme.colors.subText, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "搜索音乐 / BV / 链接",
-                    color = SaltTheme.colors.subText.copy(alpha = 0.8f),
-                    fontSize = 14.sp,
-                )
-            }
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+                onOpenSearch = onOpenSearch,
+                onRefresh = { refreshKey++ },
+            )
         }
 
         // ---- 最近播放（单曲）----
@@ -160,7 +144,7 @@ fun HomeScreen(
         // ---- 最近播放的歌单 ----
         if (recentPlayedPlaylists.isNotEmpty()) {
             item {
-                SectionHeader(title = "最近播放的歌单", action = "音乐库", onAction = onOpenLibrary)
+                SectionHeader(title = "最近播放的歌单", action = "曲库", onAction = onOpenLibrary)
             }
             item {
                 LazyRow(
@@ -179,7 +163,7 @@ fun HomeScreen(
         } else if (myPlaylists.isNotEmpty()) {
             // 还没有播放过歌单时，先展示本地歌单，避免新用户看不到这个模块
             item {
-                SectionHeader(title = "我的歌单", action = "音乐库", onAction = onOpenLibrary)
+                SectionHeader(title = "我的歌单", action = "曲库", onAction = onOpenLibrary)
             }
             item {
                 LazyRow(
@@ -199,7 +183,7 @@ fun HomeScreen(
 
         // ---- 我的收藏 ----
         if (favoriteTracks.isNotEmpty()) {
-            item { SectionHeader(title = "我的收藏", action = "音乐库", onAction = onOpenLibrary) }
+            item { SectionHeader(title = "我的收藏", action = "曲库", onAction = onOpenLibrary) }
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
@@ -210,46 +194,6 @@ fun HomeScreen(
                             track = favoriteTracks[idx],
                             onClick = { play(favoriteTracks, idx) },
                         )
-                    }
-                }
-            }
-        }
-
-        // ---- 收听统计 ----
-        item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 6.dp)) {
-                RoundedColumn(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        Modifier.fillMaxWidth().clickable(onClick = onOpenHistory).padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            Modifier
-                                .size(42.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SaltTheme.colors.highlight.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Rounded.BarChart,
-                                contentDescription = null,
-                                tint = SaltTheme.colors.highlight,
-                                modifier = Modifier.size(22.dp),
-                            )
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("累计收听", color = SaltTheme.colors.subText, fontSize = 12.sp)
-                            Text(
-                                Format.totalListening(summary.totalListenedMs),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("播放次数", color = SaltTheme.colors.subText, fontSize = 12.sp)
-                            Text("${summary.totalPlayCount} 次", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                        }
                     }
                 }
             }
@@ -282,31 +226,107 @@ fun HomeScreen(
     }
 }
 
+/**
+ * 发现页顶部搜索入口：用 Material 3 SearchBar 作为 Header（不展开，只当可点击的搜索框）。
+ * 整条点击进搜索页；右侧保留刷新入口。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeSearchHeader(
+    modifier: Modifier = Modifier,
+    onOpenSearch: () -> Unit,
+    onRefresh: () -> Unit,
+) {
+    // 纯白（墨水屏）主题下 background == subBackground，SearchBar 会"消失"；
+    // 此时补一条发丝描边，正常主题保持无描边（视觉不变）。
+    val searchShape = RoundedCornerShape(50)
+    val needHairline = SaltTheme.colors.subBackground == SaltTheme.colors.background
+    SearchBar(
+        inputField = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clickable(onClick = onOpenSearch)
+                    .padding(start = 16.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = null,
+                    tint = SaltTheme.colors.subText,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = "搜索音乐 / BV号 / 链接",
+                    color = SaltTheme.colors.subText.copy(alpha = 0.75f),
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                IconAction(Icons.Rounded.Refresh, "刷新", onClick = onRefresh)
+            }
+        },
+        expanded = false,
+        onExpandedChange = { if (it) onOpenSearch() },
+        modifier = modifier.then(
+            if (needHairline) {
+                Modifier.border(0.5.dp, SaltTheme.colors.stroke, searchShape)
+            } else {
+                Modifier
+            }
+        ),
+        shape = searchShape,
+        // SaltUI 没有为 M3 组件提供 MaterialTheme，这里手动取 Salt token，避免深色模式下变成默认亮色。
+        colors = SearchBarDefaults.colors(
+            containerColor = SaltTheme.colors.subBackground,
+            dividerColor = SaltTheme.colors.stroke,
+        ),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        // 外层已 statusBarsPadding，避免 SearchBar 默认 windowInsets 再叠一次。
+        windowInsets = WindowInsets(0, 0, 0, 0),
+        content = {},
+    )
+}
+
+/** 16:9 视频卡：封面在上，标题最多 2 行，UP 主 1 行（发现页最近播放 / 我的收藏）。 */
 @Composable
 private fun RecentCard(track: Track, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .width(112.dp)
+            .width(200.dp)
             .clickable(onClick = onClick),
     ) {
-        CoverImage(url = track.coverUrl, modifier = Modifier.size(112.dp), corner = 12.dp)
+        CoverImage(
+            url = track.coverUrl,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
+            corner = BbTokens.CoverCorner,
+        )
         Spacer(Modifier.height(6.dp))
         Text(
             text = track.displayTitle,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            fontSize = 12.sp,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
         )
+        Spacer(Modifier.height(2.dp))
         Text(
             text = track.uploader,
-            color = SaltTheme.colors.subText,
+            color = SaltTheme.colors.subText.copy(alpha = 0.6f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            fontSize = SaltTheme.textStyles.sub.fontSize,
+            fontSize = 12.sp,
         )
     }
 }
 
+/** 歌单卡：保持方形 2×2 拼图封面，不做 16:9 改造。 */
 @Composable
 private fun PlaylistCard(playlist: Playlist, metaSuffix: String?, onClick: () -> Unit) {
     val covers = playlist.coverUrls

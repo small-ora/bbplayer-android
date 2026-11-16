@@ -64,6 +64,7 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import kotlin.math.abs
@@ -311,7 +312,7 @@ fun ImportPlaylistScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 40.dp),
+        contentPadding = PaddingValues(bottom = BbTokens.SecondaryContentBottomPadding),
     ) {
         item { SmallTopBar(title = "导入外部歌单", onBack = onBack) }
 

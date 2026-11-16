@@ -1,6 +1,8 @@
 package com.bbplayer.android.ui.screens.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,20 +10,25 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,32 +37,35 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.widget.Toast
-import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.Format
+import com.bbplayer.android.core.contracts.toUserMessage
+import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.model.DailyStat
 import com.bbplayer.android.core.model.ListeningSummary
 import com.bbplayer.android.core.model.Track
-import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.CoverImage
+import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.SaltPill
-import com.moriafly.salt.ui.Item
+import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun ProfileScreen(
@@ -76,10 +86,17 @@ fun ProfileScreen(
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 140.dp),
+        modifier = Modifier.fillMaxSize().statusBarsPadding().clipToBounds(),
+        contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
-        item { LargeTitle("我的") }
+        item {
+            LargeTitle(
+                title = "我的",
+                actions = {
+                    IconAction(Icons.Rounded.Settings, "设置", onOpenSettings)
+                },
+            )
+        }
         item {
             AccountCard(
                 user = session,
@@ -88,86 +105,39 @@ fun ProfileScreen(
             )
         }
         item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding)) {
-                RoundedColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    paddingValues = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier.size(44.dp).clip(RoundedCornerShape(14.dp))
-                                .background(SaltTheme.colors.highlight.copy(alpha = 0.14f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            androidx.compose.material3.Icon(
-                                Icons.Rounded.BarChart, null,
-                                tint = SaltTheme.colors.highlight,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        Spacer(Modifier.size(12.dp))
-                        Column {
-                            Text("累计收听", color = SaltTheme.colors.subText, fontSize = 13.sp)
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                Format.totalListening(summary.totalListenedMs),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                        Spacer(Modifier.weight(1f))
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("播放次数", color = SaltTheme.colors.subText, fontSize = 13.sp)
-                            Spacer(Modifier.height(2.dp))
-                            Text("${summary.totalPlayCount} 次", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Heatmap(daily)
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "最近 12 周听歌记录",
-                        color = SaltTheme.colors.subText.copy(alpha = 0.7f),
-                        fontSize = 11.sp,
-                    )
-                }
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
+                DashboardCard(summary = summary, daily = daily)
             }
         }
         item {
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 12.dp)) {
-                RoundedColumn(modifier = Modifier.fillMaxWidth()) {
-                    Item(
+                RoundedColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    paddingValues = PaddingValues(0.dp),
+                ) {
+                    ProfileEntryRow(
+                        icon = Icons.Rounded.BarChart,
+                        title = "收听排行",
+                        subtitle = "B 站音乐榜 · 我的收听排行",
                         onClick = onOpenLeaderboard,
-                        text = "收听排行",
-                        sub = "B 站音乐榜 · 我的收听排行",
-                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.BarChart),
                     )
-                    Item(
+                    ProfileEntryRow(
+                        icon = Icons.Rounded.History,
+                        title = "播放历史",
+                        subtitle = "按日查看听歌记录",
                         onClick = onOpenHistory,
-                        text = "播放历史",
-                        sub = "按日查看听歌记录",
-                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.History),
                     )
-                    Item(
+                    ProfileEntryRow(
+                        icon = Icons.Rounded.Download,
+                        title = "已下载",
+                        subtitle = "离线歌曲与导出",
                         onClick = onOpenDownloads,
-                        text = "已下载",
-                        sub = "离线歌曲与导出",
-                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.Download),
                     )
-                    Item(
+                    ProfileEntryRow(
+                        icon = Icons.Rounded.PlaylistAdd,
+                        title = "导入歌单",
+                        subtitle = "网易云 / QQ 音乐 → B 站",
                         onClick = onOpenImport,
-                        text = "导入歌单",
-                        sub = "网易云 / QQ 音乐 → B 站",
-                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.PlaylistAdd),
-                    )
-                }
-            }
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
-                RoundedColumn(modifier = Modifier.fillMaxWidth()) {
-                    Item(
-                        onClick = onOpenSettings,
-                        text = "设置",
-                        iconPainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.Settings),
                     )
                 }
             }
@@ -215,13 +185,157 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * 仪表板卡片：左侧累计指标，右侧 12 周紧凑点阵热力图（AC9）。
+ *
+ * 12 周 × 7 天、cell 9dp、gap 2dp → 宽 130dp，右对齐垂直居中，避免右侧大片留白。
+ */
+@Composable
+private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
+    RoundedColumn(
+        modifier = Modifier.fillMaxWidth(),
+        paddingValues = PaddingValues(0.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("累计收听", color = SaltTheme.colors.subText, fontSize = BbTokens.CaptionSize)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    Format.totalListening(summary.totalListenedMs),
+                    fontSize = BbTokens.TitleLargeSize,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "播放次数 ${summary.totalPlayCount} 次",
+                    color = SaltTheme.colors.subText.copy(alpha = BbTokens.CaptionAlpha),
+                    fontSize = BbTokens.CaptionSize,
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            Heatmap(daily)
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "最近 12 周听歌记录",
+            color = SaltTheme.colors.subText.copy(alpha = BbTokens.CaptionAlpha),
+            fontSize = BbTokens.CaptionSize,
+        )
+        }
+    }
+}
+
+/** 12 周 × 7 天的紧凑点阵热力图，点阵整体 130dp 宽，右对齐。 */
+@Composable
+private fun Heatmap(daily: List<DailyStat>) {
+    val byDate = daily.associateBy { it.date }
+    val today = LocalDate.now()
+    // 以「本周一」为最后一列，向前取满 12 列；每列 7 天（周一 → 周日）。
+    val currentMonday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+    val startMonday = currentMonday.minusWeeks(11)
+    val weeks = (0 until 12).map { week ->
+        (0 until 7).map { weekday ->
+            val date = startMonday.plusDays((week * 7 + weekday).toLong())
+            when {
+                date.isAfter(today) -> null
+                else -> byDate[date.toString()] ?: DailyStat(date.toString(), 0, 0)
+            }
+        }
+    }
+    val maxMs = (weeks.flatten().filterNotNull().maxOfOrNull { it.listenedMs } ?: 1L).coerceAtLeast(1L)
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        for (weekday in 0..6) {
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                weeks.forEach { week ->
+                    val day = week.getOrNull(weekday)
+                    val alpha = when {
+                        day == null -> 0f
+                        day.listenedMs <= 0 -> 0.06f
+                        else -> 0.25f + 0.75f * (day.listenedMs.toFloat() / maxMs)
+                    }
+                    Box(
+                        Modifier
+                            .size(9.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                if (day == null) Color.Transparent
+                                else SaltTheme.colors.highlight.copy(alpha = alpha)
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 统一的功能入口行：40dp 圆形浅色底托 + 22dp 图标 + 标题/副标题 + ChevronRight（AC9）。 */
+@Composable
+private fun ProfileEntryRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(SaltTheme.colors.highlight.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = SaltTheme.colors.highlight,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                title,
+                fontSize = BbTokens.BodySize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                subtitle,
+                color = SaltTheme.colors.subText.copy(alpha = BbTokens.CaptionAlpha),
+                fontSize = BbTokens.CaptionSize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Icon(
+            Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = SaltTheme.colors.subText.copy(alpha = 0.6f),
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
 @Composable
 private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -> Unit) {
     Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
         RoundedColumn(
             modifier = Modifier.fillMaxWidth(),
-            paddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+            paddingValues = PaddingValues(0.dp),
         ) {
+          Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
             if (user == null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -229,7 +343,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                             .background(SaltTheme.colors.subBackground),
                         contentAlignment = Alignment.Center,
                     ) {
-                        androidx.compose.material3.Icon(
+                        Icon(
                             Icons.Rounded.Person, null,
                             tint = SaltTheme.colors.subText,
                             modifier = Modifier.size(28.dp),
@@ -263,7 +377,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false),
                             )
                             Spacer(Modifier.size(6.dp))
@@ -291,49 +405,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
             )
-        }
-    }
-}
-
-/** 12-week x 7-day listening heatmap, Salt Player style: small rounded squares. */
-@Composable
-private fun Heatmap(daily: List<DailyStat>) {
-    val byDate = daily.associateBy { it.date }
-    val today = LocalDate.now()
-    // Align the grid so the last column ends today (columns = weeks, rows = weekdays).
-    val daysBack = 83
-    val start = today.minusDays(daysBack.toLong())
-    val startOffset = (start.dayOfWeek.value - 1) // Monday = 0
-    val cells = mutableListOf<DailyStat?>()
-    repeat(startOffset) { cells.add(null) }
-    for (i in 0..daysBack) {
-        val date = start.plusDays(i.toLong())
-        cells.add(byDate[date.toString()] ?: DailyStat(date.toString(), 0, 0))
-    }
-    while (cells.size % 7 != 0) cells.add(null)
-    val maxMs = (cells.filterNotNull().maxOfOrNull { it.listenedMs } ?: 1L).coerceAtLeast(1L)
-    val weeks = cells.chunked(7) // one column per week
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        for (weekday in 0..6) {
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                weeks.forEach { week ->
-                    val day = week.getOrNull(weekday)
-                    val alpha = when {
-                        day == null -> 0f
-                        day.listenedMs <= 0 -> 0.06f
-                        else -> 0.25f + 0.75f * (day.listenedMs.toFloat() / maxMs)
-                    }
-                    Box(
-                        Modifier
-                            .size(12.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(
-                                if (day == null) Color.Transparent
-                                else SaltTheme.colors.highlight.copy(alpha = alpha)
-                            )
-                    )
-                }
-            }
+          }
         }
     }
 }

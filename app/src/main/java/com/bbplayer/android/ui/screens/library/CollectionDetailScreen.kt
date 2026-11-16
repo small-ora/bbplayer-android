@@ -35,6 +35,7 @@ import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -68,7 +69,7 @@ fun CollectionDetailScreen(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 120.dp),
+        contentPadding = PaddingValues(bottom = BbTokens.SecondaryContentBottomPadding),
     ) {
         item { SmallTopBar(title = title, onBack = onBack) }
         item {

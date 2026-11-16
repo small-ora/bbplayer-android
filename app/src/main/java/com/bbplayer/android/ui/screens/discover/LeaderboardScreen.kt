@@ -45,6 +45,7 @@ import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -91,7 +92,7 @@ fun LeaderboardScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 40.dp),
+        contentPadding = PaddingValues(bottom = BbTokens.SecondaryContentBottomPadding),
     ) {
         item {
             SmallTopBar(

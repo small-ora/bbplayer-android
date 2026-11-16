@@ -3,6 +3,7 @@ package com.bbplayer.android.ui.screens.player
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -59,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -260,7 +262,6 @@ fun PlayerScreen(
             Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
                 .padding(horizontal = 24.dp),
         ) {
             state.errorMessage?.let { message ->
@@ -288,21 +289,15 @@ fun PlayerScreen(
             }
 
             // ---- top bar ----
-            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(
                     Icons.Rounded.KeyboardArrowDown, "收起", onClick = onBack,
-                    tint = onPlayerColor, size = 40,
+                    tint = onPlayerColor, size = 36,
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("正在播放", color = onPlayerColor.copy(alpha = 0.85f), fontSize = 12.sp)
-                        Text(
-                            track.uploader,
-                            color = onPlayerColor.copy(alpha = 0.55f),
-                            fontSize = 11.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        // UP 主只在下方副标题出现一次，避免重复。
                         // 页码指示：封面 / 歌词 / 评论
                         Spacer(Modifier.height(5.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -320,7 +315,7 @@ fun PlayerScreen(
                 }
                 IconAction(
                     Icons.Rounded.MoreHoriz, "更多", onClick = { sheet.value = "more" },
-                    tint = onPlayerColor, size = 40,
+                    tint = onPlayerColor, size = 36,
                 )
             }
 
@@ -356,66 +351,84 @@ fun PlayerScreen(
             }
 
             // ---- 固定区域：歌名 / 进度 / 播放控件 / 底部操作（不随横滑切换）----
-            Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = track.displayTitle,
-                        color = onPlayerColor,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+            // 底部安全区：只在这一层加 navigationBarsPadding()（根 Column 已移除，避免 inset 双计），
+            // 另留 12dp 底部留白，确保功能按钮行不被系统手势条遮挡；播放器背景仍延伸到系统栏下方。
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 4.dp),
+            ) {
+                // 标题 + 副标题合并在一行块内，收藏红心常驻右侧并垂直居中；
+                // 这样底部固定区更紧凑，封面能接近「屏宽 84%」（AC10）。
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
                         Text(
-                            text = track.uploader,
-                            color = onPlayerSecondary,
-                            fontSize = 13.sp,
+                            text = track.displayTitle,
+                            color = onPlayerColor,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
+                            overflow = TextOverflow.Clip,
+                            // 长标题单行跑马灯，不折行。
+                            modifier = Modifier.fillMaxWidth().basicMarquee(),
                         )
-                        Spacer(Modifier.width(8.dp))
-                        QualityBadge(quality = quality, pureWhite = pureWhite)
+                        Spacer(Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = track.uploader,
+                                color = onPlayerSecondary,
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            QualityBadge(quality = quality, pureWhite = pureWhite)
+                        }
                     }
+                    Spacer(Modifier.width(4.dp))
+                    IconAction(
+                        icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                        contentDescription = "收藏",
+                        onClick = {
+                            scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
+                        },
+                        tint = if (isFavorite) Color(0xFFFF6B81) else onPlayerColor.copy(alpha = 0.85f),
+                        // 热区 48dp，与标题块垂直居中。
+                        size = 48,
+                    )
                 }
-                IconAction(
-                    icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                    contentDescription = "收藏",
-                    onClick = {
-                        scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
-                    },
-                    tint = if (isFavorite) Color(0xFFFF6B81) else onPlayerColor.copy(alpha = 0.85f),
-                    size = 40,
+                Spacer(Modifier.height(6.dp))
+                SeekLine(
+                    positionMs = state.positionMs,
+                    durationMs = state.durationMs.coerceAtLeast(1),
+                    onSeek = { graph.playbackController.seekTo(it) },
+                    activeColor = onPlayerColor,
+                    trackColor = onPlayerColor.copy(alpha = 0.24f),
+                    timeColor = onPlayerSecondary,
+                    touchHeight = 18.dp,
+                )
+                Spacer(Modifier.height(4.dp))
+                TransportRow(
+                    state = state,
+                    onPrev = { },
+                    onToggle = { },
+                    onNext = { },
+                    pureWhite = pureWhite,
+                )
+                Spacer(Modifier.height(2.dp))
+                BottomActions(
+                    state = state,
+                    quality = quality,
+                    onModeClick = { graph.playbackController.setPlayMode(state.playMode.next()) },
+                    onShowSheet = { sheet.value = it },
+                    onOpenQueue = { showQueue = true },
                 )
             }
-            Spacer(Modifier.height(14.dp))
-            SeekLine(
-                positionMs = state.positionMs,
-                durationMs = state.durationMs.coerceAtLeast(1),
-                onSeek = { graph.playbackController.seekTo(it) },
-                activeColor = onPlayerColor,
-                trackColor = onPlayerColor.copy(alpha = 0.24f),
-                timeColor = onPlayerSecondary,
-            )
-            Spacer(Modifier.height(10.dp))
-            TransportRow(
-                state = state,
-                onPrev = { },
-                onToggle = { },
-                onNext = { },
-                white = !pureWhite,
-            )
-            Spacer(Modifier.height(6.dp))
-            BottomActions(
-                state = state,
-                quality = quality,
-                onModeClick = { graph.playbackController.setPlayMode(state.playMode.next()) },
-                onShowSheet = { sheet.value = it },
-                onOpenQueue = { showQueue = true },
-            )
-            Spacer(Modifier.height(10.dp))
         }
     }
 
@@ -668,17 +681,20 @@ private val PlayerCommentColors = SaltColors(
 )
 @Composable
 private fun CoverPage(track: Track, state: PlaybackState) {
+    // AC10：播放态封面宽 = 屏宽 85%，暂停态 0.97 缩放后仍 ≥82%，二者都落在 82%–85%；
+    // 再与可用高度取 min，小窗/横屏也不溢出；圆角 16dp，无白边/描边。
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val coverScale = animateFloatAsState(
-            targetValue = if (state.isPlaying) 1f else 0.94f,
+            targetValue = if (state.isPlaying) 1f else 0.97f,
             animationSpec = tween(400),
             label = "coverScale",
         )
-        val side = minOf(maxWidth * 0.86f, maxHeight)
+        val side = minOf(screenWidth * 0.85f, maxHeight)
         CoverImage(
             url = track.coverUrl,
             modifier = Modifier.size(side).androidxScale(coverScale.value),
-            corner = 20.dp,
+            corner = 16.dp,
         )
     }
 }
@@ -733,29 +749,47 @@ private fun QualityBadge(quality: AudioQuality, pureWhite: Boolean = false) {
 }
 
 @Composable
-private fun TransportRow(state: PlaybackState, onPrev: () -> Unit, onToggle: () -> Unit, onNext: () -> Unit, white: Boolean) {
+private fun TransportRow(
+    state: PlaybackState,
+    onPrev: () -> Unit,
+    onToggle: () -> Unit,
+    onNext: () -> Unit,
+    pureWhite: Boolean,
+) {
     val graph = LocalAppGraph.current
+    val controlTint = if (pureWhite) SaltTheme.colors.text else Color.White
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconAction(Icons.Rounded.SkipPrevious, "上一首", onClick = { graph.playbackController.previous() }, tint = if (white) Color.White.copy(alpha = 0.9f) else SaltTheme.colors.text, size = 52)
+        // 上一首 / 下一首保持无底板，视觉层级低于主播放键。
+        IconAction(
+            Icons.Rounded.SkipPrevious, "上一首", onClick = { graph.playbackController.previous() },
+            tint = controlTint.copy(alpha = 0.9f), size = 52,
+        )
+        // 主播放键：72dp + 半透明圆形浅色底板（纯白墨水屏用黑色低透明度）。
         Box(
             Modifier
-                .size(66.dp)
+                .size(72.dp)
                 .clip(RoundedCornerShape(50))
+                .background(
+                    if (pureWhite) Color.Black.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.14f)
+                )
                 .clickable { graph.playbackController.playPause() },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                 contentDescription = if (state.isPlaying) "暂停" else "播放",
-                tint = if (white) Color.White else SaltTheme.colors.text,
-                modifier = Modifier.size(52.dp),
+                tint = controlTint,
+                modifier = Modifier.size(56.dp),
             )
         }
-        IconAction(Icons.Rounded.SkipNext, "下一首", onClick = { graph.playbackController.next() }, tint = if (white) Color.White.copy(alpha = 0.9f) else SaltTheme.colors.text, size = 52)
+        IconAction(
+            Icons.Rounded.SkipNext, "下一首", onClick = { graph.playbackController.next() },
+            tint = controlTint.copy(alpha = 0.9f), size = 52,
+        )
     }
 }
 
@@ -768,7 +802,7 @@ private fun BottomActions(
     onOpenQueue: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -782,12 +816,12 @@ private fun BottomActions(
             contentDescription = state.playMode.label,
             onClick = onModeClick,
             tint = if (state.playMode in listOf(PlayMode.REPEAT_ONE, PlayMode.SHUFFLE)) Color.White else Color.White.copy(alpha = 0.65f),
-            size = 38,
+            size = 32,
         )
-        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
-        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
-        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 38)
-        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
+        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
+        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
+        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 32)
+        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
     }
 }
 
