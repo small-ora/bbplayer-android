@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -128,7 +129,7 @@ fun SettingsScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().statusBarsPadding(),
         contentPadding = PaddingValues(bottom = 40.dp),
     ) {
         item { SmallTopBar(title = "设置", onBack = onBack) }
@@ -381,6 +382,7 @@ fun SettingsScreen(
             scope.safeLaunch {
                 graph.backupRepository.exportZip()
                     .onSuccess { file ->
+                        // 分享用系统对话框；结果用系统 Toast 提示（设置页底部提示在屏幕外看不到）。
                         runCatching {
                             val uri = androidx.core.content.FileProvider.getUriForFile(
                                 context, "${context.packageName}.fileprovider", file,
@@ -391,12 +393,29 @@ fun SettingsScreen(
                                 addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
                             context.startActivity(
-                                android.content.Intent.createChooser(intent, "导出备份").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                android.content.Intent.createChooser(intent, "导出备份")
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                             )
-                        }.onFailure { toast = "导出文件已生成：${file.name}" }
-                        toast = "备份已导出：${file.name}"
+                            android.widget.Toast.makeText(
+                                context,
+                                "备份已生成：${file.name}",
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                        }.onFailure {
+                            android.widget.Toast.makeText(
+                                context,
+                                "备份已生成：${file.name}（分享失败，可在文件管理中从 Android/data 取出）",
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
+                        }
                     }
-                    .onFailure { toast = it.toUserMessage() }
+                    .onFailure {
+                        android.widget.Toast.makeText(
+                            context,
+                            it.toUserMessage(),
+                            android.widget.Toast.LENGTH_LONG,
+                        ).show()
+                    }
             }
             dialog = null
         }

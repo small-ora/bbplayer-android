@@ -327,7 +327,7 @@ private fun AppNavHost(
     NavHost(
         navController = navController,
         startDestination = Routes.HOME,
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
+        modifier = Modifier.fillMaxSize(),
     ) {
         composable(Routes.HOME) {
             HomeScreen(
@@ -503,4 +503,14 @@ private fun NavHostController.switchTab(route: String) {
         launchSingleTop = true
         restoreState = true
     }
+}
+
+/** LocalView.context 在 MIUI/主题包装下可能不是 Activity，逐层解包。 */
+private fun android.content.Context.findActivity(): android.app.Activity? {
+    var ctx: android.content.Context? = this
+    while (ctx is android.content.ContextWrapper) {
+        if (ctx is android.app.Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return ctx as? android.app.Activity
 }

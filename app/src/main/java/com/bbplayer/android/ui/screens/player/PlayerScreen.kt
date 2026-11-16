@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -207,6 +208,7 @@ fun PlayerScreen(
 
     val pureWhite = backgroundStyle == PlayerBackgroundStyle.PURE_WHITE
     val onPlayerColor = if (pureWhite) Color(0xFF111111) else Color.White
+    val onPlayerSecondary = if (pureWhite) Color(0x99000000) else Color.White.copy(alpha = 0.65f)
     Box(Modifier.fillMaxSize()) {
         // ---- background: gradient / solid / pure white ----
         val base = wash.firstOrNull() ?: SaltTheme.colors.highlight
@@ -319,32 +321,15 @@ fun PlayerScreen(
                 )
             }
 
+            // ---- 可横滑区域（仅此区域切换：封面 / 歌词 / 评论）----
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxWidth().weight(1f),
-                // 三页全部保留在组合中：歌词滚动/评论分页/楼中楼展开在左右滑动时不会丢状态；
-                // 评论请求由 CommentsScreen(active=…) 门控，只有真正滑到评论页才发。
+                // 三页保持组合：歌词滚动/评论分页/楼中楼展开在左右滑动时不会丢状态。
                 beyondViewportPageCount = 2,
             ) { page ->
                 when (page) {
-                    0 -> MainPlayerContent(
-                        state = state,
-                        track = track,
-                        quality = quality,
-                        isFavorite = isFavorite,
-                        onToggleFavorite = {
-                            scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
-                        },
-                        onSeek = { graph.playbackController.seekTo(it) },
-                        // 「歌词」按钮 = 滑到歌词页（唯一入口是横向滑动，这里只做快捷方式）
-                        onToggleLyrics = { scope.launch { pagerState.animateScrollToPage(1) } },
-                        onOpenQueue = { showQueue = true },
-                        onShowSheet = { sheet.value = it },
-                        onModeClick = {
-                            graph.playbackController.setPlayMode(state.playMode.next())
-                        },
-                        pureWhite = pureWhite,
-                    )
+                    0 -> CoverPage(track = track, state = state)
                     1 -> LyricsPage(
                         lyrics = effectiveLyrics,
                         positionMs = state.positionMs,
@@ -357,8 +342,6 @@ fun PlayerScreen(
                         onRetry = { lyricsNonce++ },
                         onManualSearch = { sheet.value = "searchLyrics" },
                         onSeekTo = { graph.playbackController.seekTo(it.coerceAtLeast(0)) },
-                        state = state,
-                        pureWhite = pureWhite,
                     )
                     else -> CommentsPage(
                         bvid = track.bvid,
@@ -366,6 +349,68 @@ fun PlayerScreen(
                     )
                 }
             }
+
+            // ---- 固定区域：歌名 / 进度 / 播放控件 / 底部操作（不随横滑切换）----
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = track.displayTitle,
+                        color = onPlayerColor,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = track.uploader,
+                            color = onPlayerSecondary,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        QualityBadge(quality)
+                    }
+                }
+                IconAction(
+                    icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                    contentDescription = "收藏",
+                    onClick = {
+                        scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
+                    },
+                    tint = if (isFavorite) Color(0xFFFF6B81) else onPlayerColor.copy(alpha = 0.85f),
+                    size = 40,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            SeekLine(
+                positionMs = state.positionMs,
+                durationMs = state.durationMs.coerceAtLeast(1),
+                onSeek = { graph.playbackController.seekTo(it) },
+                activeColor = onPlayerColor,
+                trackColor = onPlayerColor.copy(alpha = 0.24f),
+                timeColor = onPlayerSecondary,
+            )
+            Spacer(Modifier.height(10.dp))
+            TransportRow(
+                state = state,
+                onPrev = { },
+                onToggle = { },
+                onNext = { },
+                white = !pureWhite,
+            )
+            Spacer(Modifier.height(6.dp))
+            BottomActions(
+                state = state,
+                quality = quality,
+                onModeClick = { graph.playbackController.setPlayMode(state.playMode.next()) },
+                onShowSheet = { sheet.value = it },
+                onOpenQueue = { showQueue = true },
+            )
+            Spacer(Modifier.height(10.dp))
         }
     }
 
@@ -569,17 +614,13 @@ private fun LyricsPage(
     onRetry: () -> Unit,
     onManualSearch: () -> Unit,
     onSeekTo: (Long) -> Unit,
-    state: PlaybackState,
-    pureWhite: Boolean,
 ) {
-    val graph = LocalAppGraph.current
-    Column(Modifier.fillMaxSize()) {
-        Spacer(Modifier.height(8.dp))
+    Box(Modifier.fillMaxSize()) {
         when {
-            lyricsLoading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            lyricsLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 LoadingState(text = "正在获取歌词…")
             }
-            lyricsError != null -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            lyricsError != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = lyricsError,
@@ -596,22 +637,30 @@ private fun LyricsPage(
                 lyrics = lyrics,
                 positionMs = positionMs,
                 fontScale = fontScale,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxSize(),
                 style = lyricStyle,
                 verbatim = verbatim,
                 showTranslation = showTranslation,
                 onSeekTo = onSeekTo,
             )
         }
-        // 纯展示页：不再放 ±0.1s / 偏移数值等调整控件；偏移请到「设置 → 歌词 → 歌词偏移」。
-        MiniTransport(
-            state = state,
-            onPrev = { graph.playbackController.previous() },
-            onToggle = { graph.playbackController.playPause() },
-            onNext = { graph.playbackController.next() },
-            white = !pureWhite,
+    }
+}
+
+@Composable
+private fun CoverPage(track: Track, state: PlaybackState) {
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val coverScale = animateFloatAsState(
+            targetValue = if (state.isPlaying) 1f else 0.94f,
+            animationSpec = tween(400),
+            label = "coverScale",
         )
-        Spacer(Modifier.height(6.dp))
+        val side = minOf(maxWidth * 0.86f, maxHeight)
+        CoverImage(
+            url = track.coverUrl,
+            modifier = Modifier.size(side).androidxScale(coverScale.value),
+            corner = 20.dp,
+        )
     }
 }
 
@@ -626,103 +675,6 @@ private fun CommentsPage(bvid: String, active: Boolean) {
             .background(SaltTheme.colors.background),
     ) {
         CommentsScreen(bvid = bvid, onBack = {}, embedded = true, active = active)
-    }
-}
-
-@Composable
-private fun MainPlayerContent(
-    state: PlaybackState,
-    track: Track,
-    quality: AudioQuality,
-    isFavorite: Boolean,
-    onToggleFavorite: () -> Unit,
-    onSeek: (Long) -> Unit,
-    onToggleLyrics: () -> Unit,
-    onOpenQueue: () -> Unit,
-    onShowSheet: (String) -> Unit,
-    onModeClick: () -> Unit,
-    pureWhite: Boolean = false,
-) {
-    val onPlayer = if (pureWhite) Color(0xFF111111) else Color.White
-    val onPlayerSecondary = if (pureWhite) Color(0x99000000) else Color.White.copy(alpha = 0.65f)
-    Column(Modifier.fillMaxSize()) {
-        Spacer(Modifier.height(6.dp))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.Center,
-        ) {
-            val coverSize = animateFloatAsState(if (state.isPlaying) 1f else 0.94f, tween(400), label = "coverScale")
-            CoverImage(
-                url = track.coverUrl,
-                modifier = Modifier
-                    .fillMaxWidth(0.86f)
-                    .aspectRatio(1f)
-                    .androidxScale(coverSize.value),
-                corner = 20.dp,
-            )
-        }
-        // title + uploader + favourite
-        Row(verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = track.displayTitle,
-                    color = onPlayer,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = track.uploader,
-                        color = onPlayerSecondary,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    QualityBadge(quality)
-                }
-            }
-            IconAction(
-                icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                contentDescription = "收藏",
-                onClick = onToggleFavorite,
-                tint = if (isFavorite) Color(0xFFFF6B81) else onPlayer.copy(alpha = 0.85f),
-                size = 40,
-            )
-        }
-        Spacer(Modifier.height(14.dp))
-        SeekLine(
-            positionMs = state.positionMs,
-            durationMs = state.durationMs.coerceAtLeast(1),
-            onSeek = onSeek,
-            activeColor = onPlayer,
-            trackColor = onPlayer.copy(alpha = 0.24f),
-            timeColor = onPlayerSecondary,
-        )
-        Spacer(Modifier.height(10.dp))
-        TransportRow(
-            state = state,
-            onPrev = { /* handled by caller via lambda */ },
-            onToggle = { },
-            onNext = { },
-            white = !pureWhite,
-        )
-        Spacer(Modifier.height(6.dp))
-        BottomActions(
-            state = state,
-            quality = quality,
-            onModeClick = onModeClick,
-            onShowSheet = onShowSheet,
-            onOpenQueue = onOpenQueue,
-            onToggleLyrics = onToggleLyrics,
-        )
-        Spacer(Modifier.height(10.dp))
     }
 }
 
@@ -776,23 +728,12 @@ private fun TransportRow(state: PlaybackState, onPrev: () -> Unit, onToggle: () 
 }
 
 @Composable
-private fun MiniTransport(state: PlaybackState, onPrev: () -> Unit, onToggle: () -> Unit, onNext: () -> Unit, white: Boolean) {
-    val graph = LocalAppGraph.current
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-        IconAction(Icons.Rounded.SkipPrevious, "上一首", onClick = { graph.playbackController.previous() }, tint = Color.White.copy(alpha = 0.9f), size = 44)
-        IconAction(if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, "播放", onClick = { graph.playbackController.playPause() }, tint = Color.White, size = 52)
-        IconAction(Icons.Rounded.SkipNext, "下一首", onClick = { graph.playbackController.next() }, tint = Color.White.copy(alpha = 0.9f), size = 44)
-    }
-}
-
-@Composable
 private fun BottomActions(
     state: PlaybackState,
     quality: AudioQuality,
     onModeClick: () -> Unit,
     onShowSheet: (String) -> Unit,
     onOpenQueue: () -> Unit,
-    onToggleLyrics: () -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
@@ -813,7 +754,6 @@ private fun BottomActions(
         )
         IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
         IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
-        IconAction(Icons.Rounded.Subtitles, "歌词", onClick = onToggleLyrics, tint = Color.White.copy(alpha = 0.65f), size = 38)
         IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 38)
         IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 38)
     }

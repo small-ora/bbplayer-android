@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="shared" path="shared/" />
+    <!-- 备份 zip 生成在 cacheDir 根目录（bbplayer-backup-*.zip） -->
+    <cache-path name="backups" path="." />
     <files-path name="downloads" path="downloads/" />
 </paths>
