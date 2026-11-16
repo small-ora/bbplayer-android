@@ -2,6 +2,7 @@ package com.bbplayer.android.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,12 +14,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,7 +56,6 @@ fun BottomPlayerBar(
     onTogglePlay: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onOpenQueue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val track = state.track ?: return
@@ -65,6 +65,9 @@ fun BottomPlayerBar(
         0f
     }
     val floating = style == MiniPlayerStyle.FLOAT
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    // 左滑下一首、右滑上一首（点按仍然是进入播放页）。
+    val swipeThresholdPx = with(density) { 56.dp.toPx() }
     val shape = if (floating) {
         RoundedCornerShape(28.dp)
     } else {
@@ -82,6 +85,24 @@ fun BottomPlayerBar(
             Modifier
                 .fillMaxWidth()
                 .height(if (floating) 64.dp else 62.dp)
+                .pointerInput(Unit) {
+                    var total = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { total = 0f },
+                        onDragEnd = {
+                            when {
+                                total <= -swipeThresholdPx -> onNext()
+                                total >= swipeThresholdPx -> onPrevious()
+                            }
+                            total = 0f
+                        },
+                        onDragCancel = { total = 0f },
+                        onHorizontalDrag = { change, dragAmount ->
+                            total += dragAmount
+                            change.consume()
+                        },
+                    )
+                }
                 .clickable(onClick = onOpenPlayer)
                 .padding(start = 10.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -118,12 +139,6 @@ fun BottomPlayerBar(
                 icon = Icons.Rounded.SkipNext,
                 description = "下一首",
                 onClick = onNext,
-            )
-            TransportButton(
-                icon = Icons.Rounded.QueueMusic,
-                description = "播放队列",
-                onClick = onOpenQueue,
-                tint = SaltTheme.colors.subText,
             )
         }
         ProgressLine(

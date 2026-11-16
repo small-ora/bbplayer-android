@@ -94,6 +94,9 @@ import com.bbplayer.android.ui.components.SeekLine
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.screens.comments.CommentsScreen
 import com.bbplayer.android.ui.theme.rememberAlbumWash
+import com.moriafly.salt.ui.SaltColors
+import com.moriafly.salt.ui.SaltConfigs
+import com.moriafly.salt.ui.SaltDynamicColors
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import kotlinx.coroutines.launch
@@ -342,10 +345,12 @@ fun PlayerScreen(
                         onRetry = { lyricsNonce++ },
                         onManualSearch = { sheet.value = "searchLyrics" },
                         onSeekTo = { graph.playbackController.seekTo(it.coerceAtLeast(0)) },
+                        contentColor = onPlayerColor,
                     )
                     else -> CommentsPage(
                         bvid = track.bvid,
                         active = pagerState.currentPage == 2,
+                        pureWhite = pureWhite,
                     )
                 }
             }
@@ -372,7 +377,7 @@ fun PlayerScreen(
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         Spacer(Modifier.width(8.dp))
-                        QualityBadge(quality)
+                        QualityBadge(quality = quality, pureWhite = pureWhite)
                     }
                 }
                 IconAction(
@@ -614,17 +619,18 @@ private fun LyricsPage(
     onRetry: () -> Unit,
     onManualSearch: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    contentColor: Color,
 ) {
     Box(Modifier.fillMaxSize()) {
         when {
             lyricsLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                LoadingState(text = "正在获取歌词…")
+                Text("正在获取歌词…", color = contentColor.copy(alpha = 0.75f), fontSize = 14.sp)
             }
             lyricsError != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = lyricsError,
-                        color = Color.White.copy(alpha = 0.75f),
+                        color = contentColor.copy(alpha = 0.75f),
                         fontSize = 14.sp,
                     )
                     Spacer(Modifier.height(10.dp))
@@ -642,11 +648,24 @@ private fun LyricsPage(
                 verbatim = verbatim,
                 showTranslation = showTranslation,
                 onSeekTo = onSeekTo,
+                contentColor = contentColor,
             )
         }
     }
 }
 
+
+/** 播放页评论：透明背景 + 白色文字，与播放器封面渐变融合（不再是一块纯白卡片）。 */
+private val PlayerCommentColors = SaltColors(
+    highlight = Color(0xE6FFFFFF),
+    text = Color(0xEBFFFFFF),
+    subText = Color(0x99FFFFFF),
+    background = Color.Transparent,
+    subBackground = Color(0x14FFFFFF),
+    popup = Color(0x14FFFFFF),
+    stroke = Color(0x38FFFFFF),
+    onHighlight = Color(0xFF111111),
+)
 @Composable
 private fun CoverPage(track: Track, state: PlaybackState) {
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -665,25 +684,38 @@ private fun CoverPage(track: Track, state: PlaybackState) {
 }
 
 @Composable
-private fun CommentsPage(bvid: String, active: Boolean) {
-    // 评论页在播放页里以不透明圆角卡片呈现，保证浅/深色主题下都易读，也能看清左右滑动边界。
-    Box(
-        Modifier
-            .fillMaxSize()
-            .padding(top = 4.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(SaltTheme.colors.background),
-    ) {
-        CommentsScreen(bvid = bvid, onBack = {}, embedded = true, active = active)
+private fun CommentsPage(bvid: String, active: Boolean, pureWhite: Boolean) {
+    // 与播放器背景融合：透明底 + 白色文字（深色渐变时加轻微压暗，保证可读）；
+    // 纯白墨水屏播放页则用正常深色文字。
+    Box(Modifier.fillMaxSize().padding(top = 4.dp)) {
+        if (!pureWhite) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(Color.Black.copy(alpha = 0.22f), Color.Black.copy(alpha = 0.40f)),
+                        )
+                    )
+            )
+            SaltTheme(
+                configs = SaltConfigs.default(isDarkTheme = false),
+                dynamicColors = SaltDynamicColors(PlayerCommentColors, PlayerCommentColors),
+            ) {
+                CommentsScreen(bvid = bvid, onBack = {}, embedded = true, active = active)
+            }
+        } else {
+            CommentsScreen(bvid = bvid, onBack = {}, embedded = true, active = active)
+        }
     }
 }
 
 @Composable
-private fun QualityBadge(quality: AudioQuality) {
+private fun QualityBadge(quality: AudioQuality, pureWhite: Boolean = false) {
     Box(
         Modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(Color.White.copy(alpha = 0.16f))
+            .background(if (pureWhite) Color.Black.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.16f))
             .padding(horizontal = 4.dp, vertical = 1.dp),
     ) {
         Text(
@@ -694,7 +726,7 @@ private fun QualityBadge(quality: AudioQuality) {
                 AudioQuality.Q128 -> "SQ"
                 AudioQuality.Q64 -> "LQ"
             },
-            color = Color.White.copy(alpha = 0.8f),
+            color = if (pureWhite) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.8f),
             fontSize = 9.sp,
         )
     }

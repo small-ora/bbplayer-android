@@ -152,7 +152,7 @@ fun SettingsScreen(
                         }
                     }
                 }
-                SettingRow("凭据安全", "仅本机 Keystore 加密保存，界面不显示 Cookie") {}
+                SettingNoteRow("凭据安全", "仅本机 Keystore 加密保存，界面不显示 Cookie")
             }
         }
 
@@ -160,10 +160,12 @@ fun SettingsScreen(
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 SettingRow("主题模式", themeMode.label) { dialog = "theme" }
-                SettingSwitchRow("动态取色", "跟随系统壁纸取色（Android 12+）", dynamicColor) {
-                    scope.safeLaunch { prefs.setDynamicColor(it) }
+                if (themeMode != ThemeMode.PURE_WHITE) {
+                    SettingSwitchRow("动态取色", "跟随系统壁纸取色（Android 12+）", dynamicColor) {
+                        scope.safeLaunch { prefs.setDynamicColor(it) }
+                    }
+                    SettingRow("强调色", accent.label) { dialog = "accent" }
                 }
-                SettingRow("强调色", accent.label) { dialog = "accent" }
                 SettingRow("播放器背景", backgroundStyle.label) { dialog = "bgStyle" }
                 SettingRow("迷你播放器", miniStyle.label) { dialog = "miniStyle" }
             }
@@ -518,6 +520,22 @@ private fun SettingsGroup(title: String) {
     )
 }
 
+
+/** 标题 + 说明文字的行（长说明不会被挤成竖排）。 */
+@Composable
+private fun SettingNoteRow(title: String, note: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title)
+            Spacer(Modifier.height(2.dp))
+            Text(note, color = SaltTheme.colors.subText, fontSize = 12.sp)
+        }
+    }
+}
+
 @Composable
 private fun SettingRow(title: String, value: String, onClick: () -> Unit) {
     Row(
@@ -529,7 +547,14 @@ private fun SettingRow(title: String, value: String, onClick: () -> Unit) {
     ) {
         Text(title, modifier = Modifier.weight(1f))
         if (value.isNotBlank()) {
-            Text(value, color = SaltTheme.colors.subText, fontSize = 13.sp)
+            Text(
+                text = value,
+                color = SaltTheme.colors.subText,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 12.dp),
+            )
         }
     }
 }

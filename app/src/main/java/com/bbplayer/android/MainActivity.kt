@@ -58,7 +58,8 @@ class MainActivity : ComponentActivity() {
                     themeMode = themeMode,
                     dynamicColor = dynamicColor,
                     accentPreset = accentPreset,
-                    pureWhite = backgroundStyle == PlayerBackgroundStyle.PURE_WHITE,
+                    pureWhite = themeMode == ThemeMode.PURE_WHITE ||
+                        backgroundStyle == PlayerBackgroundStyle.PURE_WHITE,
                 ) {
                     AppRoot()
                 }

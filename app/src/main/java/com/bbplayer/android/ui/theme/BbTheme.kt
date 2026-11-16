@@ -36,6 +36,7 @@ fun BbTheme(
         ThemeMode.SYSTEM -> systemDark
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
+        ThemeMode.PURE_WHITE -> false
     }
     val context = LocalContext.current
     val colors = when {

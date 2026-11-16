@@ -239,7 +239,6 @@ fun AppRoot() {
                 onTogglePlay = { graph.playbackController.playPause() },
                 onPrevious = { graph.playbackController.previous() },
                 onNext = { graph.playbackController.next() },
-                onOpenQueue = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
                 modifier = barModifier,
             )
         }

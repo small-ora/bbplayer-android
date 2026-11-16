@@ -164,7 +164,7 @@ enum class PlayMode(val label: String) {
     }
 }
 
-enum class ThemeMode(val label: String) { SYSTEM("跟随系统"), LIGHT("浅色"), DARK("深色") }
+enum class ThemeMode(val label: String) { SYSTEM("跟随系统"), LIGHT("浅色"), DARK("深色"), PURE_WHITE("纯白") }
 
 @Serializable
 data class PlaybackState(

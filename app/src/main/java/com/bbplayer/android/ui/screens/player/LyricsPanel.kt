@@ -54,12 +54,14 @@ fun LyricsPanel(
     verbatim: Boolean = true,
     showTranslation: Boolean = true,
     onSeekTo: (Long) -> Unit,
+    /** 歌词文字基色：播放页深色背景用白色，纯白墨水屏背景用深色。 */
+    contentColor: Color = Color.White,
 ) {
     if (lyrics == null || lyrics.isEmpty) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = "暂无歌词",
-                color = Color.White.copy(alpha = 0.6f),
+                color = contentColor.copy(alpha = 0.6f),
                 fontSize = 15.sp,
             )
         }
@@ -110,6 +112,7 @@ fun LyricsPanel(
                 showTranslation = showTranslation,
                 positionMs = positionMs,
                 onClick = { onSeekTo(line.startMs - lyrics.offsetMs) },
+                contentColor = contentColor,
             )
         }
     }
@@ -125,15 +128,16 @@ private fun LyricLineItem(
     showTranslation: Boolean,
     positionMs: Long,
     onClick: () -> Unit,
+    contentColor: Color,
 ) {
     val modern = style == LyricVisualStyle.MODERN
     val baseSize = (if (modern) 20f else 17f) * fontScale
     val size by animateFloatAsState(if (active && modern) baseSize * 1.15f else baseSize, label = "lyricSize")
     val color by animateColorAsState(
         targetValue = when {
-            active -> Color.White
-            modern -> Color.White.copy(alpha = 0.42f)
-            else -> Color.White.copy(alpha = 0.55f)
+            active -> contentColor
+            modern -> contentColor.copy(alpha = 0.42f)
+            else -> contentColor.copy(alpha = 0.55f)
         },
         label = "lyricColor",
     )
@@ -153,6 +157,7 @@ private fun LyricLineItem(
                 progress = karaokeProgress,
                 activeSize = size,
                 activeColor = color,
+                contentColor = contentColor,
                 textAlign = align,
                 activeWeight = FontWeight.Bold,
             )
@@ -172,7 +177,7 @@ private fun LyricLineItem(
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = translation,
-                    color = if (active) Color.White.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.28f),
+                    color = if (active) contentColor.copy(alpha = 0.8f) else contentColor.copy(alpha = 0.28f),
                     fontSize = (baseSize * 0.72f).sp,
                     textAlign = align,
                     modifier = Modifier.fillMaxWidth(),
@@ -189,6 +194,7 @@ private fun KaraokeLine(
     progress: Float,
     activeSize: Float,
     activeColor: Color,
+    contentColor: Color,
     textAlign: TextAlign,
     activeWeight: FontWeight,
 ) {
@@ -196,7 +202,7 @@ private fun KaraokeLine(
     Box {
         Text(
             text = text,
-            color = Color.White.copy(alpha = 0.45f),
+            color = contentColor.copy(alpha = 0.45f),
             fontSize = activeSize.sp,
             fontWeight = activeWeight,
             lineHeight = (activeSize * 1.35f).sp,
