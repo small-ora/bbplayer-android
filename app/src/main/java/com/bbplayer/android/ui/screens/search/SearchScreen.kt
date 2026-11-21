@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bbplayer.android.core.input.SearchInput
+import com.bbplayer.android.core.input.parseSearchInput
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.di.LocalAppGraph
@@ -87,16 +89,29 @@ fun SearchScreen(
 
     LaunchedEffect(submittedQuery, searchNonce) {
         if (submittedQuery.isEmpty()) return@LaunchedEffect
-        // BV / AV / b23.tv / full URL are resolved as direct links first;
-        // anything else falls back to keyword search.
-        val direct = graph.musicRepository.resolveInput(submittedQuery)
-        if (direct.isSuccess && direct.getOrNull()?.isNotEmpty() == true) {
-            results = direct.getOrThrow()
-            loading = false
-        } else {
-            graph.musicRepository.search(submittedQuery)
-                .onSuccess { results = it.items; loading = false }
-                .onFailure { error = it.toUserMessage(); loading = false }
+        loading = true
+        error = null
+        // 关键词 → 列表搜索（返回全部结果）；BV / AV / b23.tv / 完整链接 → 解析为视频（含分 P）。
+        // 之前所有输入都先走 resolveInput，而它对关键词只取首条视频，导致「搜什么都只有一条」。
+        when (val input = parseSearchInput(submittedQuery)) {
+            is SearchInput.KeywordQuery -> {
+                // 关键词：走列表搜索，返回全部结果。
+                graph.musicRepository.search(input.query)
+                    .onSuccess { results = it.items; loading = false }
+                    .onFailure { error = it.toUserMessage(); loading = false }
+            }
+            is SearchInput.DirectVideo -> {
+                // 直接视频引用：解析该视频（含分 P）；解析失败再回退到关键词搜索。
+                val direct = graph.musicRepository.resolveInput(input.raw)
+                if (direct.isSuccess && direct.getOrNull()?.isNotEmpty() == true) {
+                    results = direct.getOrThrow()
+                    loading = false
+                } else {
+                    graph.musicRepository.search(input.raw)
+                        .onSuccess { results = it.items; loading = false }
+                        .onFailure { error = it.toUserMessage(); loading = false }
+                }
+            }
         }
     }
 

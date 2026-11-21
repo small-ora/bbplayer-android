@@ -1,5 +1,6 @@
 package com.bbplayer.android.data
 
+import com.bbplayer.android.core.input.InputResolver
 import com.bbplayer.android.core.contracts.AppException
 import com.bbplayer.android.core.model.ExternalPlaylist
 import com.bbplayer.android.core.model.ExternalSource

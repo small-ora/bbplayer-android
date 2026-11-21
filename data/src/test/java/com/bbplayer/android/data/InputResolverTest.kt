@@ -1,5 +1,9 @@
 package com.bbplayer.android.data
 
+import com.bbplayer.android.core.input.InputResolver
+import com.bbplayer.android.core.input.SearchInput
+import com.bbplayer.android.core.input.VideoInput
+import com.bbplayer.android.core.input.parseSearchInput
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -79,4 +83,21 @@ class InputResolverTest {
         assertTrue(href!!.contains("BV1ab411c7XY"))
         assertEquals(VideoInput.Bvid("BV1ab411c7XY"), InputResolver.extractVideoRef(href))
     }
+
+    @Test
+    fun `搜索关键词路由到列表搜索而不是单视频解析`() {
+        // 回归：搜索「小虎队」等关键词时，旧实现先 resolveInput → 只返回首条视频。
+        assertEquals(SearchInput.KeywordQuery("小虎队"), parseSearchInput("小虎队"))
+        assertEquals(SearchInput.KeywordQuery("周杰伦 夜曲"), parseSearchInput(" 周杰伦 夜曲 "))
+        assertEquals(SearchInput.KeywordQuery("jay chou"), parseSearchInput("jay chou"))
+    }
+
+    @Test
+    fun `BV AV 短链与完整链接路由到直接视频解析`() {
+        assertTrue(parseSearchInput("BV1q4FTeBEMj") is SearchInput.DirectVideo)
+        assertTrue(parseSearchInput("av170001") is SearchInput.DirectVideo)
+        assertTrue(parseSearchInput("https://b23.tv/AbCd12") is SearchInput.DirectVideo)
+        assertTrue(parseSearchInput("https://www.bilibili.com/video/BV1q4FTeBEMj?p=2") is SearchInput.DirectVideo)
+    }
+
 }
