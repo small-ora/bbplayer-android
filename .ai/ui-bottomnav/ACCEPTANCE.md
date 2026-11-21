@@ -130,3 +130,18 @@ Header 与 16:9 视频卡；曲库页三胶囊改为 MoreVert + M3 ModalBottomSh
   - 下载包校验：`aapt2 dump badging` → versionCode 14 / versionName 0.8.1；sha256 `1e3fa62158e988d027959af5c03f485b4eadf3e4d91a7502c83872ffef3e1bc2`
   - CI（tag）：Android CI run `43835906713` success（单测 → debug → signed release → Release）
   - CI（main）：Android CI run `43835899658` success
+
+## 13. v0.8.2 补丁发布记录（搜索多结果）
+
+- 触发：人工反馈「搜索只会出来一个结果」（如搜「小虎队」）
+- 根因：`SearchScreen` 对所有输入先调用 `MusicRepository.resolveInput`；它对 `VideoInput.Keyword` 只取首条视频（展开分 P）返回，关键词分支永远只有 1 条
+- 修复：
+  - `core/input/InputResolver.kt`（从 data 模块移入 core，纯函数）：新增 `SearchInput.KeywordQuery / DirectVideo` 与 `parseSearchInput()`
+  - `SearchScreen`：关键词 → `search()` 列表（20 条/页）；BV/AV/b23.tv/完整链接 → `resolveInput()`，失败回退搜索
+  - 回归测试（`data/.../InputResolverTest.kt`）：关键词路由 3 例、直接视频引用路由 4 例
+- 验证：
+  - 线上接口实测：`/x/web-interface/search/type?keyword=小虎队` → `code:0`，`result` 20 条，`numPages:50`
+  - `:data:testDebugUnitTest --tests InputResolverTest --rerun-tasks` → 12 tests / 0 failures
+  - 全量门禁（app assembleDebug+assembleRelease、app/data/playback/lyrics 单测 --rerun-tasks）→ 333 tasks / exit 0
+  - 说明：发布时开发机 adb 因 USB 枚举错误（`can't set config #1, error -32`）无法真机验证，由用户在自己手机上安装验证
+- Release：<!-- V082_RESULT -->
