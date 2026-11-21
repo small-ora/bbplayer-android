@@ -1,4 +1,4 @@
-package com.bbplayer.android.data
+package com.bbplayer.android.core.input
 
 /** 用户输入（搜索框 / 剪贴板 / 分享文本）的解析结果。 */
 sealed interface VideoInput {
@@ -17,9 +17,12 @@ sealed interface VideoInput {
 
 /**
  * 纯函数输入解析：BV / AV / 完整链接 / b23.tv 短链 / 关键词。
- * 不发起任何网络请求，短链由 [BiliMusicRepository] 跟随重定向后再回调 [extractVideoRef]。
+ * 不发起任何网络请求，短链由数据层跟随重定向后再回调 [extractVideoRef]。
+ *
+ * 放在 core 模块：数据层（resolveInput）和搜索 UI（区分「直接视频引用」与「关键词」，
+ * 关键词走列表搜索、BV/AV/链接走视频解析）共用同一套判断，避免两处正则漂移。
  */
-internal object InputResolver {
+object InputResolver {
 
     private val BV_REGEX = Regex("BV[0-9A-Za-z]{10}", RegexOption.IGNORE_CASE)
     private val AV_REGEX = Regex("(?<![0-9A-Za-z])av(\\d+)", RegexOption.IGNORE_CASE)
@@ -82,3 +85,25 @@ internal object InputResolver {
         }
     }
 }
+
+/**
+ * 搜索框提交后的路由结果。
+ *
+ * 回归背景：旧搜索页对所有输入都先调用 `MusicRepository.resolveInput`，而它对关键词只取
+ * 首条视频展开分 P，导致「搜什么都只有一条结果」。关键词必须走搜索列表接口，
+ * 只有 BV / AV / b23.tv / 完整视频链接才走视频解析。
+ */
+sealed interface SearchInput {
+    /** 普通关键词 → 走列表搜索，返回全部结果。 */
+    data class KeywordQuery(val query: String) : SearchInput
+
+    /** BV / AV / b23.tv / 完整视频链接 → 走视频解析（含分 P）。 */
+    data class DirectVideo(val raw: String) : SearchInput
+}
+
+/** 解析搜索框输入并给出路由结果（纯函数，可单测）。 */
+fun parseSearchInput(raw: String): SearchInput =
+    when (val resolved = InputResolver.resolve(raw)) {
+        is VideoInput.Keyword -> SearchInput.KeywordQuery(resolved.query)
+        else -> SearchInput.DirectVideo(raw)
+    }

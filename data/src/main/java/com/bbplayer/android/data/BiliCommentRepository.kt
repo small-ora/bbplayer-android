@@ -1,5 +1,8 @@
 package com.bbplayer.android.data
 
+import com.bbplayer.android.core.input.InputResolver
+import com.bbplayer.android.core.input.VideoInput
+
 import android.content.Context
 import com.bbplayer.android.core.contracts.AppException
 import com.bbplayer.android.core.contracts.CommentRepository
