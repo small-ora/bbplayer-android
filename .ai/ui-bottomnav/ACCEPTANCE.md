@@ -144,4 +144,9 @@ Header 与 16:9 视频卡；曲库页三胶囊改为 MoreVert + M3 ModalBottomSh
   - `:data:testDebugUnitTest --tests InputResolverTest --rerun-tasks` → 12 tests / 0 failures
   - 全量门禁（app assembleDebug+assembleRelease、app/data/playback/lyrics 单测 --rerun-tasks）→ 333 tasks / exit 0
   - 说明：发布时开发机 adb 因 USB 枚举错误（`can't set config #1, error -32`）无法真机验证，由用户在自己手机上安装验证
-- Release：<!-- V082_RESULT -->
+- Release：✅ 2026-11-21 — https://github.com/small-ora/bbplayer-android/releases/tag/v0.8.2
+  - 资产：`app-release.apk`（4,454,611 B，固定 release 签名；CI `Verify release signature` 通过）
+  - 下载包校验：`aapt2 dump badging` → versionCode 15 / versionName 0.8.2；sha256 `eba4b527e8a57ea82343005fa25af1ab8b261ce2cc32062ef229c1534fe81272`
+  - CI（tag）：Android CI run `44915912303` success（单测 → debug → signed release → GitHub Release）
+  - CI（main）：Android CI run `44915909860` success
+  - 真机验证：开发机 adb USB 故障未能验证，由用户安装 0.8.2 在自有手机上验收
