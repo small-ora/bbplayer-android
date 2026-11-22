@@ -56,14 +56,14 @@ fun BbTheme(
         pureWhite -> SaltDynamicColors(light = PureWhiteColors, dark = PureWhiteColors)
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> SaltDynamicColors(
             light = dynamicLightColorScheme(context).toSaltColors().withLightNeutrals(),
-            dark = dynamicDarkColorScheme(context).toSaltColors(),
+            dark = dynamicDarkColorScheme(context).toSaltColors().withDarkNeutrals(),
         )
         else -> SaltDynamicColors(
             light = lightSaltColors().withAccent(accentPreset.light).withLightNeutrals(),
-            dark = darkSaltColors().withAccent(accentPreset.dark),
+            dark = darkSaltColors().withAccent(accentPreset.dark).withDarkNeutrals(),
         )
     }
-    CompositionLocalProvider(LocalBbColors provides BbExtraColors(dark)) {
+    CompositionLocalProvider(LocalBbColors provides BbExtraColors(isDark = dark, pureWhite = pureWhite)) {
         SaltTheme(
             configs = SaltConfigs.default(isDarkTheme = dark),
             dynamicColors = colors,
@@ -89,15 +89,24 @@ private val BbShapes: SaltShapes = SaltShapes.default(
     large = RoundedCornerShape(24.dp),
 )
 
-/** 需求 §6：浅色背景 #F8F9FA，卡片表面 #EDF2F7，弹层用白色。 */
-private val LightBackground = Color(0xFFF8F9FA)
-private val LightCardSurface = Color(0xFFEDF2F7)
-private val LightPopup = Color(0xFFFFFFFF)
-
+/**
+ * v9 中性色（P0）：底色浅灰 + 白面卡片 + 12% 黑 hairline；subText 提亮到可读实色。
+ *
+ * 只覆盖中性角色，不碰 accent —— 动态取色 / 强调色预设仍然决定 highlight。
+ * 具体数值见 [ThemeTokens]（与 ThemeTokensTest 共用同一份常量）。
+ */
 private fun SaltColors.withLightNeutrals(): SaltColors = copy(
-    background = LightBackground,
-    subBackground = LightCardSurface,
-    popup = LightPopup,
+    background = Color(ThemeTokens.LightBackground),
+    subBackground = Color(ThemeTokens.LightSurface),
+    popup = Color(ThemeTokens.LightPopup),
+    text = Color(ThemeTokens.LightText),
+    subText = Color(ThemeTokens.LightSubText),
+    stroke = Color(ThemeTokens.LightStroke),
+)
+
+/** v9 深色：沿用 SaltUI 深色层次，只把 hairline 提升到 12% 白。 */
+private fun SaltColors.withDarkNeutrals(): SaltColors = copy(
+    stroke = Color(ThemeTokens.DarkStroke),
 )
 
 private fun androidx.compose.material3.ColorScheme.toSaltColors(): SaltColors = SaltColors(
@@ -113,15 +122,15 @@ private fun androidx.compose.material3.ColorScheme.toSaltColors(): SaltColors = 
 
 private fun SaltColors.withAccent(accent: Long): SaltColors = copy(highlight = Color(accent))
 
-/** E-ink friendly palette: pure white surfaces, black text, no tinting. */
+/** E-ink friendly palette: pure white page, slightly grey cards so grouped rows stay visible. */
 private val PureWhiteColors: SaltColors = SaltColors(
     highlight = Color(0xFF1A1A1A),
-    text = Color(0xFF000000),
-    subText = Color(0xFF6B6B6B),
-    background = Color(0xFFFFFFFF),
-    subBackground = Color(0xFFFFFFFF),
-    popup = Color(0xFFFFFFFF),
-    stroke = Color(0x33000000),
+    text = Color(ThemeTokens.InkText),
+    subText = Color(ThemeTokens.InkSubText),
+    background = Color(ThemeTokens.InkBackground),
+    subBackground = Color(ThemeTokens.InkSurface),
+    popup = Color(ThemeTokens.InkPopup),
+    stroke = Color(ThemeTokens.InkStroke),
     onHighlight = Color(0xFFFFFFFF),
 )
 
@@ -129,9 +138,19 @@ private val PureWhiteColors: SaltColors = SaltColors(
 @Immutable
 data class BbExtraColors(
     val isDark: Boolean,
+    val pureWhite: Boolean = false,
     val playerScrim: Color = if (isDark) Color(0xB3000000) else Color(0x99000000),
     val onPlayer: Color = Color.White,
     val onPlayerSecondary: Color = Color(0xCCFFFFFF),
-)
+) {
+    /** 播放页弹层容器：沉浸播放页用深灰玻璃，纯白墨水屏用白面。 */
+    val playerSheet: Color get() = if (pureWhite) Color(0xFFFFFFFF) else Color(0xFF262626)
+
+    /** 弹层主文字。 */
+    val playerSheetOn: Color get() = if (pureWhite) Color(0xFF111111) else Color.White
+
+    /** 弹层次级文字。 */
+    val playerSheetOnSecondary: Color get() = if (pureWhite) Color(0x99000000) else Color(0xCCFFFFFF)
+}
 
 val LocalBbColors = staticCompositionLocalOf { BbExtraColors(isDark = false) }
