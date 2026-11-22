@@ -29,7 +29,7 @@
 
 | 步 | 状态 | commit | 证据 |
 |---|---|---|---|
-| S16 | ✅ 动效体系 |  | （120/220/320 + 标准缓动）、NavHost 转场、tab fade、、进度补间、、跑马灯两端渐隐； 3/3；真机截图 `21-s16-dock.png`/`22-s16-player.png`，录屏 `s16-transitions.mp4`（本机无 ffmpeg，抽帧未做） |
+| S16 | ✅ 动效体系 | `fbea5ef` | `Motion.kt`（120/220/320 + 标准缓动）、NavHost 转场、tab fade、`PlayPauseIcon`、进度补间、`animateItem`、跑马灯两端渐隐；`BbMotionTest` 3/3；真机截图 `21-s16-dock.png`/`22-s16-player.png`，录屏 `s16-transitions.mp4`（本机无 ffmpeg，抽帧未做） |
 | S17–S21 | ⏳ 待续 | — | — |
 
 ## 2. 人工门禁
