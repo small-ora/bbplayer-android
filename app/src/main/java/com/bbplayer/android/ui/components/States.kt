@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -189,12 +190,6 @@ private fun SkeletonBlock(alpha: Float, modifier: Modifier = Modifier, corner: D
     )
 }
 
-/** 单块骨架（独立使用时自带一条呼吸动画；列表请直接用 SkeletonTrackList / SkeletonFeed）。 */
-@Composable
-fun SkeletonBox(modifier: Modifier = Modifier, corner: Dp = BbRadius.Small) {
-    SkeletonBlock(alpha = skeletonAlpha(), modifier = modifier, corner = corner)
-}
-
 /** 列表首屏骨架：行高 64dp + 48dp 封面 + 两行文字，按真实版式占位。 */
 @Composable
 fun SkeletonTrackList(
@@ -241,10 +236,15 @@ fun SkeletonFeed(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(BbSpacing.Md))
             Row(horizontalArrangement = Arrangement.spacedBy(BbSpacing.Md)) {
                 repeat(3) {
-                    Column {
-                        SkeletonBlock(alpha, Modifier.size(112.dp), corner = BbRadius.Media)
+                    Column(Modifier.weight(1f)) {
+                        // 自适应宽度：320dp 窄屏也不会横向溢出（固定 112dp ×3 会超）。
+                        SkeletonBlock(
+                            alpha,
+                            Modifier.fillMaxWidth().aspectRatio(1f),
+                            corner = BbRadius.Media,
+                        )
                         Spacer(Modifier.height(BbSpacing.Sm))
-                        SkeletonBlock(alpha, Modifier.width(90.dp).height(13.dp))
+                        SkeletonBlock(alpha, Modifier.fillMaxWidth(0.8f).height(13.dp))
                     }
                 }
             }
