@@ -70,12 +70,13 @@ fun QueueSheet(
                 }
             }
             LazyColumn(Modifier.fillMaxWidth().height(if (queue.size > 6) 460.dp else (queue.size * 60 + 20).dp)) {
-                items(queue.size) { index ->
+                items(count = queue.size, key = { queue[it].key }) { index ->
                     val track = queue[index]
                     val current = index == currentIndex
                     Row(
                         Modifier
                             .fillMaxWidth()
+                            .animateItem()
                             .clickable { onJumpTo(index) }
                             .padding(horizontal = BbSpacing.Xl, vertical = BbSpacing.Sm),
                         verticalAlignment = Alignment.CenterVertically,

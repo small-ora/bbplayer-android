@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +58,12 @@ fun SeekLine(
     var dragFraction by remember { mutableFloatStateOf(0f) }
     val duration = durationMs.coerceAtLeast(1L)
     val fraction = if (dragging) dragFraction else (positionMs.toFloat() / duration).coerceIn(0f, 1f)
+    // v9.2：非拖动时进度平滑推进（250ms 线性），拖动时跟手不补间
+    val animatedFraction by animateFloatAsState(
+        targetValue = fraction,
+        animationSpec = if (dragging) tween(0) else tween(250, easing = LinearEasing),
+        label = "seekProgress",
+    )
 
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
@@ -91,7 +101,7 @@ fun SeekLine(
             )
             Box(
                 Modifier
-                    .fillMaxWidth(fraction)
+                    .fillMaxWidth(animatedFraction)
                     .height(2.dp)
                     .background(activeColor, CircleShape)
             )

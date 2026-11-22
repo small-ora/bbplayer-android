@@ -69,6 +69,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -92,6 +94,7 @@ import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.AppGraph
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.CoverImage
+import com.bbplayer.android.ui.components.PlayPauseIcon
 import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LoadingState
@@ -843,11 +846,13 @@ private fun TransportRow(
                 .clickable { graph.playbackController.playPause() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                contentDescription = if (state.isPlaying) "暂停" else "播放",
+            PlayPauseIcon(
+                isPlaying = state.isPlaying,
                 tint = controlTint,
-                modifier = Modifier.size(56.dp),
+                size = 56.dp,
+                modifier = Modifier.semantics {
+                    contentDescription = if (state.isPlaying) "暂停" else "播放"
+                },
             )
         }
         IconAction(

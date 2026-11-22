@@ -89,6 +89,7 @@ fun PlaylistDetailScreen(
                 val track = tracks[idx]
                 TrackRow(
                     track = track,
+                    modifier = Modifier.animateItem(),
                     isCurrent = playback.track?.key == track.key,
                     onClick = {
                         scope.safeLaunch { graph.libraryRepository.markPlaylistPlayed(playlistId) }

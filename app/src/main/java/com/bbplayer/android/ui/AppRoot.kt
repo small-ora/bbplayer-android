@@ -2,9 +2,12 @@ package com.bbplayer.android.ui
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -77,6 +80,7 @@ import com.bbplayer.android.ui.screens.settings.SettingsScreen
 import com.bbplayer.android.ui.screens.uploader.UploaderScreen
 import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbMotion
 import com.bbplayer.android.ui.theme.BbTokens
 import com.bbplayer.android.ui.theme.bbDockDepth
 import com.bbplayer.android.ui.theme.bbDockTopHairline
@@ -286,8 +290,28 @@ private fun AppNavHost(
         navController = navController,
         startDestination = Routes.HOME,
         modifier = Modifier.fillMaxSize(),
+        // v9.2：二级页统一 1/8 横向滑入 + 淡入（220ms），退出 120ms 快于进入。
+        enterTransition = {
+            slideInHorizontally(animationSpec = tween(BbMotion.BaseMs, easing = BbMotion.StandardEasing)) { it / 8 } +
+                fadeIn(animationSpec = tween(BbMotion.BaseMs))
+        },
+        exitTransition = { fadeOut(animationSpec = tween(BbMotion.FastMs)) },
+        popEnterTransition = {
+            slideInHorizontally(animationSpec = tween(BbMotion.BaseMs, easing = BbMotion.StandardEasing)) { -it / 8 } +
+                fadeIn(animationSpec = tween(BbMotion.BaseMs))
+        },
+        popExitTransition = {
+            slideOutHorizontally(animationSpec = tween(BbMotion.FastMs)) { it / 8 } +
+                fadeOut(animationSpec = tween(BbMotion.FastMs))
+        },
     ) {
-        composable(Routes.HOME) {
+        composable(
+            route = Routes.HOME,
+            enterTransition = { fadeIn(animationSpec = tween(BbMotion.TabFadeMs)) },
+            exitTransition = { fadeOut(animationSpec = tween(BbMotion.TabFadeMs)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(BbMotion.TabFadeMs)) },
+            popExitTransition = { fadeOut(animationSpec = tween(BbMotion.TabFadeMs)) },
+        ) {
             HomeScreen(
                 onOpenSearch = { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
                 onOpenPlayer = onOpenPlayer,
@@ -301,7 +325,13 @@ private fun AppNavHost(
         composable(Routes.SEARCH) {
             SearchScreen(onOpenPlayer = onOpenPlayer, onPlayTrack = onPlayTrack)
         }
-        composable(Routes.LIBRARY) {
+        composable(
+            route = Routes.LIBRARY,
+            enterTransition = { fadeIn(animationSpec = tween(BbMotion.TabFadeMs)) },
+            exitTransition = { fadeOut(animationSpec = tween(BbMotion.TabFadeMs)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(BbMotion.TabFadeMs)) },
+            popExitTransition = { fadeOut(animationSpec = tween(BbMotion.TabFadeMs)) },
+        ) {
             LibraryScreen(
                 onOpenPlaylist = { navController.navigate(Routes.playlist(it)) },
                 onOpenPlayer = onOpenPlayer,
@@ -314,7 +344,13 @@ private fun AppNavHost(
                 onOpenWatchLater = { navController.navigate(Routes.WATCH_LATER) { launchSingleTop = true } },
             )
         }
-        composable(Routes.PROFILE) {
+        composable(
+            route = Routes.PROFILE,
+            enterTransition = { fadeIn(animationSpec = tween(BbMotion.TabFadeMs)) },
+            exitTransition = { fadeOut(animationSpec = tween(BbMotion.TabFadeMs)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(BbMotion.TabFadeMs)) },
+            popExitTransition = { fadeOut(animationSpec = tween(BbMotion.TabFadeMs)) },
+        ) {
             ProfileScreen(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onPlayTrack = onPlayTrack,
@@ -328,10 +364,10 @@ private fun AppNavHost(
         // 全屏播放器：从底部平滑展开 / 收起（迷你播放器点击或向上拖拽触发）。
         composable(
             route = Routes.PLAYER,
-            enterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
-            exitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() },
-            popEnterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
-            popExitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() },
+            enterTransition = { slideInVertically(animationSpec = tween(BbMotion.SlowMs, easing = BbMotion.StandardEasing)) { it } + fadeIn(animationSpec = tween(BbMotion.BaseMs)) },
+            exitTransition = { slideOutVertically(animationSpec = tween(BbMotion.BaseMs, easing = BbMotion.StandardEasing)) { it } + fadeOut(animationSpec = tween(BbMotion.FastMs)) },
+            popEnterTransition = { slideInVertically(animationSpec = tween(BbMotion.BaseMs, easing = BbMotion.StandardEasing)) { it } + fadeIn(animationSpec = tween(BbMotion.BaseMs)) },
+            popExitTransition = { slideOutVertically(animationSpec = tween(BbMotion.SlowMs, easing = BbMotion.StandardEasing)) { it } + fadeOut(animationSpec = tween(BbMotion.FastMs)) },
         ) {
             PlayerScreen(
                 onBack = { navController.popBackStack() },

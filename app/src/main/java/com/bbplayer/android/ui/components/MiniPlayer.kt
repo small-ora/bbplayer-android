@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
@@ -127,14 +129,28 @@ fun MiniPlayer(
             )
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                Text(
-                    text = track.displayTitle,
-                    style = BbType.Body,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    // 单行超长跑马灯
-                    modifier = Modifier.basicMarquee(),
-                )
+                // 单行超长跑马灯；两端用容器色渐隐，避免文字被硬切
+                Box(Modifier.fillMaxWidth()) {
+                    Text(
+                        text = track.displayTitle,
+                        style = BbType.Body,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth().basicMarquee(),
+                    )
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    0f to SaltTheme.colors.popup,
+                                    0.06f to Color.Transparent,
+                                    0.94f to Color.Transparent,
+                                    1f to SaltTheme.colors.popup,
+                                )
+                            )
+                    )
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = track.uploader,
@@ -189,11 +205,10 @@ private fun MiniPlayPauseButton(state: PlaybackState, onClick: () -> Unit) {
                 strokeWidth = 2.dp,
             )
         } else {
-            Icon(
-                imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                contentDescription = null,
+            PlayPauseIcon(
+                isPlaying = state.isPlaying,
                 tint = SaltTheme.colors.text,
-                modifier = Modifier.size(BbIconSize.Lg),
+                size = BbIconSize.Lg,
             )
         }
     }
