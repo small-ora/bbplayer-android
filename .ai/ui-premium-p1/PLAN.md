@@ -53,3 +53,4 @@
 | S16 | ✅ FULL gate + 真机冒烟（MI 6 三主题 11 张截图） | `a6f0001` | `evidence/full-gate.log`（EXIT=0，641 单测 0 fail 0 skipped）+ `evidence/device/p1-*.png`；骨架动画已提升为列表级单条 |
 | S17 | ✅ 2 名 fresh reviewer（P0×0 / P1×3）+ 修复复核 | `15a0c82`/`eaf4217`/`ff76633` | `REVIEW.md`；P1 全修，P2 修 8 条/记录 3 条 |
 | S18 | ✅ 验收包 v1（含 2 名 reviewer 处置、真机三主题截图） | — | `ACCEPTANCE.md`；HEAD `ff76633`，FULL gate EXIT=0 |
+| S19 | ✅ 人工验收反馈：首页搜索框描边与白底错位（M3 SearchBar 8dp 顶距） | `2b46703` | 自绘 pill（底色/描边/圆角同节点）；p1-15 像素复核 border 与白底相邻，无 8dp 空隙；三主题 p1-15~20 |
