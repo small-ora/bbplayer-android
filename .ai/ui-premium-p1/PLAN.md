@@ -50,6 +50,6 @@
 | S13 | ✅ 底部 dock 合并（迷你行 + icon-only 导航） | `6f009a3` | QUICK 绿；`NavigationBar` 引用 0；dock token 见 `DesignTokens`；设备截图待 P0 会话释放 |
 | S14 | ✅ 深度体系：卡片 hairline / 封面 24dp 阴影+光晕 / dock 16dp 阴影 | `f60b99a` | QUICK 绿；`shadow(` 仅剩 MiniPlayer 悬浮态 + Depth.kt；21 处卡片补 0.5dp hairline |
 | S15 | ✅ 骨架屏 + 图片占位/淡入/错误兜底 + 空/错误态 | `f60b99a` | QUICK 绿；10 处首屏 loading 换骨架；CoverImage 200ms 淡入 + onError 兜底；ErrorState 内联卡片 |
-| S16 | ⏳ | — | — |
-| S17 | ⏳ | — | — |
-| S18 | ⏳ | — | — |
+| S16 | ✅ FULL gate + 真机冒烟（MI 6 三主题 11 张截图） | `a6f0001` | `evidence/full-gate.log`（EXIT=0，641 单测 0 fail 0 skipped）+ `evidence/device/p1-*.png`；骨架动画已提升为列表级单条 |
+| S17 | ⏳ fresh reviewer 审查中 | — | `REVIEW.md` |
+| S18 | ⏳ 验收包 v1 已起草，待审查结论合并 | — | `ACCEPTANCE.md` |
