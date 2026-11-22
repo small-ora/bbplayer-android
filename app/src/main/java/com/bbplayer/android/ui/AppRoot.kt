@@ -1,5 +1,9 @@
 package com.bbplayer.android.ui
 
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.animation.SharedTransitionLayout
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -207,7 +211,8 @@ fun AppRoot() {
     val isRootTab = route in rootRoutes
     val selectedRoute = if (route == Routes.SEARCH) Routes.HOME else route
     // 二级页迷你播放器仍然常驻；播放页不显示（播放页自身就是全屏播放器）。
-    val showMiniPlayer = playback.track != null && route != Routes.PLAYER
+    val playerOpen = route == Routes.PLAYER
+    val showMiniPlayer = playback.track != null && !playerOpen
 
     BoxWithConstraints(Modifier.fillMaxSize().background(SaltTheme.colors.background)) {
         val twoPane = wideScreen || maxWidth >= 600.dp
@@ -220,6 +225,10 @@ fun AppRoot() {
                 )
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
+              // v9.2 P2-2：NavHost 与 dock 同处一个 SharedTransitionLayout，封面才能做共享元素
+              SharedTransitionLayout {
+                CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                  Box(Modifier.fillMaxSize()) {
                 AppNavHost(
                     navController = navController,
                     playbackState = playback,
@@ -233,7 +242,7 @@ fun AppRoot() {
 
                 if (twoPane) {
                     // 宽屏：底部导航收敛为左侧 rail；迷你播放器悬浮在内容底部。
-                    if (showMiniPlayer) {
+                    if (playback.track != null) {
                         // 系统手势条 inset 区域也铺底色：否则页面内容会从小白条下面透出来。
                         Box(
                             modifier = Modifier
@@ -249,9 +258,12 @@ fun AppRoot() {
                                 onTogglePlay = { graph.playbackController.playPause() },
                                 onNext = { graph.playbackController.next() },
                                 onPrevious = { graph.playbackController.previous() },
+                                sharedVisible = !playerOpen,
                                 modifier = Modifier
                                     .widthIn(max = 560.dp)
-                                    .padding(bottom = BbTokens.MiniPlayerGap),
+                                    .padding(bottom = BbTokens.MiniPlayerGap)
+                                    .alpha(if (playerOpen) 0f else 1f)
+                                    .zIndex(if (playerOpen) -1f else 0f),
                             )
                         }
                     }
@@ -262,8 +274,10 @@ fun AppRoot() {
                         tabs = mainTabs,
                         selectedRoute = selectedRoute,
                         onSelect = { navController.switchTab(it) },
-                        showMini = showMiniPlayer,
+                        showMini = playback.track != null,
                         showNav = isRootTab,
+                        visible = !playerOpen,
+                        sharedVisible = !playerOpen,
                         playback = playback,
                         onOpenPlayer = ::openPlayer,
                         onTogglePlay = { graph.playbackController.playPause() },
@@ -272,6 +286,9 @@ fun AppRoot() {
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
+                  }
+                }
+              }
             }
         }
     }
@@ -372,11 +389,13 @@ private fun AppNavHost(
             popEnterTransition = { slideInVertically(animationSpec = tween(BbMotion.BaseMs, easing = BbMotion.StandardEasing)) { it } + fadeIn(animationSpec = tween(BbMotion.BaseMs)) },
             popExitTransition = { slideOutVertically(animationSpec = tween(BbMotion.SlowMs, easing = BbMotion.StandardEasing)) { it } + fadeOut(animationSpec = tween(BbMotion.FastMs)) },
         ) {
-            PlayerScreen(
-                onBack = { navController.popBackStack() },
-                onOpenLogin = openLogin,
-                onOpenUploader = { mid -> navController.navigate(Routes.uploader(mid)) },
-            )
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+                PlayerScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenLogin = openLogin,
+                    onOpenUploader = { mid -> navController.navigate(Routes.uploader(mid)) },
+                )
+            }
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(
@@ -482,6 +501,8 @@ private fun BottomDock(
     onSelect: (String) -> Unit,
     showMini: Boolean,
     showNav: Boolean,
+    visible: Boolean = true,
+    sharedVisible: Boolean = true,
     playback: PlaybackState,
     onOpenPlayer: () -> Unit,
     onTogglePlay: () -> Unit,
@@ -494,7 +515,13 @@ private fun BottomDock(
     val shape = RoundedCornerShape(BbTokens.DockCorner)
     // 先铺满整条底部 chrome（含系统手势条 inset），inset 由 dock 内部避让：
     // 页面内容不会再从系统手势条（小白条）下方透出来。
-    Box(modifier = modifier.fillMaxWidth().background(SaltTheme.colors.background)) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(SaltTheme.colors.background)
+            .alpha(if (visible) 1f else 0f)
+            .zIndex(if (visible) 0f else -1f),
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -521,6 +548,7 @@ private fun BottomDock(
                         onNext = onNext,
                         onPrevious = onPrevious,
                         embedded = true,
+                        sharedVisible = sharedVisible,
                     )
                 }
                 AnimatedVisibility(

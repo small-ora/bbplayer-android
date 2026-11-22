@@ -39,6 +39,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bbplayer.android.core.model.PlaybackState
+import com.bbplayer.android.ui.PlayerCoverSharedKey
+import com.bbplayer.android.ui.LocalSharedTransitionScope
 import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
@@ -66,6 +68,8 @@ fun MiniPlayer(
     onPrevious: () -> Unit = {},
     modifier: Modifier = Modifier,
     embedded: Boolean = false,
+    /** v9.2：封面共享元素可见性（播放页打开时为 false，让 sharedElement 从 mini 过渡到播放页封面）。 */
+    sharedVisible: Boolean = true,
 ) {
     val track = state.track ?: return
     val fraction = if (state.durationMs > 0) {
@@ -122,9 +126,22 @@ fun MiniPlayer(
                 .padding(start = BbSpacing.Md, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val sharedScope = LocalSharedTransitionScope.current
+            val coverModifier = if (sharedScope != null) {
+                with(sharedScope) {
+                    Modifier
+                        .size(BbTokens.MiniCoverSize)
+                        .sharedElementWithCallerManagedVisibility(
+                            rememberSharedContentState(PlayerCoverSharedKey),
+                            visible = sharedVisible,
+                        )
+                }
+            } else {
+                Modifier.size(BbTokens.MiniCoverSize)
+            }
             CoverImage(
                 url = track.coverUrl,
-                modifier = Modifier.size(BbTokens.MiniCoverSize),
+                modifier = coverModifier,
                 corner = BbTokens.MiniCoverCorner,
             )
             Spacer(Modifier.width(10.dp))

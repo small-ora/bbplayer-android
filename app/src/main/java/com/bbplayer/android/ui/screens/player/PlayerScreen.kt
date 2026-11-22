@@ -97,6 +97,9 @@ import com.bbplayer.android.di.AppGraph
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.CoverImage
 import com.bbplayer.android.ui.components.PlayPauseIcon
+import com.bbplayer.android.ui.PlayerCoverSharedKey
+import com.bbplayer.android.ui.LocalSharedTransitionScope
+import com.bbplayer.android.ui.LocalNavAnimatedScope
 import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LoadingState
@@ -737,6 +740,8 @@ private fun CoverPage(track: Track, state: PlaybackState, wash: List<Color>) {
     // AC10：播放态封面宽 = 屏宽 85%，暂停态 0.97 缩放后仍 ≥82%，二者都落在 82%–85%；
     // 再与可用高度取 min，小窗/横屏也不溢出；圆角 16dp，无白边/描边。
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val sharedScope = LocalSharedTransitionScope.current
+    val navScope = LocalNavAnimatedScope.current
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val coverScale = animateFloatAsState(
             targetValue = if (state.isPlaying) 1f else 0.97f,
@@ -760,11 +765,21 @@ private fun CoverPage(track: Track, state: PlaybackState, wash: List<Color>) {
                         )
                     ),
             )
+            // 缩放只保留在父容器一层（v9.1 冻结口径）；这里只负责尺寸/阴影/共享元素
+            val baseCover = Modifier
+                .size(side)
+                .bbCoverShadow(BbRadius.Card)
+            // v9.2 P2-2：与迷你播放器封面共享元素，点开/收起时连续 morph
+            val sharedCover = if (sharedScope != null && navScope != null) {
+                with(sharedScope) {
+                    baseCover.sharedElement(rememberSharedContentState(PlayerCoverSharedKey), navScope)
+                }
+            } else {
+                baseCover
+            }
             CoverImage(
                 url = track.coverUrl,
-                modifier = Modifier
-                    .size(side)
-                    .bbCoverShadow(BbRadius.Card),
+                modifier = sharedCover,
                 corner = BbRadius.Card,
                 // 缩放只保留在父容器一层（避免 0.97² 跌出 82%–85% 的冻结口径）。
                 hairline = false,
