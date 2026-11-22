@@ -8,6 +8,13 @@
 
 > 本项目为学习/研究性质的第三方客户端，与 Bilibili 官方无关；数据来自 B 站公开接口，仅供个人听歌使用，请遵守 B 站用户协议。
 
+## 开发文档
+
+- [开发计划 v0.13.0 / v0.14.0（AI 执行版）](docs/dev/DEV-PLAN-v0.13-v0.14.md)
+- [开发协作约定](docs/dev/CONVENTIONS.md)
+- [发布历史](docs/RELEASES.md)
+- 设计/上游参考：[Salt Player 设计基线](docs/reference/saltplayer-design.md)、[上游功能清单](docs/reference/upstream-features.md)
+
 ## 功能
 
 ### v0.12.0 整合发布（v0.10.x / v0.11.0 全部并入 main）
@@ -30,7 +37,7 @@
 ### v0.10.2 修复（纯白主题播放页底部功能键不可见）
 
 - 纯白/墨水屏播放页的底部功能栏（循环 / 定时 / 倍速 / 队列 / 更多）此前仍硬编码白色图标，铺在纯白背景上不可见；改为随播放页前景色（`onPlayerColor` / `onPlayerSecondary`）取值，纯白主题下恢复为深色图标
-- 竖屏/横屏真机截图验证（`.ai/ui-premium-p2/evidence/44/45-purewhite-*-fixed.png`）
+- 竖屏/横屏真机截图验证（`docs/reference/evidence/v0.10.2-purewhite-*.png`）
 
 ### v0.10.1 修复（独立审查 P1）
 
