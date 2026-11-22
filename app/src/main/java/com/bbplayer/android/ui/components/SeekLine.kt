@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.components
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -111,8 +112,8 @@ fun SeekLine(
         if (showTimes) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
                 val shown = if (dragging) (dragFraction * duration).toLong() else positionMs
-                Text(text = Format.duration(shown), color = timeColor, fontSize = SaltTheme.textStyles.sub.fontSize)
-                Text(text = Format.duration(durationMs), color = timeColor, fontSize = SaltTheme.textStyles.sub.fontSize)
+                Text(text = Format.duration(shown), color = timeColor, style = BbType.CaptionTnum)
+                Text(text = Format.duration(durationMs), color = timeColor, style = BbType.CaptionTnum)
             }
         }
     }

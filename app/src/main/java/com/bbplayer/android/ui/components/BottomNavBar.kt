@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.components
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -51,7 +52,7 @@ fun BbBottomNavBar(
                 label = {
                     Text(
                         text = tab.label,
-                        fontSize = 12.sp,
+                        style = BbType.Caption,
                         maxLines = 1,
                     )
                 },

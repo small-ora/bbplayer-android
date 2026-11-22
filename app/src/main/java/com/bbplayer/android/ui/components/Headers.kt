@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.components
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -68,7 +69,7 @@ fun LargeTitle(title: String, subtitle: String? = null, actions: (@Composable ()
                 Text(
                     text = it,
                     color = SaltTheme.colors.subText,
-                    fontSize = SaltTheme.textStyles.sub.fontSize,
+                    style = BbType.Caption,
                 )
             }
         }
@@ -96,7 +97,7 @@ fun SmallTopBar(title: String, onBack: (() -> Unit)? = null, actions: (@Composab
             text = title,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            fontSize = 17.sp,
+            style = BbType.Section,
             modifier = Modifier.weight(1f).padding(horizontal = 6.dp),
         )
         actions?.invoke()
@@ -131,7 +132,7 @@ fun SearchField(
                 value = value,
                 onValueChange = onValueChange,
                 singleLine = true,
-                textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = 15.sp),
+                textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = BbType.Body.fontSize),
                 cursorBrush = SolidColor(SaltTheme.colors.highlight),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearch(value) }),
@@ -151,7 +152,7 @@ fun SearchField(
                     },
                 decorationBox = { inner ->
                     if (value.isEmpty()) {
-                        Text(placeholder, color = SaltTheme.colors.subText, fontSize = 14.sp)
+                        Text(placeholder, color = SaltTheme.colors.subText, style = BbType.Body)
                     }
                     inner()
                 },
@@ -189,7 +190,7 @@ fun SaltPill(text: String, selected: Boolean = false, onClick: (() -> Unit)? = n
         Text(
             text = text,
             color = if (selected) SaltTheme.colors.highlight else SaltTheme.colors.subText,
-            fontSize = 12.sp,
+            style = BbType.Caption,
             maxLines = 1,
         )
     }

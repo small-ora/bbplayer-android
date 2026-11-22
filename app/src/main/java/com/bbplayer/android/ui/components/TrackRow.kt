@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.components
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,7 +66,7 @@ fun TrackRow(
             Text(
                 text = meta.ifBlank { track.uploader },
                 color = subColor,
-                fontSize = SaltTheme.textStyles.sub.fontSize,
+                style = BbType.Caption,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -75,7 +76,7 @@ fun TrackRow(
             Text(
                 text = Format.duration(track.durationMs),
                 color = SaltTheme.colors.subText,
-                fontSize = SaltTheme.textStyles.sub.fontSize,
+                style = BbType.CaptionTnum,
             )
         }
         if (onMoreClick != null) {

@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.home
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -260,7 +261,7 @@ private fun HomeSearchHeader(
                 Text(
                     text = "搜索音乐 / BV号 / 链接",
                     color = SaltTheme.colors.subText,
-                    fontSize = 14.sp,
+                    style = BbType.Body,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -305,7 +306,7 @@ private fun RecentCard(track: Track, onClick: () -> Unit) {
             text = track.displayTitle,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            fontSize = 14.sp,
+            style = BbType.Body,
             fontWeight = FontWeight.Medium,
         )
         Spacer(Modifier.height(2.dp))
@@ -314,7 +315,7 @@ private fun RecentCard(track: Track, onClick: () -> Unit) {
             color = SaltTheme.colors.subText,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            fontSize = 12.sp,
+            style = BbType.Caption,
         )
     }
 }
@@ -347,7 +348,7 @@ private fun PlaylistCard(playlist: Playlist, metaSuffix: String?, onClick: () ->
                 }
                 covers.isNotEmpty() -> CoverImage(url = covers[0], modifier = Modifier.fillMaxSize(), corner = 12.dp)
                 else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("歌单", color = SaltTheme.colors.subText, fontSize = 13.sp)
+                    Text("歌单", color = SaltTheme.colors.subText, style = BbType.Label)
                 }
             }
         }
@@ -356,7 +357,7 @@ private fun PlaylistCard(playlist: Playlist, metaSuffix: String?, onClick: () ->
             text = playlist.name,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            fontSize = 12.sp,
+            style = BbType.Caption,
         )
         val meta = buildString {
             append("${playlist.tracks.size} 首")
@@ -367,7 +368,7 @@ private fun PlaylistCard(playlist: Playlist, metaSuffix: String?, onClick: () ->
             color = SaltTheme.colors.subText,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            fontSize = SaltTheme.textStyles.sub.fontSize,
+            style = BbType.CaptionTnum,
         )
     }
 }

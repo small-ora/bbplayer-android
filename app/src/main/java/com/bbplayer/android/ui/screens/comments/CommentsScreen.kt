@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.comments
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -208,13 +209,13 @@ fun CommentsScreen(
                         .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("评论", fontSize = 16.sp)
+                    Text("评论", style = BbType.Section)
                     Spacer(Modifier.width(10.dp))
                     if (total > 0) {
                         Text(
                             text = "共 $total 条",
                             color = SaltTheme.colors.subText,
-                            fontSize = 12.sp,
+                            style = BbType.Caption,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -230,7 +231,7 @@ fun CommentsScreen(
                             Text(
                                 text = "共 $total 条",
                                 color = SaltTheme.colors.subText,
-                                fontSize = 12.sp,
+                                style = BbType.Caption,
                                 modifier = Modifier.padding(end = 12.dp),
                             )
                         }
@@ -283,7 +284,7 @@ fun CommentsScreen(
                             loadingMore -> Text(
                                 text = "加载中…",
                                 color = SaltTheme.colors.subText,
-                                fontSize = 12.sp,
+                                style = BbType.Caption,
                             )
                             moreError != null -> SaltPill(
                                 text = "加载失败，点击重试",
@@ -305,7 +306,7 @@ fun CommentsScreen(
                             else -> Text(
                                 text = "没有更多评论了",
                                 color = SaltTheme.colors.subText,
-                                fontSize = 11.sp,
+                                style = BbType.Micro,
                             )
                         }
                     }
@@ -339,14 +340,14 @@ private fun CommentRow(
                 Text(
                     text = comment.userName.ifBlank { "匿名用户" },
                     color = SaltTheme.colors.subText,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = comment.content,
-                    fontSize = 14.sp,
+                    style = BbType.Body,
                     lineHeight = 20.sp,
                 )
                 Spacer(Modifier.height(5.dp))
@@ -354,7 +355,7 @@ private fun CommentRow(
                     Text(
                         text = formatRelativeTime(comment.createdAtSec),
                         color = SaltTheme.colors.subText,
-                        fontSize = 11.sp,
+                        style = BbType.Micro,
                     )
                     Spacer(Modifier.width(14.dp))
                     Icon(
@@ -367,7 +368,7 @@ private fun CommentRow(
                     Text(
                         text = Format.count(comment.likeCount),
                         color = SaltTheme.colors.subText,
-                        fontSize = 11.sp,
+                        style = BbType.MicroTnum,
                     )
                 }
             }
@@ -403,7 +404,7 @@ private fun CommentRow(
                     state.loading && state.items.isEmpty() -> Text(
                         text = "正在加载回复…",
                         color = SaltTheme.colors.subText,
-                        fontSize = 12.sp,
+                        style = BbType.Caption,
                         modifier = Modifier.padding(vertical = 6.dp),
                     )
                     state.error != null && state.items.isEmpty() -> Row(
@@ -413,7 +414,7 @@ private fun CommentRow(
                         Text(
                             text = state.error,
                             color = SaltTheme.colors.subText,
-                            fontSize = 11.sp,
+                            style = BbType.Micro,
                             modifier = Modifier.weight(1f),
                         )
                         SaltPill(text = "重试", onClick = onRetryReplies)
@@ -421,7 +422,7 @@ private fun CommentRow(
                     state.items.isEmpty() -> Text(
                         text = "暂无回复",
                         color = SaltTheme.colors.subText,
-                        fontSize = 12.sp,
+                        style = BbType.Caption,
                     )
                     else -> {
                         state.items.forEach { reply ->
@@ -433,7 +434,7 @@ private fun CommentRow(
                                 state.loading -> Text(
                                     text = "加载中…",
                                     color = SaltTheme.colors.subText,
-                                    fontSize = 11.sp,
+                                    style = BbType.Micro,
                                 )
                                 state.moreError != null -> SaltPill(
                                     text = "加载失败，点击重试",
@@ -446,7 +447,7 @@ private fun CommentRow(
                                 else -> Text(
                                     text = "没有更多回复了",
                                     color = SaltTheme.colors.subText,
-                                    fontSize = 11.sp,
+                                    style = BbType.Micro,
                                 )
                             }
                         }
@@ -471,7 +472,7 @@ private fun ReplyRow(reply: CommentItem) {
                 Text(
                     text = reply.userName.ifBlank { "匿名用户" },
                     color = SaltTheme.colors.subText,
-                    fontSize = 11.sp,
+                    style = BbType.Micro,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
@@ -480,17 +481,17 @@ private fun ReplyRow(reply: CommentItem) {
                 Text(
                     text = formatRelativeTime(reply.createdAtSec),
                     color = SaltTheme.colors.subText,
-                    fontSize = 10.sp,
+                    style = BbType.Micro,
                 )
             }
             Spacer(Modifier.height(2.dp))
-            Text(text = reply.content, fontSize = 13.sp, lineHeight = 18.sp)
+            Text(text = reply.content, style = BbType.Label, lineHeight = 18.sp)
             if (reply.likeCount > 0) {
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = "赞 ${Format.count(reply.likeCount)}",
                     color = SaltTheme.colors.subText,
-                    fontSize = 10.sp,
+                    style = BbType.MicroTnum,
                 )
             }
         }

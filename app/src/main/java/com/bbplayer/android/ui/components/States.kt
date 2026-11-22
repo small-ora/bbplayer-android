@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.components
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,7 +50,7 @@ fun EmptyState(
             Text(
                 text = it,
                 color = SaltTheme.colors.subText,
-                fontSize = SaltTheme.textStyles.sub.fontSize,
+                style = BbType.Caption,
                 textAlign = TextAlign.Center,
             )
         }
@@ -86,7 +87,7 @@ fun LoadingState(modifier: Modifier = Modifier, text: String = "加载中…") {
                 modifier = Modifier.size(26.dp),
             )
             Spacer(Modifier.height(10.dp))
-            Text(text = text, color = SaltTheme.colors.subText, fontSize = SaltTheme.textStyles.sub.fontSize)
+            Text(text = text, color = SaltTheme.colors.subText, style = BbType.Caption)
         }
     }
 }
@@ -99,11 +100,9 @@ fun SaltTextButton(text: String, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = text, color = SaltTheme.colors.highlight, fontSize = 14.sp())
+        Text(text = text, color = SaltTheme.colors.highlight, style = BbType.Body)
     }
 }
-
-private fun Int.sp() = androidx.compose.ui.unit.TextUnit(this.toFloat(), androidx.compose.ui.unit.TextUnitType.Sp)
 
 private fun Modifier.androidxClickable(onClick: () -> Unit): Modifier =
     this.then(Modifier.clickable(onClick = onClick))

@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.uploader
 
+import com.bbplayer.android.ui.theme.BbType
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -152,7 +153,7 @@ fun UploaderScreen(
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     text = user?.name ?: "UP 主",
-                                    fontSize = 20.sp,
+                                    style = BbType.Title,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -161,14 +162,14 @@ fun UploaderScreen(
                                 Text(
                                     text = "粉丝 ${Format.count(user?.follower ?: 0L)}",
                                     color = SaltTheme.colors.subText,
-                                    fontSize = 12.sp,
+                                    style = BbType.CaptionTnum,
                                 )
                                 if (!user?.sign.isNullOrBlank()) {
                                     Spacer(Modifier.height(6.dp))
                                     Text(
                                         text = user.sign,
                                         color = SaltTheme.colors.subText,
-                                        fontSize = 12.sp,
+                                        style = BbType.Caption,
                                         lineHeight = 17.sp,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
@@ -195,12 +196,12 @@ fun UploaderScreen(
                 Modifier.fillMaxWidth().padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("视频", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("视频", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "${videos.items.size} 个",
                     color = SaltTheme.colors.subText,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                 )
             }
         }
@@ -245,7 +246,7 @@ fun UploaderScreen(
                         Text(
                             "已经到底啦",
                             color = SaltTheme.colors.subText,
-                            fontSize = 11.sp,
+                            style = BbType.Micro,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )

@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.history
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -100,10 +101,10 @@ fun HistoryScreen(
                     Text(
                         text = notice!!,
                         color = SaltTheme.colors.highlight,
-                        fontSize = 12.sp,
+                        style = BbType.Caption,
                         modifier = Modifier.weight(1f),
                     )
-                    Text("知道了", color = SaltTheme.colors.subText, fontSize = 11.sp)
+                    Text("知道了", color = SaltTheme.colors.subText, style = BbType.Micro)
                 }
             }
         }
@@ -141,7 +142,7 @@ fun HistoryScreen(
                     Text(
                         text = "只展示最近 30 天的记录；清空历史不会删除歌单与收藏。",
                         color = SaltTheme.colors.subText,
-                        fontSize = 11.sp,
+                        style = BbType.Micro,
                         lineHeight = 16.sp,
                     )
                 }
@@ -158,12 +159,12 @@ fun HistoryScreen(
                     .background(SaltTheme.colors.popup)
                     .padding(20.dp),
             ) {
-                Text("清空收听历史？", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("清空收听历史？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(10.dp))
                 Text(
                     text = "将删除全部收听记录与每日统计，此操作不可撤销。",
                     color = SaltTheme.colors.subText,
-                    fontSize = 13.sp,
+                    style = BbType.Label,
                     lineHeight = 19.sp,
                 )
                 Spacer(Modifier.height(18.dp))
@@ -202,14 +203,14 @@ private fun DayHeader(day: DailyHistory) {
     ) {
         Text(
             text = dayLabel(day.date),
-            fontSize = 16.sp,
+            style = BbType.Section,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = "${Format.totalListening(day.listenedMs)} · ${day.entries.size} 首",
             color = SaltTheme.colors.subText,
-            fontSize = 12.sp,
+            style = BbType.CaptionTnum,
         )
     }
 }

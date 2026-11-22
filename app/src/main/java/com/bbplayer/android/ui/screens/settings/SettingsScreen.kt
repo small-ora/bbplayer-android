@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.settings
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -299,10 +300,10 @@ fun SettingsScreen(
         item {
             Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (toast != null) {
-                    Text(toast!!, color = SaltTheme.colors.highlight, fontSize = 13.sp)
+                    Text(toast!!, color = SaltTheme.colors.highlight, style = BbType.Label)
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("BBPlayer Android Native · v$version", color = SaltTheme.colors.subText, fontSize = 11.sp)
+                Text("BBPlayer Android Native · v$version", color = SaltTheme.colors.subText, style = BbType.Micro)
             }
         }
     }
@@ -499,7 +500,7 @@ private fun SettingsGroup(title: String) {
     Text(
         text = title,
         color = SaltTheme.colors.subText,
-        fontSize = 13.sp,
+        style = BbType.Label,
         modifier = Modifier.padding(
             start = SaltTheme.dimens.padding + 4.dp,
             top = 18.dp,
@@ -519,7 +520,7 @@ private fun SettingNoteRow(title: String, note: String) {
         Column(Modifier.weight(1f)) {
             Text(title)
             Spacer(Modifier.height(2.dp))
-            Text(note, color = SaltTheme.colors.subText, fontSize = 12.sp)
+            Text(note, color = SaltTheme.colors.subText, style = BbType.Caption)
         }
     }
 }
@@ -538,7 +539,7 @@ private fun SettingRow(title: String, value: String, onClick: () -> Unit) {
             Text(
                 text = value,
                 color = SaltTheme.colors.subText,
-                fontSize = 13.sp,
+                style = BbType.Label,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = 12.dp),
@@ -558,7 +559,7 @@ private fun SettingSwitchRow(title: String, subtitle: String?, checked: Boolean,
         Column(Modifier.weight(1f)) {
             Text(title)
             subtitle?.let {
-                Text(it, color = SaltTheme.colors.subText, fontSize = 12.sp)
+                Text(it, color = SaltTheme.colors.subText, style = BbType.Caption)
             }
         }
         Switch(
@@ -585,7 +586,7 @@ private fun StepRow(title: String, value: String, onMinus: () -> Unit, onPlus: (
     ) {
         Text(title, modifier = Modifier.weight(1f))
         SaltPill(text = "−", onClick = onMinus)
-        Text(value, color = SaltTheme.colors.subText, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 12.dp).width(70.dp))
+        Text(value, color = SaltTheme.colors.subText, style = BbType.Label, modifier = Modifier.padding(horizontal = 12.dp).width(70.dp))
         SaltPill(text = "+", onClick = onPlus)
     }
 }
@@ -606,7 +607,7 @@ private fun OptionDialog(
                 .background(SaltTheme.colors.popup)
                 .padding(20.dp),
         ) {
-            Text(title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(12.dp))
             options.forEachIndexed { index, option ->
                 Row(

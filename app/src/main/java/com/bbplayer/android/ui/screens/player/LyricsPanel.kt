@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.player
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
@@ -64,7 +65,7 @@ fun LyricsPanel(
             Text(
                 text = "暂无歌词",
                 color = secondaryContentColor,
-                fontSize = 15.sp,
+                style = BbType.Body,
             )
         }
         return

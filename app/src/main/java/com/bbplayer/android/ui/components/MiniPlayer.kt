@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.components
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -120,7 +121,7 @@ fun MiniPlayer(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 Text(
                     text = track.displayTitle,
-                    fontSize = 14.sp,
+                    style = BbType.Body,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     // 单行超长跑马灯
@@ -130,7 +131,7 @@ fun MiniPlayer(
                 Text(
                     text = track.uploader,
                     color = SaltTheme.colors.subText,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

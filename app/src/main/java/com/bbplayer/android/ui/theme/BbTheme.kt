@@ -10,11 +10,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.bbplayer.android.core.model.AccentPreset
 import com.bbplayer.android.core.model.ThemeMode
 import com.moriafly.salt.ui.SaltColors
@@ -76,10 +73,10 @@ fun BbTheme(
 
 /** 需求 §6：一级标题 20sp Bold / 正文 14sp Regular / 辅助 12sp。 */
 private val BbTextStyles: SaltTextStyles = saltTextStyles(
-    main = TextStyle(fontSize = 14.sp),
-    sub = TextStyle(fontSize = 12.sp),
-    paragraph = TextStyle(fontSize = 14.sp, lineHeight = 1.5f.em),
-    largeTitle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+    main = BbType.Body,
+    sub = BbType.Caption,
+    paragraph = BbType.Body.copy(lineHeight = 1.5f.em),
+    largeTitle = BbType.Title,
 )
 
 /** 需求 §6：全应用卡片圆角统一 16dp（SaltUI 默认 medium 为 12dp）。 */

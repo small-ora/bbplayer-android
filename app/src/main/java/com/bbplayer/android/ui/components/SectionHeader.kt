@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.components
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.sizeIn
@@ -38,14 +39,14 @@ fun SectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         if (subtitle == null) {
-            Text(text = title, fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+            Text(text = title, style = BbType.Section, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
         } else {
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(text = title, fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                Text(text = title, style = BbType.Section, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                 Text(
                     text = "  $subtitle",
                     color = SaltTheme.colors.subText,
-                    fontSize = SaltTheme.textStyles.sub.fontSize,
+                    style = BbType.Caption,
                 )
             }
         }
@@ -61,7 +62,7 @@ fun SectionHeader(
                 Text(
                     text = action,
                     color = SaltTheme.colors.subText,
-                    fontSize = 13.sp,
+                    style = BbType.Label,
                 )
             }
         }

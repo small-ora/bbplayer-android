@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.playlistimport
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -330,7 +331,7 @@ fun ImportPlaylistScreen(
                     Column(Modifier.weight(1f)) {
                         Text(
                             text = stickyPlaylist.name.ifBlank { "导入歌单" },
-                            fontSize = 14.sp,
+                            style = BbType.Body,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -339,7 +340,7 @@ fun ImportPlaylistScreen(
                             text = "已匹配 $matchedCount / ${stickyPlaylist.tracks.size}"
                                 + if (matching) " · 匹配中" else "",
                             color = SaltTheme.colors.subText,
-                            fontSize = 11.sp,
+                            style = BbType.Micro,
                         )
                     }
                     SaltPill(
@@ -360,7 +361,7 @@ fun ImportPlaylistScreen(
                 Text(
                     text = "支持网易云音乐 / QQ 音乐歌单长链接或歌单 ID",
                     color = SaltTheme.colors.subText,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                     lineHeight = 17.sp,
                 )
                 Spacer(Modifier.height(10.dp))
@@ -375,14 +376,14 @@ fun ImportPlaylistScreen(
                         Text(
                             text = "粘贴歌单链接或 ID，例如 https://music.163.com/playlist?id=…",
                             color = SaltTheme.colors.subText,
-                            fontSize = 13.sp,
+                            style = BbType.Label,
                         )
                     }
                     BasicTextField(
                         value = input,
                         onValueChange = { input = it },
                         singleLine = true,
-                        textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = 14.sp),
+                        textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = BbType.Body.fontSize),
                         cursorBrush = SolidColor(SaltTheme.colors.highlight),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { parse() }),
@@ -434,21 +435,21 @@ fun ImportPlaylistScreen(
                             text = parsed.name.ifBlank { "未命名歌单" },
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            fontSize = 17.sp,
+                            style = BbType.Section,
                             fontWeight = FontWeight.SemiBold,
                         )
                         Spacer(Modifier.height(3.dp))
                         Text(
                             text = "${parsed.source.label} · ${parsed.tracks.size} 首歌曲",
                             color = SaltTheme.colors.subText,
-                            fontSize = 13.sp,
+                            style = BbType.Label,
                         )
                         if (parsed.description.isNotBlank()) {
                             Spacer(Modifier.height(3.dp))
                             Text(
                                 text = parsed.description,
                                 color = SaltTheme.colors.subText,
-                                fontSize = 11.sp,
+                                style = BbType.Micro,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -473,7 +474,7 @@ fun ImportPlaylistScreen(
                             text = "已保存进度：${savedTask.done} / ${savedTask.total}"
                                 + if (savedTask.status == ImportStatus.PAUSED) "（已暂停）" else "",
                             color = SaltTheme.colors.text,
-                            fontSize = 12.sp,
+                            style = BbType.Caption,
                             lineHeight = 17.sp,
                             modifier = Modifier.weight(1f),
                         )
@@ -542,7 +543,7 @@ fun ImportPlaylistScreen(
                         Text(
                             text = "成功 $matchedCount · 未匹配 $unmatchedCount",
                             color = SaltTheme.colors.subText,
-                            fontSize = 12.sp,
+                            style = BbType.Caption,
                         )
                     }
                 }
@@ -559,7 +560,7 @@ fun ImportPlaylistScreen(
                                 "正在分批匹配…"
                             },
                             color = SaltTheme.colors.subText,
-                            fontSize = 12.sp,
+                            style = BbType.Caption,
                         )
                         Spacer(Modifier.height(6.dp))
                         MatchProgressBar(
@@ -569,7 +570,7 @@ fun ImportPlaylistScreen(
                         Text(
                             text = "为降低风控概率，匹配按约 1.2 秒/首限速；暂停/退出后进度会保存，可在下次继续",
                             color = SaltTheme.colors.subText,
-                            fontSize = 11.sp,
+                            style = BbType.Micro,
                         )
                     }
                 }
@@ -585,7 +586,7 @@ fun ImportPlaylistScreen(
                 item {
                     Text(
                         text = "匹配结果",
-                        fontSize = 16.sp,
+                        style = BbType.Section,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(
                             start = SaltTheme.dimens.padding,
@@ -606,7 +607,7 @@ fun ImportPlaylistScreen(
                             Text(
                                 text = "可直接点顶部「保存为本地歌单」保存匹配成功的歌曲。",
                                 color = SaltTheme.colors.subText,
-                                fontSize = 11.sp,
+                                style = BbType.Micro,
                                 lineHeight = 16.sp,
                             )
                             Spacer(Modifier.height(8.dp))
@@ -616,7 +617,7 @@ fun ImportPlaylistScreen(
                             Text(
                                 text = "还有 $unmatchedCount 首未匹配，可直接保存（仅保存匹配成功的歌曲），或点击「手动匹配」逐首替换。",
                                 color = SaltTheme.colors.subText,
-                                fontSize = 11.sp,
+                                style = BbType.Micro,
                                 lineHeight = 16.sp,
                             )
                         }
@@ -648,12 +649,12 @@ fun ImportPlaylistScreen(
                     Text(
                         text = notice!!,
                         color = SaltTheme.colors.highlight,
-                        fontSize = 12.sp,
+                        style = BbType.Caption,
                         lineHeight = 17.sp,
                         modifier = Modifier.weight(1f),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("知道了", color = SaltTheme.colors.subText, fontSize = 11.sp)
+                    Text("知道了", color = SaltTheme.colors.subText, style = BbType.Micro)
                 }
             }
         }
@@ -705,7 +706,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
                 text = match.external.title,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 14.sp,
+                style = BbType.Body,
             )
             Spacer(Modifier.height(2.dp))
             if (matched != null) {
@@ -714,14 +715,14 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
                     color = SaltTheme.colors.subText,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                 )
                 val diffMs = matched.durationMs - match.external.durationMs
                 if (matched.durationMs > 0 && match.external.durationMs > 0 && abs(diffMs) >= 5_000) {
                     Text(
                         text = "时长差 ${if (diffMs > 0) "+" else "−"}${Format.duration(abs(diffMs))}",
                         color = SaltTheme.colors.subText,
-                        fontSize = 10.sp,
+                        style = BbType.MicroTnum,
                     )
                 }
             } else {
@@ -730,7 +731,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
                     color = SaltTheme.colors.subText,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                 )
             }
         }
@@ -741,7 +742,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
             Text(
                 text = "${(match.score * 100).toInt()}%",
                 color = SaltTheme.colors.subText,
-                fontSize = 11.sp,
+                style = BbType.Micro,
             )
         }
     }
@@ -780,7 +781,7 @@ private fun InlineError(message: String, onRetry: () -> Unit) {
         Text(
             text = message,
             color = SaltTheme.colors.subText,
-            fontSize = 12.sp,
+            style = BbType.Caption,
             lineHeight = 17.sp,
             modifier = Modifier.weight(1f),
         )
@@ -843,12 +844,12 @@ private fun ManualMatchDialog(
                 .background(SaltTheme.colors.popup)
                 .padding(20.dp),
         ) {
-            Text("手动匹配", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("手动匹配", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
             Text(
                 text = "原曲：${match.external.title} · ${match.external.artist}",
                 color = SaltTheme.colors.subText,
-                fontSize = 12.sp,
+                style = BbType.Caption,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -861,13 +862,13 @@ private fun ManualMatchDialog(
                     .padding(horizontal = 14.dp, vertical = 12.dp),
             ) {
                 if (keyword.isEmpty()) {
-                    Text("输入歌曲关键词", color = SaltTheme.colors.subText, fontSize = 14.sp)
+                    Text("输入歌曲关键词", color = SaltTheme.colors.subText, style = BbType.Body)
                 }
                 BasicTextField(
                     value = keyword,
                     onValueChange = { keyword = it },
                     singleLine = true,
-                    textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = 14.sp),
+                    textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = BbType.Body.fontSize),
                     cursorBrush = SolidColor(SaltTheme.colors.highlight),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { search() }),
@@ -888,7 +889,7 @@ private fun ManualMatchDialog(
             when {
                 searching -> LoadingState(text = "搜索中…")
                 error != null -> Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    Text(error!!, color = SaltTheme.colors.subText, fontSize = 12.sp)
+                    Text(error!!, color = SaltTheme.colors.subText, style = BbType.Caption)
                     Spacer(Modifier.height(8.dp))
                     SaltPill(text = "重试", onClick = { search() })
                 }
@@ -897,7 +898,7 @@ private fun ManualMatchDialog(
                     Text(
                         text = "搜索结果（默认使用第一条）",
                         color = SaltTheme.colors.subText,
-                        fontSize = 11.sp,
+                        style = BbType.Micro,
                     )
                     Spacer(Modifier.height(6.dp))
                     Column(
@@ -925,12 +926,12 @@ private fun ManualMatchDialog(
                                         text = track.displayTitle,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        fontSize = 13.sp,
+                                        style = BbType.Label,
                                     )
                                     Text(
                                         text = if (index == 0) "默认匹配 · ${track.uploader}" else track.uploader,
                                         color = if (index == 0) SaltTheme.colors.highlight else SaltTheme.colors.subText,
-                                        fontSize = 11.sp,
+                                        style = BbType.Micro,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )

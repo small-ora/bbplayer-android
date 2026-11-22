@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.playlist
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,7 @@ fun PlaylistDetailScreen(
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
                 Text(
                     text = playlist?.name ?: "歌单",
-                    fontSize = 26.sp,
+                    style = BbType.Display,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                 )
                 Spacer(Modifier.height(4.dp))
@@ -67,7 +68,7 @@ fun PlaylistDetailScreen(
                     Text(
                         "${playlist?.tracks?.size ?: 0} 首歌曲",
                         color = SaltTheme.colors.subText,
-                        fontSize = 13.sp,
+                        style = BbType.Label,
                     )
                     Spacer(Modifier.size(12.dp))
                     if (!playlist?.tracks.isNullOrEmpty()) {

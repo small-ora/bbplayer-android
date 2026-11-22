@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.search
 
+import com.bbplayer.android.ui.theme.BbType
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -151,7 +152,7 @@ fun SearchScreen(
                             Text(
                                 text = suggestion,
                                 color = SaltTheme.colors.text,
-                                fontSize = 14.sp,
+                                style = BbType.Body,
                                 maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             )
@@ -172,7 +173,7 @@ fun SearchScreen(
                         ),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("B 站热搜", fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                        Text("B 站热搜", style = BbType.Section, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                     }
                 }
                 item {
@@ -200,11 +201,11 @@ fun SearchScreen(
                         ),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("最近搜索", fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                        Text("最近搜索", style = BbType.Section, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                         Text(
                             "清空",
                             color = SaltTheme.colors.subText,
-                            fontSize = 13.sp,
+                            style = BbType.Label,
                             modifier = Modifier.padding(4.dp).clickable {
                                 historyStore.clear()
                                 history = emptyList()

@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.discover
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -69,13 +70,13 @@ fun HotKeywords(
             loading -> Text(
                 text = "正在加载热搜…",
                 color = SaltTheme.colors.subText,
-                fontSize = 12.sp,
+                style = BbType.Caption,
                 modifier = Modifier.padding(horizontal = SaltTheme.dimens.padding + 4.dp),
             )
             keywords.isEmpty() -> Text(
                 text = error ?: "热搜暂时不可用",
                 color = SaltTheme.colors.subText,
-                fontSize = 12.sp,
+                style = BbType.Caption,
                 modifier = Modifier.padding(horizontal = SaltTheme.dimens.padding + 4.dp),
             )
             else -> LazyRow(

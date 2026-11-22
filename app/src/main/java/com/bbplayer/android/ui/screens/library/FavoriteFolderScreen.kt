@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.library
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,13 +75,13 @@ fun FavoriteFolderScreen(
         item { SmallTopBar(title = title, onBack = onBack) }
         item {
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
-                Text(title, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                Text(title, style = BbType.Title, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${state.items.size} 个视频",
                         color = SaltTheme.colors.subText,
-                        fontSize = 13.sp,
+                        style = BbType.Label,
                     )
                     Spacer(Modifier.padding(horizontal = 6.dp))
                     SaltPill(
@@ -134,7 +135,7 @@ fun FavoriteFolderScreen(
                         Text(
                             "已经到底啦",
                             color = SaltTheme.colors.subText,
-                            fontSize = 11.sp,
+                            style = BbType.Micro,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /**
  * BBPlayer 设计 token（需求 §6 视觉规范）。
@@ -57,12 +56,6 @@ object BbTokens {
 
     /** 二级页：只有迷你播放器 + 手势条，需求口径约 140dp。 */
     val SecondaryContentBottomPadding: Dp = 140.dp
-
-    // ---------------- 字阶（需求：20sp Bold / 14sp Regular / 12sp）
-    // v9：辅助文字改用实色 subText token（不再叠加 alpha），见 ThemeTokens / BbTheme。
-    val TitleLargeSize = 20.sp
-    val BodySize = 14.sp
-    val CaptionSize = 12.sp
 
 }
 

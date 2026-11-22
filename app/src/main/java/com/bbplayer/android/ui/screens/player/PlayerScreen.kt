@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.player
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -311,7 +312,7 @@ fun PlayerScreen(
                     Text(
                         text = message,
                         color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 12.sp,
+                        style = BbType.Caption,
                         modifier = Modifier.weight(1f),
                     )
                     SaltPill(text = "重试", onClick = {
@@ -330,7 +331,7 @@ fun PlayerScreen(
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("正在播放", color = onPlayerSecondary, fontSize = 12.sp)
+                        Text("正在播放", color = onPlayerSecondary, style = BbType.Caption)
                         // UP 主只在下方副标题出现一次，避免重复。
                         // 页码指示：封面 / 歌词 / 评论
                         Spacer(Modifier.height(5.dp))
@@ -404,7 +405,7 @@ fun PlayerScreen(
                         Text(
                             text = track.displayTitle,
                             color = onPlayerColor,
-                            fontSize = 20.sp,
+                            style = BbType.Title,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Clip,
@@ -416,7 +417,7 @@ fun PlayerScreen(
                             Text(
                                 text = track.uploader,
                                 color = onPlayerSecondary,
-                                fontSize = 13.sp,
+                                style = BbType.Label,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false),
@@ -675,14 +676,14 @@ private fun LyricsPage(
     Box(Modifier.fillMaxSize()) {
         when {
             lyricsLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("正在获取歌词…", color = secondaryContentColor, fontSize = 14.sp)
+                Text("正在获取歌词…", color = secondaryContentColor, style = BbType.Body)
             }
             lyricsError != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = lyricsError,
                         color = secondaryContentColor,
-                        fontSize = 14.sp,
+                        style = BbType.Body,
                     )
                     Spacer(Modifier.height(10.dp))
                     SaltPill(text = "重试", onClick = onRetry)
@@ -782,7 +783,7 @@ private fun QualityBadge(quality: AudioQuality, pureWhite: Boolean = false) {
                 AudioQuality.Q64 -> "LQ"
             },
             color = if (pureWhite) Color.Black.copy(alpha = 0.7f) else Color(PlayerBackdrop.ON_PLAYER_PRIMARY_ARGB),
-            fontSize = 9.sp,
+            style = BbType.Micro,
         )
     }
 }
@@ -912,7 +913,7 @@ private fun SheetTextButton(
         Text(
             text = text,
             color = if (enabled) color else color.copy(alpha = 0.45f),
-            fontSize = 14.sp,
+            style = BbType.Body,
         )
     }
 }
@@ -937,7 +938,7 @@ private fun OptionDialog(
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
         ) {
-            Text(title, color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             options.forEachIndexed { index, option ->
                 Row(
@@ -985,10 +986,10 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, ink: Boolean, onD
                 .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("添加到歌单", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("添加到歌单", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             if (playlists.isEmpty()) {
-                Text("还没有歌单，去音乐库新建一个吧", color = sheet.onSecondary, fontSize = 13.sp)
+                Text("还没有歌单，去音乐库新建一个吧", color = sheet.onSecondary, style = BbType.Label)
             } else {
                 playlists.forEach { playlist ->
                     Row(
@@ -1005,13 +1006,13 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, ink: Boolean, onD
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(playlist.name, color = sheet.on, modifier = Modifier.weight(1f))
-                        Text("${playlist.tracks.size} 首", color = sheet.onSecondary, fontSize = 12.sp)
+                        Text("${playlist.tracks.size} 首", color = sheet.onSecondary, style = BbType.Caption)
                     }
                 }
             }
             message?.let {
                 Spacer(Modifier.height(8.dp))
-                Text(it, color = sheet.accent, fontSize = 12.sp)
+                Text(it, color = sheet.accent, style = BbType.Caption)
             }
             Spacer(Modifier.height(6.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -1062,19 +1063,19 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDis
                 .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("收藏到 B 站收藏夹", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("收藏到 B 站收藏夹", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             when {
                 error != null -> {
-                    Text(error!!, color = sheet.onSecondary, fontSize = 13.sp)
+                    Text(error!!, color = sheet.onSecondary, style = BbType.Label)
                     Spacer(Modifier.height(10.dp))
                     SheetTextButton(text = "重试", color = sheet.accent, onClick = { attempt++ })
                 }
-                folders == null -> Text("正在读取收藏夹…", color = sheet.onSecondary, fontSize = 13.sp)
+                folders == null -> Text("正在读取收藏夹…", color = sheet.onSecondary, style = BbType.Label)
                 folders!!.isEmpty() -> Text(
                     "还没有收藏夹，请先在 B 站网页端创建",
                     color = sheet.onSecondary,
-                    fontSize = 13.sp,
+                    style = BbType.Label,
                 )
                 else -> {
                     Column(
@@ -1129,14 +1130,14 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDis
                                     Text(
                                         folder.title,
                                         color = sheet.on,
-                                        fontSize = 14.sp,
+                                        style = BbType.Body,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     Text(
                                         "${folder.mediaCount} 个视频${if (folder.isDefault) " · 默认收藏夹" else ""}",
                                         color = sheet.onSecondary,
-                                        fontSize = 11.sp,
+                                        style = BbType.Micro,
                                     )
                                 }
                             }
@@ -1194,7 +1195,7 @@ private fun PasteLyricsDialog(ink: Boolean, onDismiss: () -> Unit, onSave: (Stri
                 .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("粘贴 LRC 歌词", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("粘贴 LRC 歌词", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Box(
                 Modifier
@@ -1208,13 +1209,13 @@ private fun PasteLyricsDialog(ink: Boolean, onDismiss: () -> Unit, onSave: (Stri
                     Text(
                         "[00:01.00]第一句歌词\n[00:05.00]第二句歌词",
                         color = sheet.onSecondary,
-                        fontSize = 12.sp,
+                        style = BbType.Caption,
                     )
                 }
                 androidx.compose.foundation.text.BasicTextField(
                     value = text,
                     onValueChange = { text = it },
-                    textStyle = androidx.compose.ui.text.TextStyle(color = sheet.on, fontSize = 12.sp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = sheet.on, fontSize = BbType.Caption.fontSize),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(sheet.accent),
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -1259,12 +1260,12 @@ private fun LyricsSearchDialog(
                 .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("搜索歌词", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("搜索歌词", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             when {
-                error != null -> Text(error!!, color = sheet.onSecondary, fontSize = 13.sp)
-                candidates == null -> Text("正在搜索…", color = sheet.onSecondary, fontSize = 13.sp)
-                candidates!!.isEmpty() -> Text("没有找到匹配歌词", color = sheet.onSecondary, fontSize = 13.sp)
+                error != null -> Text(error!!, color = sheet.onSecondary, style = BbType.Label)
+                candidates == null -> Text("正在搜索…", color = sheet.onSecondary, style = BbType.Label)
+                candidates!!.isEmpty() -> Text("没有找到匹配歌词", color = sheet.onSecondary, style = BbType.Label)
                 else -> androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f, fill = false)) {
                     items(count = candidates!!.size, key = { idx -> candidates!![idx].source + candidates!![idx].sourceId }) { idx ->
                         val candidate = candidates!![idx]
@@ -1287,7 +1288,7 @@ private fun LyricsSearchDialog(
                             Text(
                                 "${candidate.title} · ${candidate.artist}",
                                 color = sheet.on,
-                                fontSize = 13.sp,
+                                style = BbType.Label,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
@@ -1295,7 +1296,7 @@ private fun LyricsSearchDialog(
                             Text(
                                 if (loadingIndex == idx) "加载中…" else candidate.source.uppercase(),
                                 color = sheet.onSecondary,
-                                fontSize = 11.sp,
+                                style = BbType.Micro,
                             )
                         }
                     }

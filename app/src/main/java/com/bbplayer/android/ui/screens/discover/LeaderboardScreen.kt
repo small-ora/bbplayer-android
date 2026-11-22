@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.discover
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -215,7 +216,7 @@ private fun RankRow(
                 Text(
                     text = subtitle,
                     color = subColor,
-                    fontSize = SaltTheme.textStyles.sub.fontSize,
+                    style = BbType.Caption,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
@@ -224,7 +225,7 @@ private fun RankRow(
                     Text(
                         text = " · ${Format.duration(track.durationMs)}",
                         color = subColor,
-                        fontSize = SaltTheme.textStyles.sub.fontSize,
+                        style = BbType.CaptionTnum,
                     )
                 }
             }
@@ -234,7 +235,7 @@ private fun RankRow(
             Text(
                 text = trailing,
                 color = subColor,
-                fontSize = 11.sp,
+                style = BbType.Micro,
             )
         }
     }

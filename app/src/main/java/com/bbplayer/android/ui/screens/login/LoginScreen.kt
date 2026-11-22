@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.login
 
+import com.bbplayer.android.ui.theme.BbType
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -221,21 +222,21 @@ private fun QrLoginSection(onLoggedIn: (BiliUser) -> Unit) {
             pollState == QrPollState.EXPIRED -> SaltTheme.colors.subText
             else -> SaltTheme.colors.text
         }
-        Text(statusText, color = statusColor, fontSize = 14.sp)
+        Text(statusText, color = statusColor, style = BbType.Body)
         if (pollMessage.isNotBlank() && pollError == null && pollState != QrPollState.SCANNED) {
             Spacer(Modifier.height(4.dp))
-            Text(pollMessage, color = SaltTheme.colors.subText, fontSize = 12.sp)
+            Text(pollMessage, color = SaltTheme.colors.subText, style = BbType.Caption)
         }
         Spacer(Modifier.height(6.dp))
         Text(
             "二维码 150 秒内有效，登录成功后将自动返回",
             color = SaltTheme.colors.subText,
-            fontSize = 11.sp,
+            style = BbType.Micro,
         )
         Spacer(Modifier.height(14.dp))
         when {
             error != null -> {
-                Text(error!!, color = ErrorColor, fontSize = 13.sp)
+                Text(error!!, color = ErrorColor, style = BbType.Label)
                 Spacer(Modifier.height(10.dp))
                 SaltPill(text = "重试", selected = true, onClick = { attempt++ })
             }
@@ -266,7 +267,7 @@ private fun QrLoginSection(onLoggedIn: (BiliUser) -> Unit) {
             Text(
                 "扫码后请在手机端确认；凭据仅保存在本机 Keystore 加密存储。",
                 color = SaltTheme.colors.subText,
-                fontSize = 11.sp,
+                style = BbType.Micro,
                 lineHeight = 16.sp,
             )
         }
@@ -300,12 +301,12 @@ private fun CookieLoginSection(onLoggedIn: (BiliUser) -> Unit) {
     }
 
     Column(Modifier.fillMaxWidth()) {
-        Text("粘贴浏览器 Cookie", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text("粘贴浏览器 Cookie", style = BbType.Section, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
         Text(
             "从已登录 bilibili.com 的浏览器开发者工具复制 Cookie 请求头，粘贴到下方。",
             color = SaltTheme.colors.subText,
-            fontSize = 12.sp,
+            style = BbType.Caption,
             lineHeight = 18.sp,
         )
         Spacer(Modifier.height(12.dp))
@@ -321,21 +322,21 @@ private fun CookieLoginSection(onLoggedIn: (BiliUser) -> Unit) {
                 Text(
                     "SESSDATA=...; bili_jct=...; DedeUserID=...",
                     color = SaltTheme.colors.subText,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                     lineHeight = 17.sp,
                 )
             }
             BasicTextField(
                 value = cookie,
                 onValueChange = { cookie = it },
-                textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = 12.sp, lineHeight = 17.sp),
+                textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = BbType.Caption.fontSize, lineHeight = 17.sp),
                 cursorBrush = SolidColor(SaltTheme.colors.highlight),
                 modifier = Modifier.fillMaxSize(),
             )
         }
         error?.let {
             Spacer(Modifier.height(8.dp))
-            Text(it, color = ErrorColor, fontSize = 12.sp)
+            Text(it, color = ErrorColor, style = BbType.Caption)
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -356,7 +357,7 @@ private fun CookieLoginSection(onLoggedIn: (BiliUser) -> Unit) {
             Text(
                 "安全提示：Cookie 等同账号凭据，仅保存在本机 Keystore 加密存储，可随时退出清除。请勿分享给他人，也不要粘贴到不可信的页面。",
                 color = SaltTheme.colors.subText,
-                fontSize = 11.sp,
+                style = BbType.Micro,
                 lineHeight = 17.sp,
             )
         }

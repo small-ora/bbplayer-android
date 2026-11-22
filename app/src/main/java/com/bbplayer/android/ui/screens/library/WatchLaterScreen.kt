@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.library
 
+import com.bbplayer.android.ui.theme.BbType
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -101,13 +102,13 @@ fun WatchLaterScreen(
         }
         item {
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
-                Text("稍后再看", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                Text("稍后再看", style = BbType.Title, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (loggedIn) "${items?.size ?: 0} 个视频" else "登录后查看",
                         color = SaltTheme.colors.subText,
-                        fontSize = 13.sp,
+                        style = BbType.Label,
                     )
                     Spacer(Modifier.width(12.dp))
                     val list = items
@@ -179,12 +180,12 @@ fun WatchLaterScreen(
                     .background(SaltTheme.colors.popup)
                     .padding(20.dp),
             ) {
-                Text("清空稍后再看？", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("清空稍后再看？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(10.dp))
                 Text(
                     "将删除 B 站账号下的全部稍后再看条目，此操作不可撤销。",
                     color = SaltTheme.colors.subText,
-                    fontSize = 13.sp,
+                    style = BbType.Label,
                     lineHeight = 19.sp,
                 )
                 Spacer(Modifier.height(18.dp))

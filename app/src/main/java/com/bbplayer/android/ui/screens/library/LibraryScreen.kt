@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.library
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -442,7 +443,7 @@ private fun SelectionHeaderAction(text: String, enabled: Boolean = true, onClick
         Text(
             text = text,
             color = if (enabled) SaltTheme.colors.highlight else SaltTheme.colors.subText.copy(alpha = 0.4f),
-            fontSize = 13.sp,
+            style = BbType.Label,
             maxLines = 1,
         )
     }
@@ -480,7 +481,7 @@ private fun PlaylistActionsSheet(
         Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
             Text(
                 text = playlistName,
-                fontSize = 16.sp,
+                style = BbType.Section,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -512,7 +513,7 @@ private fun SheetActionRow(
     ) {
         Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(16.dp))
-        Text(text = text, color = contentColor, fontSize = 15.sp)
+        Text(text = text, color = contentColor, style = BbType.Body)
     }
 }
 
@@ -544,7 +545,7 @@ private fun FavoriteFolderRow(folder: FavoriteFolder, onClick: () -> Unit) {
                     text = folder.title,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontSize = 16.sp,
+                    style = BbType.Section,
                     modifier = Modifier.weight(1f, fill = false),
                 )
                 if (folder.isDefault) {
@@ -556,7 +557,7 @@ private fun FavoriteFolderRow(folder: FavoriteFolder, onClick: () -> Unit) {
             Text(
                 text = "${folder.mediaCount} 个视频",
                 color = SaltTheme.colors.subText,
-                fontSize = SaltTheme.textStyles.sub.fontSize,
+                style = BbType.Caption,
             )
         }
         Icon(
@@ -584,7 +585,7 @@ private fun CollectionRow(collection: BiliCollection, onClick: () -> Unit) {
                 text = collection.title,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 16.sp,
+                style = BbType.Section,
             )
             Spacer(Modifier.height(2.dp))
             Text(
@@ -594,7 +595,7 @@ private fun CollectionRow(collection: BiliCollection, onClick: () -> Unit) {
                     collection.description
                 },
                 color = SaltTheme.colors.subText,
-                fontSize = SaltTheme.textStyles.sub.fontSize,
+                style = BbType.Caption,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -602,7 +603,7 @@ private fun CollectionRow(collection: BiliCollection, onClick: () -> Unit) {
         Text(
             text = "${collection.count}",
             color = SaltTheme.colors.subText,
-            fontSize = SaltTheme.textStyles.sub.fontSize,
+            style = BbType.Caption,
         )
         Spacer(Modifier.width(4.dp))
         Icon(
@@ -651,12 +652,12 @@ private fun PlaylistRow(
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp)
+            Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = BbType.Section)
             Spacer(Modifier.height(2.dp))
             Text(
                 "${playlist.tracks.size} 首歌曲",
                 color = SaltTheme.colors.subText,
-                fontSize = SaltTheme.textStyles.sub.fontSize,
+                style = BbType.Caption,
             )
         }
         if (!selectionMode) {
@@ -690,7 +691,7 @@ private fun RenamePlaylistDialog(current: String, onDismiss: () -> Unit, onConfi
                 .background(SaltTheme.colors.popup)
                 .padding(20.dp),
         ) {
-            Text("重命名歌单", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("重命名歌单", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(14.dp))
             Box(
                 Modifier
@@ -703,7 +704,7 @@ private fun RenamePlaylistDialog(current: String, onDismiss: () -> Unit, onConfi
                     value = name,
                     onValueChange = { name = it },
                     singleLine = true,
-                    textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = 15.sp),
+                    textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = BbType.Body.fontSize),
                     cursorBrush = SolidColor(SaltTheme.colors.highlight),
                 )
             }
@@ -730,7 +731,7 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
                 .background(SaltTheme.colors.popup)
                 .padding(20.dp),
         ) {
-            Text("新建歌单", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("新建歌单", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(14.dp))
             Box(
                 Modifier
@@ -740,13 +741,13 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
                     .padding(horizontal = 14.dp, vertical = 12.dp),
             ) {
                 if (name.isEmpty()) {
-                    Text("歌单名称", color = SaltTheme.colors.subText, fontSize = 15.sp)
+                    Text("歌单名称", color = SaltTheme.colors.subText, style = BbType.Body)
                 }
                 BasicTextField(
                     value = name,
                     onValueChange = { name = it },
                     singleLine = true,
-                    textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = 15.sp),
+                    textStyle = TextStyle(color = SaltTheme.colors.text, fontSize = BbType.Body.fontSize),
                     cursorBrush = SolidColor(SaltTheme.colors.highlight),
                 )
             }
@@ -772,12 +773,12 @@ private fun BatchDeleteConfirmDialog(count: Int, onDismiss: () -> Unit, onConfir
                 .background(SaltTheme.colors.popup)
                 .padding(20.dp),
         ) {
-            Text("删除 $count 个歌单？", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("删除 $count 个歌单？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             Text(
                 "只会删除本机歌单，不会影响 B 站内容；删除后无法撤销。",
                 color = SaltTheme.colors.subText,
-                fontSize = 13.sp,
+                style = BbType.Label,
                 lineHeight = 19.sp,
             )
             Spacer(Modifier.height(16.dp))

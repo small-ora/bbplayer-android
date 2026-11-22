@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.downloads
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -145,7 +146,7 @@ fun DownloadsScreen(
                 Text(
                     text = "共 ${entries.size} 项 · 已占用 ${formatBytes(usedBytes)}",
                     color = SaltTheme.colors.subText,
-                    fontSize = 12.sp,
+                    style = BbType.Caption,
                     modifier = Modifier.padding(
                         start = SaltTheme.dimens.padding + 4.dp,
                         top = 10.dp,
@@ -203,7 +204,7 @@ fun DownloadsScreen(
                     Text(
                         text = "下载文件为 B 站音频容器（m4s），导出到公共目录时以 .m4a 命名；离线播放不会发起网络流解析。",
                         color = SaltTheme.colors.subText,
-                        fontSize = 11.sp,
+                        style = BbType.Micro,
                         lineHeight = 16.sp,
                     )
                 }
@@ -262,7 +263,7 @@ private fun DownloadRow(
                 Text(
                     text = entry.status.label(),
                     color = if (entry.status == DownloadStatus.FAILED) SaltTheme.colors.highlight else subColor,
-                    fontSize = 11.sp,
+                    style = BbType.Micro,
                 )
             }
             Spacer(Modifier.height(3.dp))
@@ -277,7 +278,7 @@ private fun DownloadRow(
                     }
                 },
                 color = subColor,
-                fontSize = SaltTheme.textStyles.sub.fontSize,
+                style = BbType.CaptionTnum,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -288,7 +289,7 @@ private fun DownloadRow(
                 Text(
                     text = "${formatBytes(entry.downloadedBytes)} / ${formatBytes(entry.totalBytes)} · ${(entry.progress.coerceIn(0f, 1f) * 100).toInt()}%",
                     color = subColor,
-                    fontSize = 11.sp,
+                    style = BbType.Micro,
                 )
             }
             if (entry.status == DownloadStatus.FAILED) {
@@ -296,7 +297,7 @@ private fun DownloadRow(
                 Text(
                     text = entry.errorMessage?.takeIf { it.isNotBlank() } ?: "下载失败，请重试",
                     color = SaltTheme.colors.subText,
-                    fontSize = 11.sp,
+                    style = BbType.Micro,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -352,12 +353,12 @@ private fun NoticeBanner(text: String, onDismiss: () -> Unit) {
         Text(
             text = text,
             color = SaltTheme.colors.highlight,
-            fontSize = 12.sp,
+            style = BbType.Caption,
             lineHeight = 17.sp,
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
-        Text("知道了", color = SaltTheme.colors.subText, fontSize = 11.sp)
+        Text("知道了", color = SaltTheme.colors.subText, style = BbType.Micro)
     }
 }
 
@@ -377,9 +378,9 @@ private fun ConfirmDialog(
                 .background(SaltTheme.colors.popup)
                 .padding(20.dp),
         ) {
-            Text(title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
-            Text(message, color = SaltTheme.colors.subText, fontSize = 13.sp, lineHeight = 19.sp)
+            Text(message, color = SaltTheme.colors.subText, style = BbType.Label, lineHeight = 19.sp)
             Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 SaltPill(text = "取消", onClick = onDismiss)

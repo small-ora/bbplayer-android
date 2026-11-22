@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.player
 
+import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,13 +57,13 @@ fun QueueSheet(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("播放队列", fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                Text("播放队列", style = BbType.Section, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
-                Text("${queue.size} 首", color = SaltTheme.colors.subText, fontSize = 13.sp)
+                Text("${queue.size} 首", color = SaltTheme.colors.subText, style = BbType.Label)
                 Spacer(Modifier.weight(1f))
                 if (queue.isNotEmpty()) {
                     Box(Modifier.clickable(onClick = onClear).padding(6.dp)) {
-                        Text("清空", color = SaltTheme.colors.subText, fontSize = 13.sp)
+                        Text("清空", color = SaltTheme.colors.subText, style = BbType.Label)
                     }
                 }
             }
@@ -85,17 +86,17 @@ fun QueueSheet(
                                 color = if (current) SaltTheme.colors.highlight else SaltTheme.colors.text,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                fontSize = 14.sp,
+                                style = BbType.Body,
                             )
                             Text(
                                 track.uploader,
                                 color = SaltTheme.colors.subText,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                fontSize = 12.sp,
+                                style = BbType.Caption,
                             )
                         }
-                        Text(Format.duration(track.durationMs), color = SaltTheme.colors.subText, fontSize = 12.sp)
+                        Text(Format.duration(track.durationMs), color = SaltTheme.colors.subText, style = BbType.CaptionTnum)
                         IconAction(Icons.Rounded.Close, "移出队列", onClick = { onRemove(index) }, tint = SaltTheme.colors.subText, size = 34)
                     }
                 }

@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.screens.profile
 
+import com.bbplayer.android.ui.theme.BbType
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -144,9 +145,9 @@ fun ProfileScreen(
         }
         item {
             Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("BBPlayer · 安卓原生版", color = SaltTheme.colors.subText, fontSize = 12.sp)
+                Text("BBPlayer · 安卓原生版", color = SaltTheme.colors.subText, style = BbType.Caption)
                 Spacer(Modifier.height(4.dp))
-                Text("数据来自 Bilibili · 界面风格致敬椒盐音乐", color = SaltTheme.colors.subText, fontSize = 11.sp)
+                Text("数据来自 Bilibili · 界面风格致敬椒盐音乐", color = SaltTheme.colors.subText, style = BbType.Micro)
             }
         }
     }
@@ -160,12 +161,12 @@ fun ProfileScreen(
                     .background(SaltTheme.colors.popup)
                     .padding(20.dp),
             ) {
-                Text("退出登录？", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("退出登录？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(10.dp))
                 Text(
                     "退出后将清除本机保存的加密凭据，收藏夹、合集与稍后再看需要重新登录才能查看。",
                     color = SaltTheme.colors.subText,
-                    fontSize = 13.sp,
+                    style = BbType.Label,
                     lineHeight = 19.sp,
                 )
                 Spacer(Modifier.height(18.dp))
@@ -199,11 +200,11 @@ private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
         Column(Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("累计收听", color = SaltTheme.colors.subText, fontSize = BbTokens.CaptionSize)
+                Text("累计收听", color = SaltTheme.colors.subText, style = BbType.Caption)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     Format.totalListening(summary.totalListenedMs),
-                    fontSize = BbTokens.TitleLargeSize,
+                    style = BbType.TitleTnum,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -212,7 +213,7 @@ private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
                 Text(
                     "播放次数 ${summary.totalPlayCount} 次",
                     color = SaltTheme.colors.subText,
-                    fontSize = BbTokens.CaptionSize,
+                    style = BbType.CaptionTnum,
                 )
             }
             Spacer(Modifier.width(16.dp))
@@ -222,7 +223,7 @@ private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
         Text(
             "最近 12 周听歌记录",
             color = SaltTheme.colors.subText,
-            fontSize = BbTokens.CaptionSize,
+            style = BbType.Caption,
         )
         }
     }
@@ -305,7 +306,7 @@ private fun ProfileEntryRow(
         Column(Modifier.weight(1f)) {
             Text(
                 title,
-                fontSize = BbTokens.BodySize,
+                style = BbType.Body,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -313,7 +314,7 @@ private fun ProfileEntryRow(
             Text(
                 subtitle,
                 color = SaltTheme.colors.subText,
-                fontSize = BbTokens.CaptionSize,
+                style = BbType.Caption,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -351,12 +352,12 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                     }
                     Spacer(Modifier.size(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("未登录", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                        Text("未登录", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(2.dp))
                         Text(
                             "登录后同步收藏夹、合集、稍后再看与高音质",
                             color = SaltTheme.colors.subText,
-                            fontSize = 12.sp,
+                            style = BbType.Caption,
                             lineHeight = 16.sp,
                         )
                     }
@@ -374,7 +375,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 user.name,
-                                fontSize = 17.sp,
+                                style = BbType.Section,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -391,7 +392,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                         Text(
                             "UID ${user.mid}",
                             color = SaltTheme.colors.subText,
-                            fontSize = 11.sp,
+                            style = BbType.Micro,
                         )
                     }
                     Spacer(Modifier.size(8.dp))
@@ -402,7 +403,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
             Text(
                 "凭据仅保存在本机 Keystore 加密存储，界面不会显示 Cookie。",
                 color = SaltTheme.colors.subText,
-                fontSize = 11.sp,
+                style = BbType.Micro,
                 lineHeight = 16.sp,
             )
           }
