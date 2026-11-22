@@ -238,7 +238,7 @@ private fun HomeSearchHeader(
     onRefresh: () -> Unit,
 ) {
     // v9：卡片面（subBackground）与页面底（background）在所有主题下都不同色，
-    // 因此搜索条固定补一条发丝描边，不再需要 needHairline 兜底分支。
+    // 因此搜索条固定补一条发丝描边，不再需要「底色==卡片色才描边」的兜底分支。
     val searchShape = RoundedCornerShape(50)
     SearchBar(
         inputField = {

@@ -143,14 +143,17 @@ data class BbExtraColors(
     val onPlayer: Color = Color.White,
     val onPlayerSecondary: Color = Color(0xCCFFFFFF),
 ) {
-    /** 播放页弹层容器：沉浸播放页用深灰玻璃，纯白墨水屏用白面。 */
-    val playerSheet: Color get() = if (pureWhite) Color(0xFFFFFFFF) else Color(0xFF262626)
+    /** 播放页弹层容器：沉浸播放页用深灰玻璃，纯白墨水屏用白面（数值见 [PlayerSheetTokens]）。 */
+    val playerSheet: Color
+        get() = Color(if (pureWhite) PlayerSheetTokens.InkContainer else PlayerSheetTokens.DarkContainer)
 
     /** 弹层主文字。 */
-    val playerSheetOn: Color get() = if (pureWhite) Color(0xFF111111) else Color.White
+    val playerSheetOn: Color
+        get() = Color(if (pureWhite) PlayerSheetTokens.InkOn else PlayerSheetTokens.DarkOn)
 
     /** 弹层次级文字。 */
-    val playerSheetOnSecondary: Color get() = if (pureWhite) Color(0x99000000) else Color(0xCCFFFFFF)
+    val playerSheetOnSecondary: Color
+        get() = Color(if (pureWhite) PlayerSheetTokens.InkOnSecondary else PlayerSheetTokens.DarkOnSecondary)
 }
 
 val LocalBbColors = staticCompositionLocalOf { BbExtraColors(isDark = false) }
