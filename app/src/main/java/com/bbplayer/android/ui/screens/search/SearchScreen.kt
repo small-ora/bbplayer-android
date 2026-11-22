@@ -1,8 +1,10 @@
 package com.bbplayer.android.ui.screens.search
 
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,12 +21,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -48,14 +53,17 @@ import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
+import kotlinx.coroutines.launch
 
 @Composable
 fun SearchScreen(
     onOpenPlayer: () -> Unit,
     onPlayTrack: (List<Track>, Int) -> Unit,
+    onOpenVideoCollection: (String) -> Unit,
 ) {
     val graph = LocalAppGraph.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val historyStore = remember { SearchHistoryStore(context) }
     var query by remember { mutableStateOf("") }
     var submittedQuery by remember { mutableStateOf("") }
@@ -66,6 +74,8 @@ fun SearchScreen(
     var searchNonce by remember { mutableStateOf(0) }
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var hotKeywords by remember { mutableStateOf<List<String>>(emptyList()) }
+    // 正在解析合集的曲目 key（行内 loading + 防重复点击/重复导航）。
+    var resolvingKey by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         graph.discoverRepository.hotKeywords().onSuccess { hotKeywords = it }
@@ -242,10 +252,56 @@ fun SearchScreen(
                 results.isEmpty() -> item { EmptyState(title = "没有找到相关结果", subtitle = "换个关键词试试") }
                 else -> items(count = results.size, key = { idx -> results[idx].key }) { idx ->
                     val track = results[idx]
+                    val resolving = resolvingKey == track.key
                     TrackRow(
                         track = track,
                         isCurrent = playback.track?.key == track.key,
-                        onClick = { onPlayTrack(results, idx) },
+                        onClick = {
+                            // 一次只解析一条：快速连点不重复发请求、不重复导航/播放。
+                            if (resolvingKey == null) {
+                                resolvingKey = track.key
+                                val snapshot = results
+                                scope.launch {
+                                    try {
+                                        graph.musicRepository.getVideoCollection(track.bvid)
+                                            .onSuccess { collection ->
+                                                if (collection != null && collection.isCollection) {
+                                                    onOpenVideoCollection(collection.bvid)
+                                                } else {
+                                                    // 单视频：保持旧行为，直接播放该单曲。
+                                                    onPlayTrack(snapshot, idx)
+                                                }
+                                            }
+                                            .onFailure {
+                                                // 解析失败不阻塞：提示后回退为播放该单曲。
+                                                Toast.makeText(
+                                                    context,
+                                                    "合集解析失败，已按单曲播放",
+                                                    Toast.LENGTH_SHORT,
+                                                ).show()
+                                                onPlayTrack(snapshot, idx)
+                                            }
+                                    } finally {
+                                        resolvingKey = null
+                                    }
+                                }
+                            }
+                        },
+                        trailing = if (resolving) {
+                            {
+                                Box(
+                                    Modifier.size(48.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                 }
             }

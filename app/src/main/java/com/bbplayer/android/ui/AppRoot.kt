@@ -69,6 +69,7 @@ import com.bbplayer.android.ui.components.BbDockNav
 import com.bbplayer.android.ui.components.MainTab
 import com.bbplayer.android.ui.components.MiniPlayer
 import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
+import com.bbplayer.android.ui.screens.collection.VideoCollectionScreen
 import com.bbplayer.android.ui.screens.discover.LeaderboardScreen
 import com.bbplayer.android.ui.screens.downloads.DownloadsScreen
 import com.bbplayer.android.ui.screens.history.HistoryScreen
@@ -112,10 +113,13 @@ object Routes {
     const val FAVORITE_FOLDER = "favoriteFolder/{id}?title={title}"
     const val COLLECTION_DETAIL = "collection/{id}?title={title}"
     const val UPLOADER = "uploader/{mid}"
+    const val VIDEO_COLLECTION = "videoCollection/{bvid}"
     fun playlist(id: String) = "playlist/$id"
     fun favoriteFolder(id: Long, title: String) = "favoriteFolder/$id?title=${Uri.encode(title)}"
     fun collection(id: Long, title: String) = "collection/$id?title=${Uri.encode(title)}"
     fun uploader(mid: Long) = "uploader/$mid"
+    /** bvid 只含字母数字，无需 Uri.encode。 */
+    fun videoCollection(bvid: String) = "videoCollection/$bvid"
 }
 
 /** 底部导航 3 个核心 Tab（需求 §1）：发现（原首页）/ 曲库（原音乐库）/ 我的（原个人中心）。 */
@@ -343,7 +347,11 @@ private fun AppNavHost(
             )
         }
         composable(Routes.SEARCH) {
-            SearchScreen(onOpenPlayer = onOpenPlayer, onPlayTrack = onPlayTrack)
+            SearchScreen(
+                onOpenPlayer = onOpenPlayer,
+                onPlayTrack = onPlayTrack,
+                onOpenVideoCollection = { navController.navigate(Routes.videoCollection(it)) },
+            )
         }
         composable(
             route = Routes.LIBRARY,
@@ -410,6 +418,15 @@ private fun AppNavHost(
                 onBack = { navController.popBackStack() },
                 onOpenPlayer = onOpenPlayer,
                 onPlayTrack = onPlayTrack,
+            )
+        }
+        composable(Routes.VIDEO_COLLECTION) { entry ->
+            VideoCollectionScreen(
+                bvid = entry.arguments?.getString("bvid").orEmpty(),
+                onBack = { navController.popBackStack() },
+                onOpenPlayer = onOpenPlayer,
+                onPlayTrack = onPlayTrack,
+                onOpenPlaylist = { navController.navigate(Routes.playlist(it)) },
             )
         }
         composable(Routes.DOWNLOADS) {
