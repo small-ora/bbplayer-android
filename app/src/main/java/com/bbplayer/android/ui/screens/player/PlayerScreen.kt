@@ -486,6 +486,8 @@ fun PlayerScreen(
                     onModeClick = { graph.playbackController.setPlayMode(state.playMode.next()) },
                     onShowSheet = { sheet.value = it },
                     onOpenQueue = { showQueue = true },
+                    strongTint = onPlayerColor,
+                    weakTint = onPlayerSecondary,
                 )
             }
         }
@@ -898,6 +900,8 @@ private fun BottomActions(
     onModeClick: () -> Unit,
     onShowSheet: (String) -> Unit,
     onOpenQueue: () -> Unit,
+    strongTint: Color,
+    weakTint: Color,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = BbSpacing.Xs),
@@ -913,12 +917,12 @@ private fun BottomActions(
             },
             contentDescription = state.playMode.label,
             onClick = onModeClick,
-            tint = if (state.playMode in listOf(PlayMode.REPEAT_ONE, PlayMode.SHUFFLE)) Color.White else Color.White.copy(alpha = 0.65f),
+            tint = if (state.playMode in listOf(PlayMode.REPEAT_ONE, PlayMode.SHUFFLE)) strongTint else weakTint,
         )
-        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f))
-        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f))
-        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f))
-        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f))
+        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = weakTint)
+        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = weakTint)
+        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = weakTint)
+        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = weakTint)
     }
 }
 
