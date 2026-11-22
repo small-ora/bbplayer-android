@@ -175,6 +175,7 @@ fun VideoCollectionScreen(
             onBack = onBack,
             onPlayTrack = onPlayTrack,
             onSave = { saveToPlaylist(state.collection) },
+            onRetry = { retryNonce++ },
         )
     }
 }
@@ -188,6 +189,7 @@ private fun CollectionContent(
     onBack: () -> Unit,
     onPlayTrack: (List<Track>, Int) -> Unit,
     onSave: () -> Unit,
+    onRetry: () -> Unit,
 ) {
     val tracks = collection.tracks
     val subtitle = buildString {
@@ -214,6 +216,22 @@ private fun CollectionContent(
                     color = SaltTheme.colors.subText,
                     style = BbType.Label,
                 )
+                // season 兜底分页失败时曲目可能不完整：弱提示 + 重试入口（SPEC §6 mitigation）。
+                if (collection.partial) {
+                    Spacer(Modifier.height(BbSpacing.Sm))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(BbSpacing.Sm),
+                    ) {
+                        Text(
+                            text = "部分集数加载失败，可能不完整",
+                            color = SaltTheme.colors.subText,
+                            style = BbType.Label,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        SaltPill(text = "重试", onClick = onRetry)
+                    }
+                }
                 Spacer(Modifier.height(BbSpacing.Md))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

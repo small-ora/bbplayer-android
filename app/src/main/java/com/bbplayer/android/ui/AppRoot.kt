@@ -350,7 +350,10 @@ private fun AppNavHost(
             SearchScreen(
                 onOpenPlayer = onOpenPlayer,
                 onPlayTrack = onPlayTrack,
-                onOpenVideoCollection = { navController.navigate(Routes.videoCollection(it)) },
+                // launchSingleTop：view 缓存命中时解析极快，退场动画期间二次点击也不会压入第二个合集页。
+                onOpenVideoCollection = {
+                    navController.navigate(Routes.videoCollection(it)) { launchSingleTop = true }
+                },
             )
         }
         composable(
