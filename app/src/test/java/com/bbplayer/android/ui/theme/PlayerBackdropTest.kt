@@ -45,6 +45,63 @@ class PlayerBackdropTest {
         }
     }
 
+    /**
+     * 独立复算：不复用 [PlayerBackdrop.worstCaseContrast]，按 SPEC 写死 40% 封面 / 三段 scrim，
+     * 防止「实现和断言共用同一函数」导致回归测不出来。
+     */
+    private fun independentBackground(wash: Int, scrimAlpha: Float): Int {
+        val image = ColorMath.compositeOver(
+            ColorMath.withAlpha(0xFFFFFFFF.toInt(), 0.40f),
+            wash,
+        )
+        return ColorMath.compositeOver(
+            ColorMath.withAlpha(0xFF000000.toInt(), scrimAlpha),
+            image,
+        )
+    }
+
+    @Test
+    fun independentPipelineKeepsPrimaryAndSecondaryTextReadable() {
+        val scrims = listOf(PlayerBackdrop.SCRIM_TOP, PlayerBackdrop.SCRIM_MID, PlayerBackdrop.SCRIM_BOTTOM)
+        for ((name, raw) in extremes) {
+            val wash = PlayerBackdrop.washForBackground(raw)
+            for (scrim in scrims) {
+                val bg = independentBackground(wash, scrim)
+                val primary = ColorMath.contrastRatio(0xFFFFFFFF.toInt(), bg)
+                val secondary = ColorMath.contrastRatio(PlayerBackdrop.ON_PLAYER_SECONDARY_ARGB, bg)
+                assertTrue("$name @scrim=$scrim 主文字 $primary", primary >= 4.5)
+                assertTrue("$name @scrim=$scrim 次级文字 $secondary", secondary >= 4.5)
+            }
+        }
+    }
+
+    @Test
+    fun washRespectsValueLowerAndUpperBounds() {
+        for ((name, raw) in extremes) {
+            val wash = ColorMath.rgbToHsv(PlayerBackdrop.washForBackground(raw))
+            assertTrue(
+                "$name: 明度应 ≥ ${PlayerBackdrop.MIN_WASH_VALUE}，实际 ${wash.value}",
+                wash.value >= PlayerBackdrop.MIN_WASH_VALUE - 0.01f,
+            )
+            assertTrue(
+                "$name: 明度应 ≤ ${PlayerBackdrop.MAX_WASH_VALUE}，实际 ${wash.value}",
+                wash.value <= PlayerBackdrop.MAX_WASH_VALUE + 0.01f,
+            )
+        }
+    }
+
+    @Test
+    fun secondaryTextContrastHelperMatchesIndependentMath() {
+        for ((name, raw) in extremes) {
+            val wash = PlayerBackdrop.washForBackground(raw)
+            val expected = ColorMath.contrastRatio(
+                PlayerBackdrop.ON_PLAYER_SECONDARY_ARGB,
+                independentBackground(wash, PlayerBackdrop.SCRIM_MID),
+            )
+            assertEquals(expected, PlayerBackdrop.secondaryTextContrast(wash), 1e-9)
+        }
+    }
+
     @Test
     fun solidBackgroundWithoutCoverImagePasses() {
         for ((name, raw) in extremes) {

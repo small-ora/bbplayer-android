@@ -3,6 +3,7 @@ package com.bbplayer.android.ui.screens.player
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -221,7 +222,8 @@ fun PlayerScreen(
 
     val pureWhite = backgroundStyle == PlayerBackgroundStyle.PURE_WHITE
     val onPlayerColor = if (pureWhite) Color(0xFF111111) else Color.White
-    val onPlayerSecondary = if (pureWhite) Color(0x99000000) else Color.White.copy(alpha = 0.65f)
+    // 播放页次级文字用不透明色：半透明白在最坏背景（纯白封面）下只有 3.1:1。
+    val onPlayerSecondary = if (pureWhite) Color(0xFF5F6368) else Color(PlayerBackdrop.ON_PLAYER_SECONDARY_ARGB)
     // v9：封面取色先过亮度守卫，保证任意封面（含纯白/亮黄）下白字对比度 ≥ 4.5:1。
     val rawWash = wash.firstOrNull() ?: SaltTheme.colors.highlight
     val backdropBase = Color(PlayerBackdrop.washForBackground(rawWash.toArgb()))
@@ -328,7 +330,7 @@ fun PlayerScreen(
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("正在播放", color = onPlayerColor.copy(alpha = 0.85f), fontSize = 12.sp)
+                        Text("正在播放", color = onPlayerSecondary, fontSize = 12.sp)
                         // UP 主只在下方副标题出现一次，避免重复。
                         // 页码指示：封面 / 歌词 / 评论
                         Spacer(Modifier.height(5.dp))
@@ -373,6 +375,7 @@ fun PlayerScreen(
                         onManualSearch = { sheet.value = "searchLyrics" },
                         onSeekTo = { graph.playbackController.seekTo(it.coerceAtLeast(0)) },
                         contentColor = onPlayerColor,
+                        secondaryContentColor = onPlayerSecondary,
                     )
                     else -> CommentsPage(
                         bvid = track.bvid,
@@ -667,17 +670,18 @@ private fun LyricsPage(
     onManualSearch: () -> Unit,
     onSeekTo: (Long) -> Unit,
     contentColor: Color,
+    secondaryContentColor: Color = contentColor,
 ) {
     Box(Modifier.fillMaxSize()) {
         when {
             lyricsLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("正在获取歌词…", color = contentColor.copy(alpha = 0.75f), fontSize = 14.sp)
+                Text("正在获取歌词…", color = secondaryContentColor, fontSize = 14.sp)
             }
             lyricsError != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = lyricsError,
-                        color = contentColor.copy(alpha = 0.75f),
+                        color = secondaryContentColor,
                         fontSize = 14.sp,
                     )
                     Spacer(Modifier.height(10.dp))
@@ -696,6 +700,7 @@ private fun LyricsPage(
                 showTranslation = showTranslation,
                 onSeekTo = onSeekTo,
                 contentColor = contentColor,
+                secondaryContentColor = secondaryContentColor,
             )
         }
     }
@@ -706,7 +711,7 @@ private fun LyricsPage(
 private val PlayerCommentColors = SaltColors(
     highlight = Color(0xE6FFFFFF),
     text = Color(0xEBFFFFFF),
-    subText = Color(0x99FFFFFF),
+    subText = Color(0xCCFFFFFF),
     background = Color.Transparent,
     subBackground = Color(0x14FFFFFF),
     popup = Color(0x14FFFFFF),
@@ -744,7 +749,7 @@ private fun CommentsPage(bvid: String, active: Boolean, pureWhite: Boolean) {
                     .fillMaxSize()
                     .background(
                         androidx.compose.ui.graphics.Brush.verticalGradient(
-                            listOf(Color.Black.copy(alpha = 0.22f), Color.Black.copy(alpha = 0.40f)),
+                            listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.60f)),
                         )
                     )
             )
@@ -765,7 +770,7 @@ private fun QualityBadge(quality: AudioQuality, pureWhite: Boolean = false) {
     Box(
         Modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(if (pureWhite) Color.Black.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.16f))
+            .background(if (pureWhite) Color.Black.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.35f))
             .padding(horizontal = 4.dp, vertical = 1.dp),
     ) {
         Text(
@@ -776,7 +781,7 @@ private fun QualityBadge(quality: AudioQuality, pureWhite: Boolean = false) {
                 AudioQuality.Q128 -> "SQ"
                 AudioQuality.Q64 -> "LQ"
             },
-            color = if (pureWhite) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.8f),
+            color = if (pureWhite) Color.Black.copy(alpha = 0.7f) else Color(PlayerBackdrop.ON_PLAYER_PRIMARY_ARGB),
             fontSize = 9.sp,
         )
     }
@@ -1096,6 +1101,17 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDis
                                         .clip(RoundedCornerShape(6.dp))
                                         .background(
                                             if (checked) sheet.accent else sheet.field
+                                        )
+                                        .then(
+                                            if (!checked) {
+                                                Modifier.border(
+                                                    width = 1.dp,
+                                                    color = sheet.on.copy(alpha = if (ink) 0.55f else 0.45f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                )
+                                            } else {
+                                                Modifier
+                                            }
                                         ),
                                     contentAlignment = Alignment.Center,
                                 ) {

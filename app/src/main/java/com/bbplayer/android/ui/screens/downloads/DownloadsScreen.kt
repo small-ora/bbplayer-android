@@ -238,7 +238,7 @@ private fun DownloadRow(
     onExport: (() -> Unit)? = null,
 ) {
     val textColor = if (isCurrent) SaltTheme.colors.highlight else SaltTheme.colors.text
-    val subColor = if (isCurrent) SaltTheme.colors.highlight.copy(alpha = 0.75f) else SaltTheme.colors.subText
+    val subColor = if (isCurrent) SaltTheme.colors.highlight else SaltTheme.colors.subText
     val clickableModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Row(
         modifier = Modifier

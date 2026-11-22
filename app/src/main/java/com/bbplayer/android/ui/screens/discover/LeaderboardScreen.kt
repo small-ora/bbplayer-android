@@ -183,7 +183,7 @@ private fun RankRow(
     onClick: () -> Unit,
 ) {
     val textColor = if (isCurrent) SaltTheme.colors.highlight else SaltTheme.colors.text
-    val subColor = if (isCurrent) SaltTheme.colors.highlight.copy(alpha = 0.75f) else SaltTheme.colors.subText
+    val subColor = if (isCurrent) SaltTheme.colors.highlight else SaltTheme.colors.subText
     Row(
         modifier = Modifier
             .fillMaxWidth()
