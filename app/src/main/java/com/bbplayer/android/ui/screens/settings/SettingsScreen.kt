@@ -1,11 +1,27 @@
 package com.bbplayer.android.ui.screens.settings
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Subtitles
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.heightIn
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -49,6 +65,7 @@ import com.bbplayer.android.core.model.ThemeMode
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.lyrics.DesktopLyricsService
 import com.bbplayer.android.ui.theme.BbRadius
@@ -144,11 +161,12 @@ fun SettingsScreen(
                 SettingRow(
                     title = "Bilibili 账号",
                     value = if (user == null) "未登录" else "${user.name} · Lv.${user.level}",
+                    icon = Icons.Rounded.Person,
                 ) {}
                 if (user == null) {
-                    SettingRow("登录 Bilibili", "扫码登录 / Cookie 粘贴") { onOpenLogin() }
+                    SettingRow("登录 Bilibili", "扫码登录 / Cookie 粘贴", icon = Icons.Rounded.Person) { onOpenLogin() }
                 } else {
-                    SettingRow("退出登录", "清除本机加密凭据") {
+                    SettingRow("退出登录", "清除本机加密凭据", icon = Icons.Rounded.Person, danger = true) {
                         scope.safeLaunch(onError = { toast = it.toUserMessage() }) {
                             graph.authRepository.logout()
                             toast = "已退出登录"
@@ -162,14 +180,14 @@ fun SettingsScreen(
         item { SettingsGroup("外观") }
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
-                SettingRow("主题模式", themeMode.label) { dialog = "theme" }
+                SettingRow("主题模式", themeMode.label, icon = Icons.Rounded.Palette) { dialog = "theme" }
                 if (themeMode != ThemeMode.PURE_WHITE) {
-                    SettingSwitchRow("动态取色", "跟随系统壁纸取色（Android 12+）", dynamicColor) {
+                    SettingSwitchRow("动态取色", "跟随系统壁纸取色（Android 12+）", dynamicColor, icon = Icons.Rounded.Palette) {
                         scope.safeLaunch { prefs.setDynamicColor(it) }
                     }
-                    SettingRow("强调色", accent.label) { dialog = "accent" }
+                    SettingRow("强调色", accent.label, icon = Icons.Rounded.Palette) { dialog = "accent" }
                 }
-                SettingRow("播放器背景", backgroundStyle.label) { dialog = "bgStyle" }
+                SettingRow("播放器背景", backgroundStyle.label, icon = Icons.Rounded.Palette) { dialog = "bgStyle" }
             }
         }
 
@@ -177,9 +195,9 @@ fun SettingsScreen(
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 // D1: 音质与「高音质」开关合并为单一「音质」下拉（杜比/无损选项需要登录）。
-                SettingRow("音质", qualityLabel) { dialog = "quality" }
+                SettingRow("音质", qualityLabel, icon = Icons.Rounded.PlayCircle) { dialog = "quality" }
                 // D4: 启动行为合并为一项三选一。
-                SettingRow("启动时", startupLabel) { dialog = "startup" }
+                SettingRow("启动时", startupLabel, icon = Icons.Rounded.PlayCircle) { dialog = "startup" }
             }
         }
 
@@ -190,6 +208,7 @@ fun SettingsScreen(
                     title = "上报播放进度到 B 站历史",
                     subtitle = "默认关闭。开启且已登录时，播放进度会同步到 B 站播放历史；关闭后不发任何请求",
                     checked = reportProgress,
+                    icon = Icons.Rounded.Lock,
                 ) { enabled ->
                     if (enabled && session == null) {
                         android.widget.Toast.makeText(
@@ -208,8 +227,8 @@ fun SettingsScreen(
         item { SettingsGroup("下载") }
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
-                SettingRow("同时下载数", "${downloadParallel} 个") { dialog = "downloadParallel" }
-                SettingRow("已下载管理", "查看/删除/导出") { onOpenDownloads() }
+                SettingRow("同时下载数", "${downloadParallel} 个", icon = Icons.Rounded.Download) { dialog = "downloadParallel" }
+                SettingRow("已下载管理", "查看/删除/导出", icon = Icons.Rounded.Download) { onOpenDownloads() }
             }
         }
 
@@ -218,12 +237,14 @@ fun SettingsScreen(
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                 StepRow(
                     title = "歌词字号",
+                    icon = Icons.Rounded.Subtitles,
                     value = String.format(java.util.Locale.US, "%.1fx", fontScale),
                     onMinus = { scope.safeLaunch { prefs.setLyricsFontScale((fontScale - 0.1f).coerceIn(0.8f, 1.6f)) } },
                     onPlus = { scope.safeLaunch { prefs.setLyricsFontScale((fontScale + 0.1f).coerceIn(0.8f, 1.6f)) } },
                 )
                 StepRow(
                     title = "歌词偏移",
+                    icon = Icons.Rounded.Subtitles,
                     value = if (lyricOffset == 0) "0 ms" else "${if (lyricOffset > 0) "+" else ""}$lyricOffset ms",
                     onMinus = { scope.safeLaunch { prefs.setLyricsOffsetMs((lyricOffset - 100).coerceIn(-2000, 2000)) } },
                     onPlus = { scope.safeLaunch { prefs.setLyricsOffsetMs((lyricOffset + 100).coerceIn(-2000, 2000)) } },
@@ -234,8 +255,8 @@ fun SettingsScreen(
         item { SettingsGroup("数据") }
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
-                SettingRow("导出备份", "歌单/收藏/历史/设置/歌词 → zip") { dialog = "exportBackup" }
-                SettingRow("从备份恢复", "选择 .zip 文件恢复") { importLauncher.launch("application/zip") }
+                SettingRow("导出备份", "歌单/收藏/历史/设置/歌词 → zip", icon = Icons.Rounded.Storage) { dialog = "exportBackup" }
+                SettingRow("从备份恢复", "选择 .zip 文件恢复", icon = Icons.Rounded.Storage) { importLauncher.launch("application/zip") }
             }
         }
 
@@ -251,9 +272,10 @@ fun SettingsScreen(
                 SettingRow(
                     title = "接口缓存",
                     value = "${cacheCount} 条 · ${formatBytes(cacheSize)}",
+                    icon = Icons.Rounded.DeleteSweep,
                 ) {}
                 // D5: 接口缓存与歌词缓存合并为一个清理入口。
-                SettingRow("清除缓存", "接口缓存 + 歌词缓存") {
+                SettingRow("清除缓存", "接口缓存 + 歌词缓存", icon = Icons.Rounded.DeleteSweep) {
                     scope.safeLaunch {
                         val cleared = graph.networkCacheRepository.clear()
                         graph.lyricsRepository.clearCache()
@@ -268,7 +290,7 @@ fun SettingsScreen(
         item { SettingsGroup("关于") }
         item {
             RoundedColumn(modifier = Modifier.fillMaxWidth()) {
-                SettingRow("版本", version) {}
+                SettingRow("版本", version, icon = Icons.Rounded.Info) {}
                 SettingRow(
                     title = when {
                         checkingUpdate -> "检查更新中…"
@@ -276,6 +298,7 @@ fun SettingsScreen(
                         else -> "检查更新"
                     },
                     value = "",
+                    icon = Icons.Rounded.Info,
                 ) {
                     if (updateInfo != null) {
                         runCatching {
@@ -294,19 +317,32 @@ fun SettingsScreen(
                         checkingUpdate = false
                     }
                 }
-                SettingRow("BBPlayer", "数据来自 Bilibili，仅作学习用途") {}
-                SettingRow("界面风格", "SaltUI / 椒盐音乐（Apache-2.0）") {}
-                SettingRow("上游项目", "bbplayer-app/bbplayer（MIT）") {}
+                SettingRow("BBPlayer", "数据来自 Bilibili，仅作学习用途", icon = Icons.Rounded.Info) {}
+                SettingRow("界面风格", "SaltUI / 椒盐音乐（Apache-2.0）", icon = Icons.Rounded.Info) {}
+                SettingRow("上游项目", "bbplayer-app/bbplayer（MIT）", icon = Icons.Rounded.Info) {}
             }
         }
 
         item {
-            Column(Modifier.fillMaxWidth().padding(BbSpacing.Xxl), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Xxl),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
                 if (toast != null) {
                     Text(toast!!, color = SaltTheme.colors.highlight, style = BbType.Label)
+                    Spacer(Modifier.height(BbSpacing.Sm))
                 }
-                Spacer(Modifier.height(8.dp))
-                Text("BBPlayer Android Native · v$version", color = SaltTheme.colors.subText, style = BbType.Micro)
+                // v9.2：用一张版本卡收尾，代替页脚裸文字
+                RoundedColumn(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(BbSpacing.Lg),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("BBPlayer Android Native", color = SaltTheme.colors.text, style = BbType.Label)
+                        Spacer(Modifier.height(2.dp))
+                        Text("v$version", color = SaltTheme.colors.subText, style = BbType.Caption)
+                    }
+                }
             }
         }
     }
@@ -500,9 +536,10 @@ private fun formatBytes(bytes: Long): String = when {
 
 @Composable
 private fun SettingsGroup(title: String) {
+    // v9.2：分组标签改用 accent（Salt/主流设置页做法），层级一眼可读
     Text(
         text = title,
-        color = SaltTheme.colors.subText,
+        color = SaltTheme.colors.highlight,
         style = BbType.Label,
         modifier = Modifier.padding(
             start = SaltTheme.dimens.padding + BbSpacing.Xs,
@@ -528,16 +565,54 @@ private fun SettingNoteRow(title: String, note: String) {
     }
 }
 
+/** 危险操作文字色（退出登录 / 清空等；SaltUI 无 error 角色，这里单独给 token）。 */
 @Composable
-private fun SettingRow(title: String, value: String, onClick: () -> Unit) {
+private fun dangerColor(): Color =
+    if (SaltTheme.configs.isDarkTheme) Color(0xFFFF99A4) else Color(0xFFC42B1C)
+
+/** 行首图标：36dp 浅色圆底 + 20dp accent 图标（v9.2 P2-4）。 */
+@Composable
+private fun RowLeadingIcon(icon: ImageVector, danger: Boolean = false) {
+    val tint = if (danger) dangerColor() else SaltTheme.colors.highlight
+    Box(
+        Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(BbIconSize.Md),
+        )
+    }
+    Spacer(Modifier.width(BbSpacing.Md))
+}
+
+@Composable
+private fun SettingRow(
+    title: String,
+    value: String,
+    icon: ImageVector? = null,
+    danger: Boolean = false,
+    onClick: () -> Unit,
+) {
     Row(
         Modifier
             .fillMaxWidth()
+            .heightIn(min = 56.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Lg),
+            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, modifier = Modifier.weight(1f))
+        icon?.let { RowLeadingIcon(it, danger) }
+        Text(
+            title,
+            modifier = Modifier.weight(1f),
+            color = if (danger) dangerColor() else SaltTheme.colors.text,
+        )
         if (value.isNotBlank()) {
             Text(
                 text = value,
@@ -552,13 +627,21 @@ private fun SettingRow(title: String, value: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SettingSwitchRow(title: String, subtitle: String?, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SettingSwitchRow(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    icon: ImageVector? = null,
+    onCheckedChange: (Boolean) -> Unit,
+) {
     Row(
         Modifier
             .fillMaxWidth()
+            .heightIn(min = 56.dp)
             .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        icon?.let { RowLeadingIcon(it) }
         Column(Modifier.weight(1f)) {
             Text(title)
             subtitle?.let {
@@ -580,13 +663,21 @@ private fun SettingSwitchRow(title: String, subtitle: String?, checked: Boolean,
 }
 
 @Composable
-private fun StepRow(title: String, value: String, onMinus: () -> Unit, onPlus: () -> Unit) {
+private fun StepRow(
+    title: String,
+    value: String,
+    icon: ImageVector? = null,
+    onMinus: () -> Unit,
+    onPlus: () -> Unit,
+) {
     Row(
         Modifier
             .fillMaxWidth()
+            .heightIn(min = 56.dp)
             .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        icon?.let { RowLeadingIcon(it) }
         Text(title, modifier = Modifier.weight(1f))
         SaltPill(text = "−", onClick = onMinus)
         Text(value, color = SaltTheme.colors.subText, style = BbType.Label, modifier = Modifier.padding(horizontal = BbSpacing.Md).width(70.dp))
