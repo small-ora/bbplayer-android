@@ -15,7 +15,7 @@
 
 | 步 | 主题 | 写范围 | 验证 | 回滚点 |
 |---|---|---|---|---|
-| S16 | 动效 token + 页面转场 + tab Crossfade + 播放态/进度/列表动画 + 跑马灯边缘 | `ui/theme/Motion.kt`(新)、`AppRoot.kt`、`PlayerScreen.kt`、`MiniPlayer.kt`、`QueueSheet.kt`、`PlaylistDetailScreen.kt` | QUICK + 真机 screenrecord 抽帧 | SPEC |
+| S16 | 动效 token + 页面转场 + tab Crossfade + 播放态/进度/列表动画 + 跑马灯边缘 | `ui/theme/Motion.kt`(新)、`AppRoot.kt`、`PlayerScreen.kt`、`MiniPlayer.kt`、`QueueSheet.kt`、`PlaylistDetailScreen.kt` | ✅ QUICK 绿 + `BbMotionTest` 3/3 + 真机（MI 6）截图 + `s16-transitions.mp4` 录屏 | `fbea5ef` |
 | S17 | mini→播放器封面 shared element | `AppRoot.kt`、`MiniPlayer.kt`、`PlayerScreen.kt` | QUICK + 真机 10 次进出 + 抽帧 | S16 |
 | S18 | 发现页 hero + 模块高度/间距分级 | `HomeScreen.kt` | QUICK + 三主题截图（空/非空历史） | S17 |
 | S19 | 设置页 accent 分组标签 + 前导图标 + 56dp 行 + 危险项 + 版本卡 | `SettingsScreen.kt` | QUICK + 逐组点按回归 + 三主题截图 | S18 |
@@ -24,6 +24,13 @@
 | S22 | 自检 FULL gate | `.ai/ui-premium-p2/evidence/` | 四模块单测 + assembleDebug | S21 |
 | S23 | 独立审查（fresh reviewer） | `.ai/ui-premium-p2/REVIEW.md` | P0/P1 处置 | S22 |
 | S24 | 验收包 | `.ai/ui-premium-p2/ACCEPTANCE.md` | 人验收 | S23 |
+
+## 1.1 执行记录
+
+| 步 | 状态 | commit | 证据 |
+|---|---|---|---|
+| S16 | ✅ 动效体系 |  | （120/220/320 + 标准缓动）、NavHost 转场、tab fade、、进度补间、、跑马灯两端渐隐； 3/3；真机截图 `21-s16-dock.png`/`22-s16-player.png`，录屏 `s16-transitions.mp4`（本机无 ffmpeg，抽帧未做） |
+| S17–S21 | ⏳ 待续 | — | — |
 
 ## 2. 人工门禁
 
