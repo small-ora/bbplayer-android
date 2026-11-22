@@ -75,12 +75,14 @@
 | 步 | 状态 | commit | 验证证据 |
 |---|---|---|---|
 | S1 | ✅ SPEC 冻结 | `c7303f8` | `git log` |
-| S2 | 待办 | | |
-| S3 | 待办 | | |
-| S4 | 待办 | | |
-| S5 | 待办 | | |
-| S6 | 待办 | | |
-| S7 | 待办 | | |
-| S8 | 待办 | | |
-| S9 | 待办 | | |
-| S10 | 待办 | | |
+| S2 | ✅ 中性 token + 颜色数学 | `626f455` | `ThemeTokensTest` 6 + `ColorMathTest` 5 全绿 |
+| S3 | ✅ 文本 alpha 收敛 | `4b14105` | grep：文本类 `subText.copy` 归零（仅剩非文本用途） |
+| S4 | ✅ 播放页亮度守卫 | `db5d20a` | `PlayerBackdropTest` 5 全绿（8 组极端封面 ≥4.5:1） |
+| S5 | ✅ 状态栏图标跟随 | `5866844` | 编译绿 + 代码审查（真机 BLOCKED） |
+| S6 | ✅ 弹层 token 化 | `ca86bb6` + `52ef5e5` | grep：`PlayerScreen` 无 `#262626` |
+| S7 | ✅ 48dp 热区 | `e775de0` | grep：`IconAction` 内部 clamp 48；播放页 `size=32/36` 清零 |
+| S8 | ✅ FULL gate | `e775de0` 时点 | `evidence/full-gate.log`（EXIT=0）+ `evidence/static-assertions.log` |
+| S9 | ⏳ 独立审查 | — | `REVIEW.md`（fresh reviewer） |
+| S10 | ⏳ 验收包 | — | `ACCEPTANCE.md`（v1） |
+
+> 注：S8 之后又提交了 `52ef5e5`（弹层色单一事实源，纯重构），验收前需重跑 FULL gate；真机截图均 **BLOCKED**（本机无设备/模拟器），已用 `docs/ui-review/p0-*.png`（同算法模拟，明确标注非真机）替代示意。
