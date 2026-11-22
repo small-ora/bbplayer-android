@@ -81,7 +81,7 @@ fun TrackRow(
         if (onMoreClick != null) {
             Box(
                 Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clickable(onClick = onMoreClick),
                 contentAlignment = Alignment.Center,
             ) {

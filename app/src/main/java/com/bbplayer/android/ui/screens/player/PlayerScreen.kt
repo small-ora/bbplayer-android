@@ -332,7 +332,7 @@ fun PlayerScreen(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(
                     Icons.Rounded.KeyboardArrowDown, "收起", onClick = onBack,
-                    tint = onPlayerColor, size = 36,
+                    tint = onPlayerColor, size = 48,
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -355,7 +355,7 @@ fun PlayerScreen(
                 }
                 IconAction(
                     Icons.Rounded.MoreHoriz, "更多", onClick = { sheet.value = "more" },
-                    tint = onPlayerColor, size = 36,
+                    tint = onPlayerColor, size = 48,
                 )
             }
 
@@ -450,7 +450,7 @@ fun PlayerScreen(
                     activeColor = onPlayerColor,
                     trackColor = onPlayerColor.copy(alpha = 0.24f),
                     timeColor = onPlayerSecondary,
-                    touchHeight = 18.dp,
+                    touchHeight = 44.dp,
                 )
                 Spacer(Modifier.height(4.dp))
                 TransportRow(
@@ -858,12 +858,12 @@ private fun BottomActions(
             contentDescription = state.playMode.label,
             onClick = onModeClick,
             tint = if (state.playMode in listOf(PlayMode.REPEAT_ONE, PlayMode.SHUFFLE)) Color.White else Color.White.copy(alpha = 0.65f),
-            size = 32,
+            size = 48,
         )
-        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
-        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
-        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 32)
-        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 32)
+        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 48)
+        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 48)
+        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 48)
+        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 48)
     }
 }
 

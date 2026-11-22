@@ -86,8 +86,8 @@ fun SmallTopBar(title: String, onBack: (() -> Unit)? = null, actions: (@Composab
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onBack != null) {
-            Box(Modifier.size(40.dp).clip(RoundedCornerShape(50)).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.ArrowBack, "返回", tint = SaltTheme.colors.text, modifier = Modifier.size(22.dp))
+            Box(Modifier.size(48.dp).clip(RoundedCornerShape(50)).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.ArrowBack, "返回", tint = SaltTheme.colors.text, modifier = Modifier.size(24.dp))
             }
         } else {
             Spacer(Modifier.width(8.dp))
@@ -159,7 +159,8 @@ fun SearchField(
         }
         if (value.isNotEmpty()) {
             Box(
-                Modifier.size(30.dp).clip(RoundedCornerShape(50)).clickable {
+                // 行高 46dp 限制，清空键取 40dp（SPEC AC8 显式豁免）；其余可点元素 ≥48dp。
+                Modifier.size(40.dp).clip(RoundedCornerShape(50)).clickable {
                     onValueChange("")
                 },
                 contentAlignment = Alignment.Center,
@@ -194,12 +195,22 @@ fun SaltPill(text: String, selected: Boolean = false, onClick: (() -> Unit)? = n
     }
 }
 
+/**
+ * 图标按钮：视觉尺寸由 [size] 决定，**触控热区不小于 48dp**（SPEC AC8）。
+ */
 @Composable
-fun IconAction(icon: androidx.compose.ui.graphics.vector.ImageVector, contentDescription: String, onClick: () -> Unit, tint: Color = SaltTheme.colors.text, size: Int = 40) {
+fun IconAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    tint: Color = SaltTheme.colors.text,
+    size: Int = 48,
+) {
+    val touchSize = maxOf(size, 48)
     Box(
-        Modifier.size(size.dp).clip(RoundedCornerShape(50)).clickable(onClick = onClick),
+        Modifier.size(touchSize.dp).clip(RoundedCornerShape(50)).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription, tint = tint, modifier = Modifier.size((size * 0.55f).dp))
+        Icon(icon, contentDescription, tint = tint, modifier = Modifier.size((size * 0.5f).dp))
     }
 }
