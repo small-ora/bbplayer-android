@@ -32,9 +32,6 @@ object BbTokens {
     /** dock 容器圆角。 */
     val DockCorner: Dp = BbRadius.Dock
 
-    /** 旧名兼容：底部导航段高度（v9.1 起即 dock 导航段）。 */
-    val BottomNavHeight: Dp = DockNavHeight
-
     /** dock 上下外边距（容器与屏幕/手势条的呼吸）。 */
     val DockOuterMargin: Dp = BbSpacing.Sm
 
@@ -43,9 +40,6 @@ object BbTokens {
 
     /** 迷你播放器底部 2dp 进度条。 */
     val MiniPlayerProgressHeight: Dp = 2.dp
-
-    /** 迷你播放器总高（内容行 + 进度条）。 */
-    val MiniPlayerHeight: Dp = MiniPlayerRowHeight + MiniPlayerProgressHeight
 
     /** 迷你播放器左右边距（非 dock 的悬浮模式使用）。 */
     val MiniPlayerSideMargin: Dp = BbSpacing.Md

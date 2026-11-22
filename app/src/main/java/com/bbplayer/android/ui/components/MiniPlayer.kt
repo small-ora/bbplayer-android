@@ -156,14 +156,14 @@ fun MiniPlayer(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = BbSpacing.Md)
-                .height(2.dp)
+                .height(BbTokens.MiniPlayerProgressHeight)
                 .clip(CircleShape)
                 .background(SaltTheme.colors.subText.copy(alpha = 0.15f)),
         ) {
             Box(
                 Modifier
                     .fillMaxWidth(fraction)
-                    .height(2.dp)
+                    .height(BbTokens.MiniPlayerProgressHeight)
                     .clip(CircleShape)
                     .background(SaltTheme.colors.highlight),
             )

@@ -86,11 +86,8 @@ object BbType {
     )
 
     // ---- 等宽数字变体（SPEC AC2）：用于时间 / 时长 / 计数
-    val DisplayTnum: TextStyle = Display.tnum()
+    // 只暴露当前用到的 3 档，避免无读取点的 API。
     val TitleTnum: TextStyle = Title.tnum()
-    val SectionTnum: TextStyle = Section.tnum()
-    val BodyTnum: TextStyle = Body.tnum()
-    val LabelTnum: TextStyle = Label.tnum()
     val CaptionTnum: TextStyle = Caption.tnum()
     val MicroTnum: TextStyle = Micro.tnum()
 }
