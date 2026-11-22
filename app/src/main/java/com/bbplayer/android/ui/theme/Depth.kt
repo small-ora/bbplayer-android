@@ -28,6 +28,16 @@ fun Modifier.bbCoverShadow(corner: Dp = BbRadius.Card): Modifier = shadow(
     spotColor = Color.Black.copy(alpha = 0.16f),
 )
 
+/** 宽屏悬浮迷你条 16dp 软阴影（与 dock 同一档，移动端 dock 模式下不使用）。 */
+@Composable
+fun Modifier.bbFloatingMiniDepth(shape: Shape = RoundedCornerShape(BbRadius.Card)): Modifier = shadow(
+    elevation = 16.dp,
+    shape = shape,
+    clip = false,
+    ambientColor = Color.Black.copy(alpha = 0.10f),
+    spotColor = Color.Black.copy(alpha = 0.14f),
+)
+
 /** dock 16dp 软阴影 + 1dp 顶边 hairline（顶边用来在浅色/纯白主题里勾出容器边界）。 */
 @Composable
 fun Modifier.bbDockDepth(shape: Shape = RoundedCornerShape(BbRadius.Dock)): Modifier {

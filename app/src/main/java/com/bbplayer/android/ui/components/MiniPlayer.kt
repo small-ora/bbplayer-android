@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -42,6 +41,7 @@ import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
 import com.bbplayer.android.ui.theme.BbType
+import com.bbplayer.android.ui.theme.bbFloatingMiniDepth
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import kotlin.math.abs
@@ -82,7 +82,7 @@ fun MiniPlayer(
         modifier
             .fillMaxWidth()
             .padding(horizontal = BbTokens.MiniPlayerSideMargin)
-            .shadow(8.dp, shape)
+            .bbFloatingMiniDepth(shape)
             .clip(shape)
             .background(SaltTheme.colors.popup)
             .border(0.5.dp, SaltTheme.colors.stroke, shape)
