@@ -30,7 +30,12 @@
 | 步 | 状态 | commit | 证据 |
 |---|---|---|---|
 | S16 | ✅ 动效体系 | `fbea5ef` | `Motion.kt`（120/220/320 + 标准缓动）、NavHost 转场、tab fade、`PlayPauseIcon`、进度补间、`animateItem`、跑马灯两端渐隐；`BbMotionTest` 3/3；真机截图 `21-s16-dock.png`/`22-s16-player.png`，录屏 `s16-transitions.mp4`（本机无 ffmpeg，抽帧未做） |
-| S17–S21 | ⏳ 待续 | — | — |
+| S17 | ✅ 封面共享元素 | `d1faeea` | `SharedTransitionLayout` + caller-managed visibility；真机 3 轮开关无崩溃/错位（`24/25/26-s17-*.png`） |
+| S18 | ✅ 发现页 hero | `5865b00` | 「继续收听」16:9 大卡；真机 `27-s18-hero.png` |
+| S19 | ✅ 设置页改版 | `c6c5fdb` | accent 分组标签 + 前导图标 + 56dp 行 + 危险项 + 版本卡；真机 `29-s19-settings.png` |
+| S20 | ✅ 我的页 hero | `61fe985` | 身份+数据合并 hero；热力图空格 hairline 可见；真机 `28-s20-profile-hero.png` |
+| S21 | ✅ 触感/图标 | `0e9c2f9` | 收藏 ToggleOn/Off、加歌单 Confirm；dock 选中 filled/未选中 outlined |
+| S22 | ⏳ FULL gate | — | — |
 
 ## 2. 人工门禁
 
