@@ -47,12 +47,12 @@ import com.moriafly.salt.ui.Text
 import kotlin.math.abs
 
 /**
- * 悬浮胶囊迷你播放器（需求 §1）。
+ * 迷你播放器（需求 §1；v9.1 P1-3 起可嵌入 dock）。
  *
- * - 播放器卡片左右各 12dp 边距、与底部导航保持 6dp 间距、圆角 16dp（高度 64dp = 62dp 内容行 + 2dp 进度条）
+ * - [embedded] = true（手机 dock 上段）：由 dock 容器统一提供圆角/底色/阴影/外边距，本身只画内容行 + 2dp 进度条
+ * - [embedded] = false（宽屏悬浮）：保留独立胶囊卡片（12dp 边距 + 8dp 阴影 + 16dp 圆角）
  * - 左侧 40×40dp 圆角 8dp 封面 / 中间标题（加粗、单行跑马灯）+ UP 主（次要色、单行）
- * - 右侧只保留播放/暂停 + 下一首两个核心控制键，触控热区 ≥48×48dp
- * - 卡片底部内置 2dp 播放进度指示条
+ * - 右侧播放/暂停 + 下一首，触控热区固定 48dp
  * - 点按进入全屏播放器；向上拖拽也进入播放器；保留左滑下一首 / 右滑上一首
  */
 @Composable
@@ -63,6 +63,7 @@ fun MiniPlayer(
     onNext: () -> Unit,
     onPrevious: () -> Unit = {},
     modifier: Modifier = Modifier,
+    embedded: Boolean = false,
 ) {
     val track = state.track ?: return
     val fraction = if (state.durationMs > 0) {
@@ -75,15 +76,20 @@ fun MiniPlayer(
     val upThreshold = with(density) { 48.dp.toPx() }
     val swipeThreshold = with(density) { 64.dp.toPx() }
     val shape = RoundedCornerShape(BbTokens.CardCorner)
-
-    Column(
-        modifier = modifier
+    val surfaceModifier = if (embedded) {
+        modifier.fillMaxWidth()
+    } else {
+        modifier
             .fillMaxWidth()
             .padding(horizontal = BbTokens.MiniPlayerSideMargin)
             .shadow(8.dp, shape)
             .clip(shape)
             .background(SaltTheme.colors.popup)
             .border(0.5.dp, SaltTheme.colors.stroke, shape)
+    }
+
+    Column(
+        modifier = surfaceModifier
             .pointerInput(Unit) {
                 var total = Offset.Zero
                 detectDragGestures(

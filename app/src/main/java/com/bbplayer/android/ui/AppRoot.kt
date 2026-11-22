@@ -2,7 +2,6 @@ package com.bbplayer.android.ui
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -10,6 +9,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,7 +55,7 @@ import com.bbplayer.android.core.model.PlaybackState
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
-import com.bbplayer.android.ui.components.BbBottomNavBar
+import com.bbplayer.android.ui.components.BbDockNav
 import com.bbplayer.android.ui.components.MainTab
 import com.bbplayer.android.ui.components.MiniPlayer
 import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
@@ -247,42 +247,21 @@ fun AppRoot() {
                         }
                     }
                 } else {
-                    // 手机：迷你播放器悬浮在底部导航正上方；进二级页时导航下滑隐藏、播放器下沉贴底。
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            // 先铺满整条底部 chrome（含系统手势条 inset）再避让 inset：
-                            // 页面内容不会再从系统手势条（小白条）下方透出来。
-                            .background(SaltTheme.colors.background)
-                            .navigationBarsPadding(),
-                    ) {
-                        if (showMiniPlayer) {
-                            val gap by animateDpAsState(
-                                targetValue = if (isRootTab) BbTokens.MiniPlayerGap else 0.dp,
-                                label = "miniGap",
-                            )
-                            MiniPlayer(
-                                state = playback,
-                                onOpenPlayer = ::openPlayer,
-                                onTogglePlay = { graph.playbackController.playPause() },
-                                onNext = { graph.playbackController.next() },
-                                onPrevious = { graph.playbackController.previous() },
-                                modifier = Modifier.padding(bottom = gap),
-                            )
-                        }
-                        AnimatedVisibility(
-                            visible = isRootTab,
-                            enter = expandVertically(expandFrom = Alignment.Bottom) + fadeIn(),
-                            exit = shrinkVertically(shrinkTowards = Alignment.Bottom) + fadeOut(),
-                        ) {
-                            BbBottomNavBar(
-                                tabs = mainTabs,
-                                selectedRoute = selectedRoute,
-                                onSelect = { navController.switchTab(it) },
-                            )
-                        }
-                    }
+                    // 手机：迷你行 + icon-only 导航合并进同一个 dock 容器（v9.1 P1-3）。
+                    // 进二级页时导航下滑隐藏、只剩迷你行；无播放时导航独立成 dock。
+                    BottomDock(
+                        tabs = mainTabs,
+                        selectedRoute = selectedRoute,
+                        onSelect = { navController.switchTab(it) },
+                        showMini = showMiniPlayer,
+                        showNav = isRootTab,
+                        playback = playback,
+                        onOpenPlayer = ::openPlayer,
+                        onTogglePlay = { graph.playbackController.playPause() },
+                        onNext = { graph.playbackController.next() },
+                        onPrevious = { graph.playbackController.previous() },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
                 }
             }
         }
@@ -445,6 +424,74 @@ private fun AppNavHost(
                 onPlayTrack = onPlayTrack,
                 onOpenLogin = openLogin,
             )
+        }
+    }
+}
+
+/**
+ * 手机底部 dock（v9.1 P1-3）：一个 28dp 圆角容器，上段迷你行 + 下段 icon-only 导航。
+ *
+ * - 无 M3 导航条 / 无 pill / 无 label；`navigationBarsPadding` 收敛在 dock 内部
+ * - 二级页只保留迷你行；无播放时导航独立成 dock；播放页整体不显示
+ */
+@Composable
+private fun BottomDock(
+    tabs: List<MainTab>,
+    selectedRoute: String?,
+    onSelect: (String) -> Unit,
+    showMini: Boolean,
+    showNav: Boolean,
+    playback: PlaybackState,
+    onOpenPlayer: () -> Unit,
+    onTogglePlay: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // 播放页：dock 整体不显示（全屏播放器自己就是 chrome）。
+    if (!showMini && !showNav) return
+    val shape = RoundedCornerShape(BbTokens.DockCorner)
+    // 先铺满整条底部 chrome（含系统手势条 inset），inset 由 dock 内部避让：
+    // 页面内容不会再从系统手势条（小白条）下方透出来。
+    Box(modifier = modifier.fillMaxWidth().background(SaltTheme.colors.background)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(
+                    horizontal = BbSpacing.Md,
+                    vertical = BbTokens.DockOuterMargin,
+                ),
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(shape)
+                    .background(SaltTheme.colors.popup)
+                    .border(0.5.dp, SaltTheme.colors.stroke, shape),
+            ) {
+                if (showMini) {
+                    MiniPlayer(
+                        state = playback,
+                        onOpenPlayer = onOpenPlayer,
+                        onTogglePlay = onTogglePlay,
+                        onNext = onNext,
+                        onPrevious = onPrevious,
+                        embedded = true,
+                    )
+                }
+                AnimatedVisibility(
+                    visible = showNav,
+                    enter = expandVertically(expandFrom = Alignment.Bottom) + fadeIn(),
+                    exit = shrinkVertically(shrinkTowards = Alignment.Bottom) + fadeOut(),
+                ) {
+                    BbDockNav(
+                        tabs = tabs,
+                        selectedRoute = selectedRoute,
+                        onSelect = onSelect,
+                    )
+                }
+            }
         }
     }
 }

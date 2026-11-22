@@ -25,12 +25,21 @@ object BbTokens {
     /** 迷你播放器封面圆角。 */
     val MiniCoverCorner: Dp = BbRadius.Small
 
-    // ---------------- 底部 chrome（唯一事实源；内容安全内边距由它们推导）
-    /** Material 3 NavigationBar 容器高度（v9.1 S13 起由 dock 合并取代）。 */
-    val BottomNavHeight: Dp = 80.dp
+    // ---------------- 底部 chrome（v9.1 dock：64dp 迷你行 + 56dp icon-only 导航，唯一事实源）
+    /** dock 内 icon-only 导航段高度。 */
+    val DockNavHeight: Dp = 56.dp
 
-    /** 迷你播放器内容行高度。 */
-    val MiniPlayerRowHeight: Dp = 62.dp
+    /** dock 容器圆角。 */
+    val DockCorner: Dp = BbRadius.Dock
+
+    /** 旧名兼容：底部导航段高度（v9.1 起即 dock 导航段）。 */
+    val BottomNavHeight: Dp = DockNavHeight
+
+    /** dock 上下外边距（容器与屏幕/手势条的呼吸）。 */
+    val DockOuterMargin: Dp = BbSpacing.Sm
+
+    /** 迷你播放器内容行高度（dock 上段）。 */
+    val MiniPlayerRowHeight: Dp = 64.dp
 
     /** 迷你播放器底部 2dp 进度条。 */
     val MiniPlayerProgressHeight: Dp = 2.dp
@@ -38,11 +47,11 @@ object BbTokens {
     /** 迷你播放器总高（内容行 + 进度条）。 */
     val MiniPlayerHeight: Dp = MiniPlayerRowHeight + MiniPlayerProgressHeight
 
-    /** 迷你播放器左右边距。 */
+    /** 迷你播放器左右边距（非 dock 的悬浮模式使用）。 */
     val MiniPlayerSideMargin: Dp = BbSpacing.Md
 
-    /** 迷你播放器与底部导航间距。 */
-    val MiniPlayerGap: Dp = 6.dp
+    /** 迷你播放器与底部导航间距（dock 合并后为 0；悬浮模式保留 6dp）。 */
+    val MiniPlayerGap: Dp = 0.dp
 
     /** 迷你播放器封面尺寸。 */
     val MiniCoverSize: Dp = 40.dp
@@ -51,9 +60,9 @@ object BbTokens {
     val MinTouchTarget: Dp = BbIconSize.Touch
 
     // ---------------- 内容防遮挡
-    /** 根 Tab 页 chrome：底部导航 + 迷你播放器 + 间距 + 6dp 余量。 */
+    /** 根 Tab 页 chrome：dock（迷你行 + 导航 + 上下外边距）+ 6dp 余量。 */
     val RootContentBottomPadding: Dp =
-        BottomNavHeight + MiniPlayerHeight + MiniPlayerGap + 6.dp
+        MiniPlayerRowHeight + DockNavHeight + DockOuterMargin + DockOuterMargin + 6.dp
 
     /** 二级页：只有迷你播放器 + 手势条，需求口径约 140dp。 */
     val SecondaryContentBottomPadding: Dp = 140.dp

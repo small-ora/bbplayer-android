@@ -1,70 +1,67 @@
 package com.bbplayer.android.ui.components
 
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.bbplayer.android.ui.theme.BbIconSize
-import com.bbplayer.android.ui.theme.BbType
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
-import com.moriafly.salt.ui.Text
 
 /** 一个主 Tab：发现 / 曲库 / 我的。 */
 data class MainTab(val label: String, val route: String, val icon: ImageVector)
 
 /**
- * 底部导航栏（需求 §1）：3 个核心 Tab 常驻屏幕底部，Material 3 NavigationBar。
+ * 底部 dock 的导航段（v9.1 P1-3）：icon-only、无 M3 pill、无 label。
  *
- * 系统手势条 inset 由 [com.bbplayer.android.ui.AppRoot] 的外层 `navigationBarsPadding()` 统一处理，
- * 这里把 [NavigationBar] 自带 windowInsets 关掉，避免 double-inset（见 SPEC 风险 2）。
+ * - 选中：图标用 `text` 实色（100%）；未选中：`subText` 45%（导航图标非正文，不违反 P0 文本规则）
+ * - 触控热区 48dp，图标视觉尺寸 24dp（[BbIconSize] 单一事实源）
+ * - dock 的圆角/底色/阴影/inset 由 `AppRoot` 的 dock 容器统一提供
  */
 @Composable
-fun BbBottomNavBar(
+fun BbDockNav(
     tabs: List<MainTab>,
     selectedRoute: String?,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    NavigationBar(
-        modifier = modifier.fillMaxWidth(),
-        containerColor = SaltTheme.colors.background,
-        tonalElevation = 0.dp,
-        windowInsets = WindowInsets(0, 0, 0, 0),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(BbTokens.DockNavHeight),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         tabs.forEach { tab ->
-            NavigationBarItem(
-                selected = tab.route == selectedRoute,
-                onClick = { onSelect(tab.route) },
-                icon = {
-                    Icon(
-                        imageVector = tab.icon,
-                        contentDescription = tab.label,
-                        modifier = Modifier.size(BbIconSize.Lg),
-                    )
-                },
-                label = {
-                    Text(
-                        text = tab.label,
-                        style = BbType.Caption,
-                        maxLines = 1,
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = SaltTheme.colors.highlight,
-                    selectedTextColor = SaltTheme.colors.highlight,
-                    indicatorColor = SaltTheme.colors.highlight.copy(alpha = 0.14f),
-                    unselectedIconColor = SaltTheme.colors.subText,
-                    unselectedTextColor = SaltTheme.colors.subText,
-                ),
-            )
+            val selected = tab.route == selectedRoute
+            Box(
+                modifier = Modifier
+                    .size(BbIconSize.Touch)
+                    .clip(BbRadius.FullShape)
+                    .clickable { onSelect(tab.route) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = tab.icon,
+                    contentDescription = tab.label,
+                    tint = if (selected) {
+                        SaltTheme.colors.text
+                    } else {
+                        SaltTheme.colors.subText.copy(alpha = 0.45f)
+                    },
+                    modifier = Modifier.size(BbIconSize.Lg),
+                )
+            }
         }
     }
 }
