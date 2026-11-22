@@ -103,15 +103,14 @@ fun ProfileScreen(
             )
         }
         item {
-            AccountCard(
-                user = session,
-                onOpenLogin = onOpenLogin,
-                onLogout = { showLogoutConfirm = true },
-            )
-        }
-        item {
             Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Xs)) {
-                DashboardCard(summary = summary, daily = daily)
+                ProfileHeroCard(
+                    user = session,
+                    summary = summary,
+                    daily = daily,
+                    onOpenLogin = onOpenLogin,
+                    onLogout = { showLogoutConfirm = true },
+                )
             }
         }
         item {
@@ -197,45 +196,6 @@ fun ProfileScreen(
  * 12 周 × 7 天、cell 9dp、gap 2dp → 宽 130dp，右对齐垂直居中，避免右侧大片留白。
  */
 @Composable
-private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
-    RoundedColumn(
-        modifier = Modifier.fillMaxWidth(),
-        paddingValues = PaddingValues(0.dp),
-    ) {
-        Column(Modifier.padding(BbSpacing.Lg)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("累计收听", color = SaltTheme.colors.subText, style = BbType.Caption)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    Format.totalListening(summary.totalListenedMs),
-                    style = BbType.TitleTnum,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "播放次数 ${summary.totalPlayCount} 次",
-                    color = SaltTheme.colors.subText,
-                    style = BbType.CaptionTnum,
-                )
-            }
-            Spacer(Modifier.width(16.dp))
-            Heatmap(daily)
-        }
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "最近 12 周听歌记录",
-            color = SaltTheme.colors.subText,
-            style = BbType.Caption,
-        )
-        }
-    }
-}
-
-/** 12 周 × 7 天的紧凑点阵热力图，点阵整体 130dp 宽，右对齐。 */
-@Composable
 private fun Heatmap(daily: List<DailyStat>) {
     val byDate = daily.associateBy { it.date }
     val today = LocalDate.now()
@@ -259,16 +219,30 @@ private fun Heatmap(daily: List<DailyStat>) {
                     val day = week.getOrNull(weekday)
                     val alpha = when {
                         day == null -> 0f
-                        day.listenedMs <= 0 -> 0.06f
+                        day.listenedMs <= 0 -> 0.08f
                         else -> 0.25f + 0.75f * (day.listenedMs.toFloat() / maxMs)
                     }
+                    val empty = day != null && day.listenedMs <= 0
                     Box(
                         Modifier
                             .size(9.dp)
                             .clip(RoundedCornerShape(2.dp))
                             .background(
-                                if (day == null) Color.Transparent
-                                else SaltTheme.colors.highlight.copy(alpha = alpha)
+                                when {
+                                    day == null -> Color.Transparent
+                                    else -> SaltTheme.colors.highlight.copy(alpha = alpha)
+                                }
+                            )
+                            .then(
+                                if (empty) {
+                                    Modifier.border(
+                                        width = 0.5.dp,
+                                        color = SaltTheme.colors.stroke,
+                                        shape = RoundedCornerShape(2.dp),
+                                    )
+                                } else {
+                                    Modifier
+                                }
                             )
                     )
                 }
@@ -335,28 +309,36 @@ private fun ProfileEntryRow(
 }
 
 @Composable
-private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -> Unit) {
-    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Xs)) {
-        RoundedColumn(
-            modifier = Modifier.fillMaxWidth(),
-            paddingValues = PaddingValues(0.dp),
-        ) {
-          Column(Modifier.padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Lg)) {
+private fun ProfileHeroCard(
+    user: BiliUser?,
+    summary: ListeningSummary,
+    daily: List<DailyStat>,
+    onOpenLogin: () -> Unit,
+    onLogout: () -> Unit,
+) {
+    RoundedColumn(
+        modifier = Modifier.fillMaxWidth(),
+        paddingValues = PaddingValues(0.dp),
+    ) {
+        Column(Modifier.padding(BbSpacing.Lg)) {
+            // ---- 身份行
             if (user == null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        Modifier.size(52.dp).clip(BbRadius.FullShape)
-                            .background(SaltTheme.colors.subBackground)
-                            .border(0.5.dp, SaltTheme.colors.stroke, BbRadius.FullShape),
+                        Modifier
+                            .size(56.dp)
+                            .clip(BbRadius.FullShape)
+                            .background(SaltTheme.colors.highlight.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            Icons.Rounded.Person, null,
-                            tint = SaltTheme.colors.subText,
+                            Icons.Rounded.Person,
+                            contentDescription = null,
+                            tint = SaltTheme.colors.highlight,
                             modifier = Modifier.size(BbIconSize.Lg),
                         )
                     }
-                    Spacer(Modifier.size(12.dp))
+                    Spacer(Modifier.size(BbSpacing.Md))
                     Column(Modifier.weight(1f)) {
                         Text("未登录", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(2.dp))
@@ -364,19 +346,14 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                             "登录后同步收藏夹、合集、稍后再看与高音质",
                             color = SaltTheme.colors.subText,
                             style = BbType.Caption,
-                            lineHeight = 16.sp,
                         )
                     }
                     SaltPill(text = "登录 Bilibili", selected = true, onClick = onOpenLogin)
                 }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CoverImage(
-                        url = user.avatarUrl,
-                        modifier = Modifier.size(52.dp),
-                        corner = 26.dp,
-                    )
-                    Spacer(Modifier.size(12.dp))
+                    CoverImage(url = user.avatarUrl, modifier = Modifier.size(56.dp), corner = 28.dp)
+                    Spacer(Modifier.size(BbSpacing.Md))
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -395,24 +372,42 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                             }
                         }
                         Spacer(Modifier.height(3.dp))
-                        Text(
-                            "UID ${user.mid}",
-                            color = SaltTheme.colors.subText,
-                            style = BbType.Micro,
-                        )
+                        Text("UID ${user.mid}", color = SaltTheme.colors.subText, style = BbType.Micro)
                     }
-                    Spacer(Modifier.size(8.dp))
                     SaltPill(text = "退出登录", onClick = onLogout)
                 }
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(BbSpacing.Lg))
+            // ---- 收听数据 + 热力图（合并进同一张 hero 卡）
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("累计收听", color = SaltTheme.colors.subText, style = BbType.Caption)
+                    Spacer(Modifier.height(BbSpacing.Xs))
+                    Text(
+                        Format.totalListening(summary.totalListenedMs),
+                        style = BbType.TitleTnum,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(BbSpacing.Xs))
+                    Text(
+                        "播放次数 ${summary.totalPlayCount} 次",
+                        color = SaltTheme.colors.subText,
+                        style = BbType.CaptionTnum,
+                    )
+                }
+                Spacer(Modifier.width(BbSpacing.Lg))
+                Heatmap(daily)
+            }
+            Spacer(Modifier.height(BbSpacing.Md))
+            Text("最近 12 周听歌记录", color = SaltTheme.colors.subText, style = BbType.Caption)
+            Spacer(Modifier.height(BbSpacing.Sm))
             Text(
                 "凭据仅保存在本机 Keystore 加密存储，界面不会显示 Cookie。",
                 color = SaltTheme.colors.subText,
                 style = BbType.Micro,
-                lineHeight = 16.sp,
             )
-          }
         }
     }
 }
