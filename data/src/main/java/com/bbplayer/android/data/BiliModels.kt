@@ -5,6 +5,8 @@ import com.bbplayer.android.core.model.AudioQuality
 import com.bbplayer.android.core.model.AudioStream
 import com.bbplayer.android.core.model.SearchPage
 import com.bbplayer.android.core.model.Track
+import com.bbplayer.android.core.model.VideoCollection
+import com.bbplayer.android.core.model.VideoCollectionKind
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -106,6 +108,90 @@ internal object BiliMapper {
         if (!multiPage) return ""
         if (part.isBlank() || part == videoTitle) return if (pageNo > 0) "P$pageNo" else ""
         return if (pageNo > 0) "P$pageNo $part" else part
+    }
+
+    // ------------------------------------------------------------ 视频合集
+
+    /**
+     * `view` 接口 → 可当作歌单播放的「合集」。
+     *
+     * 判定顺序（SPEC：两者都有时优先 season）：
+     * 1. `ugc_season.sections[].episodes[]` 展平、去空 bvid、按 bvid 去重后 ≥2 条 → [VideoCollectionKind.SEASON]；
+     * 2. 否则 `pages[]` > 1 → [VideoCollectionKind.MULTI_PAGE]；
+     * 3. 否则 null（普通单视频，由调用方按原有逻辑播放）。
+     */
+    fun videoCollection(view: JsonObject): VideoCollection? {
+        val season = view.objOrNull("ugc_season")
+        if (season != null) {
+            val tracks = seasonTracks(season)
+            if (tracks.size > 1) {
+                val ownerName = HtmlText.clean(view.objOrNull("owner")?.strOrNull("name"))
+                    .ifBlank { tracks.first().uploader }
+                return VideoCollection(
+                    bvid = view.strOrNull("bvid")?.trim().orEmpty(),
+                    title = HtmlText.clean(season.strOrNull("title"))
+                        .ifBlank { HtmlText.clean(view.strOrNull("title")) },
+                    uploader = ownerName,
+                    coverUrl = normalizeImage(season.strOrNull("cover"))
+                        .ifBlank { normalizeImage(view.strOrNull("pic")) },
+                    kind = VideoCollectionKind.SEASON,
+                    tracks = tracks,
+                )
+            }
+        }
+
+        val pages = videoPages(view)
+        if (pages.size < 2) return null
+        val base = viewTrack(view)
+        return VideoCollection(
+            bvid = base.bvid,
+            title = base.title,
+            uploader = base.uploader,
+            coverUrl = base.coverUrl,
+            kind = VideoCollectionKind.MULTI_PAGE,
+            tracks = pages,
+        )
+    }
+
+    /**
+     * season 的真实集数：优先 `ugc_season.ep_count`；缺失/非正时回退 view 内 episodes 展平数。
+     * 供仓储判断是否需要走 `seasons_archives_list` 兜底分页。
+     */
+    fun seasonEpisodeCount(view: JsonObject): Int {
+        val season = view.objOrNull("ugc_season") ?: return 0
+        val declared = season.intOrNull("ep_count", "epCount")
+        if (declared != null && declared > 0) return declared
+        return season.arrOrNull("sections").toObjectList()
+            .sumOf { it.arrOrNull("episodes").toObjectList().size }
+    }
+
+    /** 各 section 的 episodes[] 展平 → Track；丢弃 bvid 为空 / 重复的条目。 */
+    private fun seasonTracks(season: JsonObject): List<Track> {
+        val seen = HashSet<String>()
+        return season.arrOrNull("sections").toObjectList()
+            .flatMap { it.arrOrNull("episodes").toObjectList() }
+            .mapNotNull(::seasonEpisodeTrack)
+            .filter { seen.add(it.bvid) }
+    }
+
+    /** season 单个 episode → Track（episode 自身字段 + `arc{}` 详情）。 */
+    private fun seasonEpisodeTrack(episode: JsonObject): Track? {
+        val bvid = episode.strOrNull("bvid")?.trim().orEmpty()
+        if (bvid.isBlank()) return null
+        val arc = episode.objOrNull("arc")
+        val author = arc?.objOrNull("author")
+        return Track(
+            bvid = bvid,
+            cid = episode.longOrNull("cid") ?: arc?.longOrNull("cid") ?: 0L,
+            title = HtmlText.clean(episode.strOrNull("title"))
+                .ifBlank { HtmlText.clean(arc?.strOrNull("title")) },
+            uploader = HtmlText.clean(author?.strOrNull("name")),
+            uploaderMid = author?.longOrNull("mid") ?: 0L,
+            coverUrl = normalizeImage(arc?.strOrNull("pic")),
+            durationMs = DurationParser.secondsToMs(arc?.longOrNull("duration")),
+            playCount = arc?.objOrNull("stat")?.longOrNull("view") ?: 0L,
+            pubDateSec = arc?.longOrNull("pubdate") ?: 0L,
+        )
     }
 
     // ------------------------------------------------------- 排行 / 相关列表
