@@ -51,5 +51,5 @@
 | S14 | ✅ 深度体系：卡片 hairline / 封面 24dp 阴影+光晕 / dock 16dp 阴影 | `f60b99a` | QUICK 绿；`shadow(` 仅剩 MiniPlayer 悬浮态 + Depth.kt；21 处卡片补 0.5dp hairline |
 | S15 | ✅ 骨架屏 + 图片占位/淡入/错误兜底 + 空/错误态 | `f60b99a` | QUICK 绿；10 处首屏 loading 换骨架；CoverImage 200ms 淡入 + onError 兜底；ErrorState 内联卡片 |
 | S16 | ✅ FULL gate + 真机冒烟（MI 6 三主题 11 张截图） | `a6f0001` | `evidence/full-gate.log`（EXIT=0，641 单测 0 fail 0 skipped）+ `evidence/device/p1-*.png`；骨架动画已提升为列表级单条 |
-| S17 | ⏳ fresh reviewer 审查中 | — | `REVIEW.md` |
-| S18 | ⏳ 验收包 v1 已起草，待审查结论合并 | — | `ACCEPTANCE.md` |
+| S17 | ✅ 2 名 fresh reviewer（P0×0 / P1×3）+ 修复复核 | `15a0c82`/`eaf4217`/`ff76633` | `REVIEW.md`；P1 全修，P2 修 8 条/记录 3 条 |
+| S18 | ✅ 验收包 v1（含 2 名 reviewer 处置、真机三主题截图） | — | `ACCEPTANCE.md`；HEAD `ff76633`，FULL gate EXIT=0 |
