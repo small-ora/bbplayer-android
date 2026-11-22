@@ -164,8 +164,9 @@ fun BbPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
 
 // ---------------- 骨架屏（P1-5）：行高按真实 64dp、12dp 圆角、alpha 呼吸 ----------------
 
+/** 骨架屏共用的 alpha 呼吸（每个骨架列表只开一条 InfiniteTransition，避免几十个动画各自打点）。 */
 @Composable
-fun SkeletonBox(modifier: Modifier = Modifier, corner: Dp = BbRadius.Small) {
+private fun skeletonAlpha(): Float {
     val transition = rememberInfiniteTransition(label = "skeleton")
     val alpha by transition.animateFloat(
         initialValue = 0.05f,
@@ -176,11 +177,22 @@ fun SkeletonBox(modifier: Modifier = Modifier, corner: Dp = BbRadius.Small) {
         ),
         label = "skeletonAlpha",
     )
+    return alpha
+}
+
+@Composable
+private fun SkeletonBlock(alpha: Float, modifier: Modifier = Modifier, corner: Dp = BbRadius.Small) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(corner))
             .background(SaltTheme.colors.text.copy(alpha = alpha)),
     )
+}
+
+/** 单块骨架（独立使用时自带一条呼吸动画；列表请直接用 SkeletonTrackList / SkeletonFeed）。 */
+@Composable
+fun SkeletonBox(modifier: Modifier = Modifier, corner: Dp = BbRadius.Small) {
+    SkeletonBlock(alpha = skeletonAlpha(), modifier = modifier, corner = corner)
 }
 
 /** 列表首屏骨架：行高 64dp + 48dp 封面 + 两行文字，按真实版式占位。 */
@@ -189,6 +201,7 @@ fun SkeletonTrackList(
     modifier: Modifier = Modifier,
     rows: Int = 7,
 ) {
+    val alpha = skeletonAlpha()
     Column(modifier.fillMaxWidth()) {
         repeat(rows) {
             Row(
@@ -198,12 +211,12 @@ fun SkeletonTrackList(
                     .padding(horizontal = BbSpacing.Lg),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SkeletonBox(Modifier.size(48.dp), corner = BbRadius.Small)
+                SkeletonBlock(alpha, Modifier.size(48.dp), corner = BbRadius.Small)
                 Spacer(Modifier.width(BbSpacing.Md))
                 Column(Modifier.weight(1f)) {
-                    SkeletonBox(Modifier.fillMaxWidth(0.62f).height(14.dp))
+                    SkeletonBlock(alpha, Modifier.fillMaxWidth(0.62f).height(14.dp))
                     Spacer(Modifier.height(BbSpacing.Sm))
-                    SkeletonBox(Modifier.fillMaxWidth(0.38f).height(11.dp))
+                    SkeletonBlock(alpha, Modifier.fillMaxWidth(0.38f).height(11.dp))
                 }
             }
         }
@@ -213,8 +226,10 @@ fun SkeletonTrackList(
 /** 发现页首屏骨架：搜索条 + 两段横向卡片区。 */
 @Composable
 fun SkeletonFeed(modifier: Modifier = Modifier) {
+    val alpha = skeletonAlpha()
     Column(modifier.fillMaxWidth().padding(horizontal = BbSpacing.Lg)) {
-        SkeletonBox(
+        SkeletonBlock(
+            alpha,
             Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -222,14 +237,14 @@ fun SkeletonFeed(modifier: Modifier = Modifier) {
         )
         repeat(2) { section ->
             Spacer(Modifier.height(BbSpacing.Xl))
-            SkeletonBox(Modifier.fillMaxWidth(0.28f).height(18.dp))
+            SkeletonBlock(alpha, Modifier.fillMaxWidth(0.28f).height(18.dp))
             Spacer(Modifier.height(BbSpacing.Md))
             Row(horizontalArrangement = Arrangement.spacedBy(BbSpacing.Md)) {
                 repeat(3) {
                     Column {
-                        SkeletonBox(Modifier.size(112.dp), corner = BbRadius.Media)
+                        SkeletonBlock(alpha, Modifier.size(112.dp), corner = BbRadius.Media)
                         Spacer(Modifier.height(BbSpacing.Sm))
-                        SkeletonBox(Modifier.width(90.dp).height(13.dp))
+                        SkeletonBlock(alpha, Modifier.width(90.dp).height(13.dp))
                     }
                 }
             }
