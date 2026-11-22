@@ -218,37 +218,3 @@ fun SkeletonTrackList(
     }
 }
 
-/** 发现页首屏骨架：搜索条 + 两段横向卡片区。 */
-@Composable
-fun SkeletonFeed(modifier: Modifier = Modifier) {
-    val alpha = skeletonAlpha()
-    Column(modifier.fillMaxWidth().padding(horizontal = BbSpacing.Lg)) {
-        SkeletonBlock(
-            alpha,
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            corner = BbRadius.Sheet,
-        )
-        repeat(2) { section ->
-            Spacer(Modifier.height(BbSpacing.Xl))
-            SkeletonBlock(alpha, Modifier.fillMaxWidth(0.28f).height(18.dp))
-            Spacer(Modifier.height(BbSpacing.Md))
-            Row(horizontalArrangement = Arrangement.spacedBy(BbSpacing.Md)) {
-                repeat(3) {
-                    Column(Modifier.weight(1f)) {
-                        // 自适应宽度：320dp 窄屏也不会横向溢出（固定 112dp ×3 会超）。
-                        SkeletonBlock(
-                            alpha,
-                            Modifier.fillMaxWidth().aspectRatio(1f),
-                            corner = BbRadius.Media,
-                        )
-                        Spacer(Modifier.height(BbSpacing.Sm))
-                        SkeletonBlock(alpha, Modifier.fillMaxWidth(0.8f).height(13.dp))
-                    }
-                }
-            }
-            if (section == 1) Spacer(Modifier.height(BbSpacing.Xxl))
-        }
-    }
-}

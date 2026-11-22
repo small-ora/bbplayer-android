@@ -44,8 +44,8 @@ object BbTokens {
     /** 迷你播放器左右边距（非 dock 的悬浮模式使用）。 */
     val MiniPlayerSideMargin: Dp = BbSpacing.Md
 
-    /** 迷你播放器与底部导航间距（dock 合并后为 0；悬浮模式保留 6dp）。 */
-    val MiniPlayerGap: Dp = 0.dp
+    /** 宽屏悬浮迷你条与底部/手势条的间距（手机 dock 模式不使用该值）。 */
+    val MiniPlayerGap: Dp = 6.dp
 
     /** 迷你播放器封面尺寸。 */
     val MiniCoverSize: Dp = 40.dp

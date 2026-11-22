@@ -198,8 +198,7 @@ private fun RankRow(
         Text(
             text = "$rank",
             color = if (rank <= 3) SaltTheme.colors.highlight else SaltTheme.colors.subText,
-            fontSize = if (rank <= 3) 17.sp else 14.sp,
-            fontWeight = if (rank <= 3) FontWeight.SemiBold else FontWeight.Normal,
+            style = if (rank <= 3) BbType.Section else BbType.Body,
             textAlign = TextAlign.Center,
             modifier = Modifier.width(26.dp),
         )
