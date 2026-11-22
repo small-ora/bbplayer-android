@@ -361,7 +361,7 @@ private fun ContinueListeningHero(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = "继续收听",
                 tint = Color.Black,
-                modifier = Modifier.size(26.dp),
+                modifier = Modifier.size(BbIconSize.Lg),
             )
         }
     }

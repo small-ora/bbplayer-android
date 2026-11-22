@@ -16,7 +16,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +31,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.bbplayer.android.core.Format
+import com.bbplayer.android.ui.theme.BbMotion
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -61,7 +61,7 @@ fun SeekLine(
     // v9.2：非拖动时进度平滑推进（250ms 线性），拖动时跟手不补间
     val animatedFraction by animateFloatAsState(
         targetValue = fraction,
-        animationSpec = if (dragging) tween(0) else tween(250, easing = LinearEasing),
+        animationSpec = if (dragging) tween(0) else tween(BbMotion.ProgressMs, easing = LinearEasing),
         label = "seekProgress",
     )
 

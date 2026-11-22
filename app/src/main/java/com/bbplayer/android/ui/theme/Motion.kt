@@ -19,6 +19,9 @@ object BbMotion {
     const val BaseMs: Int = 220
     const val SlowMs: Int = 320
 
+    /** 进度条补间时长（线性推进）。 */
+    const val ProgressMs: Int = 250
+
     /** 根 Tab 切换的淡入淡出时长（180–220ms 区间）。 */
     const val TabFadeMs: Int = 180
 

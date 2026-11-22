@@ -242,6 +242,13 @@ fun PlayerScreen(
     val rawWash = wash.firstOrNull() ?: SaltTheme.colors.highlight
     val backdropBase = Color(PlayerBackdrop.washForBackground(rawWash.toArgb()))
 
+    // v9.2 hotfix：播放失败时给一次 Reject 触感（AC6 触感三件套补齐）
+    LaunchedEffect(state.errorMessage) {
+        if (state.errorMessage != null) {
+            haptics.performHapticFeedback(HapticFeedbackType.Reject)
+        }
+    }
+
     // ---- P0-2：状态栏图标跟随播放页背景亮度（深底白图标 / 亮底深图标），离开时还原 ----
     val activity = LocalActivity.current
     val view = LocalView.current
