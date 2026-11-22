@@ -29,6 +29,11 @@ data class VideoCollection(
     val kind: VideoCollectionKind = VideoCollectionKind.MULTI_PAGE,
     /** 有序曲目：多 P 按 P 序号，season 按 section/episode 顺序。 */
     val tracks: List<Track> = emptyList(),
+    /**
+     * season 兜底分页失败 / 未能补全 `ep_count` 时为 true：曲目可能不完整，UI 需要提示。
+     * 多 P 合集永远为 false。
+     */
+    val partial: Boolean = false,
 ) {
     val size: Int get() = tracks.size
 
