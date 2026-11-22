@@ -2,6 +2,7 @@ package com.bbplayer.android.ui.screens.library
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,6 +44,7 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.components.SkeletonTrackList
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.theme.BbRadius
@@ -135,7 +137,7 @@ fun WatchLaterScreen(
             error != null -> item {
                 ErrorState(message = error!!, onRetry = { nonce++ })
             }
-            items == null -> item { LoadingState(text = "正在加载稍后再看…") }
+            items == null -> item { SkeletonTrackList(rows = 6) }
             items.isNullOrEmpty() -> item {
                 EmptyState(
                     title = "稍后再看是空的",
@@ -180,6 +182,7 @@ fun WatchLaterScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(BbRadius.Card))
                     .background(SaltTheme.colors.popup)
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                     .padding(BbSpacing.Xl),
             ) {
                 Text("清空稍后再看？", style = BbType.Section, fontWeight = FontWeight.SemiBold)

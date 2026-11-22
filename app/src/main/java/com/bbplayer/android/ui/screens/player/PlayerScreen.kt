@@ -107,6 +107,7 @@ import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbType
 import com.bbplayer.android.ui.theme.PlayerBackdrop
 import com.bbplayer.android.ui.theme.PlayerSheetTokens
+import com.bbplayer.android.ui.theme.bbCoverShadow
 import com.bbplayer.android.ui.theme.rememberAlbumWash
 import com.bbplayer.android.util.BiliIds
 import com.moriafly.salt.ui.SaltColors
@@ -733,11 +734,31 @@ private fun CoverPage(track: Track, state: PlaybackState) {
             label = "coverScale",
         )
         val side = minOf(screenWidth * 0.85f, maxHeight)
-        CoverImage(
-            url = track.coverUrl,
-            modifier = Modifier.size(side).androidxScale(coverScale.value),
-            corner = 16.dp,
-        )
+        val wash = rememberAlbumWash(track.coverUrl)
+        val halo = wash.firstOrNull() ?: SaltTheme.colors.highlight
+        Box(
+            Modifier.size(side * 1.12f).androidxScale(coverScale.value),
+            contentAlignment = Alignment.Center,
+        ) {
+            // P1-4：同图光晕（用封面取色的低透明度径向渐变，不引入 Blur，避免性能回归）。
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(halo.copy(alpha = 0.35f), Color.Transparent),
+                        )
+                    ),
+            )
+            CoverImage(
+                url = track.coverUrl,
+                modifier = Modifier
+                    .size(side)
+                    .bbCoverShadow(BbRadius.Card)
+                    .androidxScale(coverScale.value),
+                corner = BbRadius.Card,
+            )
+        }
     }
 }
 

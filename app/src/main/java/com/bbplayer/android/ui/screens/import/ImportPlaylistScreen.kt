@@ -2,6 +2,7 @@ package com.bbplayer.android.ui.screens.playlistimport
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -373,6 +374,7 @@ fun ImportPlaylistScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(BbRadius.Media))
                         .background(SaltTheme.colors.subBackground)
+                        .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media))
                         .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
                 ) {
                     if (input.isEmpty()) {
@@ -692,7 +694,8 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
                 Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(BbRadius.Small))
-                    .background(SaltTheme.colors.subBackground),
+                    .background(SaltTheme.colors.subBackground)
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Small)),
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.compose.material3.Icon(
@@ -759,7 +762,8 @@ private fun MatchProgressBar(fraction: Float) {
             .fillMaxWidth()
             .height(4.dp)
             .clip(BbRadius.FullShape)
-            .background(SaltTheme.colors.subBackground),
+            .background(SaltTheme.colors.subBackground)
+            .border(0.5.dp, SaltTheme.colors.stroke, BbRadius.FullShape),
     ) {
         if (value > 0f) {
             Box(
@@ -845,6 +849,7 @@ private fun ManualMatchDialog(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                 .padding(BbSpacing.Xl),
         ) {
             Text("手动匹配", style = BbType.Section, fontWeight = FontWeight.SemiBold)
@@ -862,6 +867,7 @@ private fun ManualMatchDialog(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground)
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media))
                     .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             ) {
                 if (keyword.isEmpty()) {

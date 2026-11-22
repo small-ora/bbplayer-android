@@ -44,6 +44,7 @@ import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.components.SkeletonTrackList
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
@@ -125,7 +126,7 @@ fun LeaderboardScreen(
         when (tab) {
             LeaderboardTab.BILI -> {
                 when {
-                    loading -> item { LoadingState(text = "正在加载 B 站音乐区热门…") }
+                    loading -> item { SkeletonTrackList(rows = 6) }
                     error != null -> item {
                         ErrorState(message = error!!, onRetry = { reloadKey++ })
                     }

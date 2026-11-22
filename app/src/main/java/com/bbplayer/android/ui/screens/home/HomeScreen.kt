@@ -53,6 +53,7 @@ import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SectionHeader
+import com.bbplayer.android.ui.components.SkeletonTrackList
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbRadius
@@ -213,7 +214,7 @@ fun HomeScreen(
             )
         }
         when {
-            loading -> item { LoadingState() }
+            loading -> item { SkeletonTrackList(rows = 5) }
             error != null -> item {
                 ErrorState(message = error!!, onRetry = { refreshKey++ })
             }
@@ -336,7 +337,8 @@ private fun PlaylistCard(playlist: Playlist, metaSuffix: String?, onClick: () ->
             Modifier
                 .size(112.dp)
                 .clip(RoundedCornerShape(BbRadius.Media))
-                .background(SaltTheme.colors.subBackground),
+                .background(SaltTheme.colors.subBackground)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media)),
         ) {
             when {
                 covers.size >= 4 -> Column(Modifier.fillMaxSize()) {

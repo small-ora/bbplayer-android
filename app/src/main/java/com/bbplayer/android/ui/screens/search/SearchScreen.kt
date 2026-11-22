@@ -41,6 +41,7 @@ import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SearchField
+import com.bbplayer.android.ui.components.SkeletonTrackList
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbSpacing
@@ -236,7 +237,7 @@ fun SearchScreen(
             }
         } else {
             when {
-                loading -> item { LoadingState() }
+                loading -> item { SkeletonTrackList(rows = 6) }
                 error != null -> item { ErrorState(message = error!!, onRetry = { submit(submittedQuery) }) }
                 results.isEmpty() -> item { EmptyState(title = "没有找到相关结果", subtitle = "换个关键词试试") }
                 else -> items(count = results.size, key = { idx -> results[idx].key }) { idx ->

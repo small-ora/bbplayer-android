@@ -1,6 +1,7 @@
 package com.bbplayer.android.ui.screens.comments
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.components.SkeletonTrackList
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbRadius
@@ -244,7 +246,7 @@ fun CommentsScreen(
         }
 
         when {
-            loading && items.isEmpty() -> item { LoadingState(text = "正在加载评论…") }
+            loading && items.isEmpty() -> item { SkeletonTrackList(rows = 4) }
             error != null && items.isEmpty() -> item {
                 ErrorState(message = error!!, onRetry = { reloadKey++ })
             }
@@ -401,6 +403,7 @@ private fun CommentRow(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground.copy(alpha = 0.55f))
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media))
                     .padding(horizontal = BbSpacing.Md, vertical = BbSpacing.Sm),
             ) {
                 when {

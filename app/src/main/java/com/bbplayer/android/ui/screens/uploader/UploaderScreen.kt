@@ -45,6 +45,7 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.components.SkeletonTrackList
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.screens.library.rememberPagedTracks
@@ -208,7 +209,7 @@ fun UploaderScreen(
         }
         when {
             videos.loading && videos.items.isEmpty() -> item {
-                LoadingState(text = "正在加载视频…")
+                SkeletonTrackList(rows = 6)
             }
             videos.error != null && videos.items.isEmpty() -> item {
                 ErrorState(message = videos.error!!, onRetry = { scope.safeLaunch { videos.retry() } })

@@ -3,6 +3,7 @@ package com.bbplayer.android.ui.screens.settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -607,6 +608,7 @@ private fun OptionDialog(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                 .padding(BbSpacing.Xl),
         ) {
             Text(title, style = BbType.Section, fontWeight = FontWeight.SemiBold)

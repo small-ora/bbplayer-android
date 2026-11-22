@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -257,6 +258,7 @@ private fun QrLoginSection(onLoggedIn: (BiliUser) -> Unit) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(BbRadius.Media))
                 .background(SaltTheme.colors.subBackground)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media))
                 .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -319,6 +321,7 @@ private fun CookieLoginSection(onLoggedIn: (BiliUser) -> Unit) {
                 .height(156.dp)
                 .clip(RoundedCornerShape(BbRadius.Media))
                 .background(SaltTheme.colors.subBackground)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media))
                 .padding(BbSpacing.Md),
         ) {
             if (cookie.isEmpty()) {

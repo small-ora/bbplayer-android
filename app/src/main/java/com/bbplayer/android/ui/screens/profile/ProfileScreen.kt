@@ -2,6 +2,7 @@ package com.bbplayer.android.ui.screens.profile
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -162,6 +163,7 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(BbRadius.Card))
                     .background(SaltTheme.colors.popup)
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                     .padding(BbSpacing.Xl),
             ) {
                 Text("退出登录？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
@@ -344,7 +346,8 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier.size(52.dp).clip(BbRadius.FullShape)
-                            .background(SaltTheme.colors.subBackground),
+                            .background(SaltTheme.colors.subBackground)
+                            .border(0.5.dp, SaltTheme.colors.stroke, BbRadius.FullShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(

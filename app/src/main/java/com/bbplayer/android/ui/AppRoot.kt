@@ -78,6 +78,7 @@ import com.bbplayer.android.ui.screens.uploader.UploaderScreen
 import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.bbDockDepth
 import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -466,6 +467,7 @@ private fun BottomDock(
             Column(
                 Modifier
                     .fillMaxWidth()
+                    .bbDockDepth(shape)
                     .clip(shape)
                     .background(SaltTheme.colors.popup)
                     .border(0.5.dp, SaltTheme.colors.stroke, shape),

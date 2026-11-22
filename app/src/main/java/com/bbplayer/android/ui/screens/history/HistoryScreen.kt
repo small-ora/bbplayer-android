@@ -1,6 +1,7 @@
 package com.bbplayer.android.ui.screens.history
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -159,6 +160,7 @@ fun HistoryScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(BbRadius.Card))
                     .background(SaltTheme.colors.popup)
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                     .padding(BbSpacing.Xl),
             ) {
                 Text("清空收听历史？", style = BbType.Section, fontWeight = FontWeight.SemiBold)

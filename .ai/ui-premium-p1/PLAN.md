@@ -46,9 +46,9 @@
 | S2 SPEC 冻结 | ✅ | `157ef3b` | `git log` |
 | S11 | ✅ 字阶 7 档 + tnum（21 处）+ fontSize 字面量清零 | `83fc108` | QUICK 绿；`BbTypeTest` 5/5；grep 页面 fontSize 字面量 = 0；app 单测绿 |
 | S12 | ✅ 间距/圆角/图标 token + 中间值消除 | `217bcdf` | QUICK 绿；`static-assertions-s12.log`：padding 字面量仅剩 7 处结构值（已豁免）、Icon 内仅剩 44/40/56 大图标、`size*0.5f` 清零 |
-| S13 | ✅ 底部 dock 合并（迷你行 + icon-only 导航） | `WORK` | QUICK 绿；`NavigationBar` 引用 0；dock token 见 `DesignTokens`；设备截图待 P0 会话释放 |
-| S14 | ⏳ | — | — |
-| S15 | ⏳ | — | — |
+| S13 | ✅ 底部 dock 合并（迷你行 + icon-only 导航） | `78c7152` | QUICK 绿；`NavigationBar` 引用 0；dock token 见 `DesignTokens`；设备截图待 P0 会话释放 |
+| S14 | ✅ 深度体系：卡片 hairline / 封面 24dp 阴影+光晕 / dock 16dp 阴影 | `PENDING` | QUICK 绿；`shadow(` 仅剩 MiniPlayer 悬浮态 + Depth.kt；21 处卡片补 0.5dp hairline |
+| S15 | ✅ 骨架屏 + 图片占位/淡入/错误兜底 + 空/错误态 | `PENDING` | QUICK 绿；10 处首屏 loading 换骨架；CoverImage 200ms 淡入 + onError 兜底；ErrorState 内联卡片 |
 | S16 | ⏳ | — | — |
 | S17 | ⏳ | — | — |
 | S18 | ⏳ | — | — |

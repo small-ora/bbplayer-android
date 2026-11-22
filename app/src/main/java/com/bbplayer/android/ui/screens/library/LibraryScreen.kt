@@ -1,6 +1,7 @@
 package com.bbplayer.android.ui.screens.library
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -80,6 +81,7 @@ import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.components.SkeletonTrackList
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbRadius
@@ -313,7 +315,7 @@ fun LibraryScreen(
                     foldersError != null -> item {
                         ErrorState(message = foldersError!!, onRetry = { foldersNonce++ })
                     }
-                    list == null -> item { LoadingState(text = "正在加载收藏夹…") }
+                    list == null -> item { SkeletonTrackList(rows = 4) }
                     list.isEmpty() -> item {
                         EmptyState(
                             title = "还没有收藏夹",
@@ -345,7 +347,7 @@ fun LibraryScreen(
                     collectionsError != null -> item {
                         ErrorState(message = collectionsError!!, onRetry = { collectionsNonce++ })
                     }
-                    list == null -> item { LoadingState(text = "正在加载合集…") }
+                    list == null -> item { SkeletonTrackList(rows = 4) }
                     list.isEmpty() -> item {
                         EmptyState(
                             title = "还没有合集",
@@ -692,6 +694,7 @@ private fun RenamePlaylistDialog(current: String, onDismiss: () -> Unit, onConfi
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                 .padding(BbSpacing.Xl),
         ) {
             Text("重命名歌单", style = BbType.Section, fontWeight = FontWeight.SemiBold)
@@ -701,6 +704,7 @@ private fun RenamePlaylistDialog(current: String, onDismiss: () -> Unit, onConfi
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground)
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media))
                     .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             ) {
                 BasicTextField(
@@ -732,6 +736,7 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                 .padding(BbSpacing.Xl),
         ) {
             Text("新建歌单", style = BbType.Section, fontWeight = FontWeight.SemiBold)
@@ -741,6 +746,7 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground)
+                    .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Media))
                     .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             ) {
                 if (name.isEmpty()) {
@@ -774,6 +780,7 @@ private fun BatchDeleteConfirmDialog(count: Int, onDismiss: () -> Unit, onConfir
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
+                .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(BbRadius.Card))
                 .padding(BbSpacing.Xl),
         ) {
             Text("删除 $count 个歌单？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
