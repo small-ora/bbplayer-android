@@ -1,6 +1,10 @@
 package com.bbplayer.android.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -126,6 +130,22 @@ fun HomeScreen(
                 onOpenSearch = onOpenSearch,
                 onRefresh = { refreshKey++ },
             )
+        }
+
+        // ---- 「继续收听」hero：把最近一次播放放大成编辑位（v9.2 P2-3）----
+        if (recentTracks.isNotEmpty()) {
+            item {
+                ContinueListeningHero(
+                    track = recentTracks.first().track,
+                    onClick = { play(recentTracks.map { it.track }, 0) },
+                    modifier = Modifier.padding(
+                        start = BbSpacing.Lg,
+                        end = BbSpacing.Lg,
+                        top = BbSpacing.Xl,
+                        bottom = BbSpacing.Xs,
+                    ),
+                )
+            }
         }
 
         // ---- 最近播放（单曲）----
@@ -288,6 +308,81 @@ private fun HomeSearchHeader(
         windowInsets = WindowInsets(0, 0, 0, 0),
         content = {},
     )
+}
+
+/**
+ * 「继续收听」hero（v9.2 P2-3）：16:9 大卡 + 底部渐变 + 22sp 标题 + 48dp 播放键。
+ * 只消费已有历史数据，不新增任何请求。
+ */
+@Composable
+private fun ContinueListeningHero(
+    track: Track,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(BbRadius.Card))
+            .clickable(onClick = onClick),
+    ) {
+        CoverImage(
+            url = track.coverUrl,
+            modifier = Modifier.fillMaxSize(),
+            corner = 0.dp,
+        )
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        0.35f to Color.Transparent,
+                        1f to Color.Black.copy(alpha = 0.78f),
+                    )
+                )
+        )
+        Column(
+            Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = BbSpacing.Lg, end = 72.dp, bottom = BbSpacing.Lg),
+        ) {
+            Text("继续收听", color = Color.White.copy(alpha = 0.85f), style = BbType.Caption)
+            Spacer(Modifier.height(BbSpacing.Xs))
+            Text(
+                text = track.displayTitle,
+                color = Color.White,
+                style = BbType.Title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = track.uploader,
+                color = Color.White.copy(alpha = 0.75f),
+                style = BbType.Caption,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Box(
+            Modifier
+                .align(Alignment.BottomEnd)
+                .padding(BbSpacing.Lg)
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = "继续收听",
+                tint = Color.Black,
+                modifier = Modifier.size(26.dp),
+            )
+        }
+    }
 }
 
 /** 16:9 视频卡：封面在上，标题最多 2 行，UP 主 1 行（发现页最近播放 / 我的收藏）。 */
