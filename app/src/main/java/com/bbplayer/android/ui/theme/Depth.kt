@@ -3,7 +3,7 @@ package com.bbplayer.android.ui.theme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -38,24 +38,32 @@ fun Modifier.bbFloatingMiniDepth(shape: Shape = RoundedCornerShape(BbRadius.Card
     spotColor = Color.Black.copy(alpha = 0.14f),
 )
 
-/** dock 16dp 软阴影 + 1dp 顶边 hairline（顶边用来在浅色/纯白主题里勾出容器边界）。 */
+/** dock 16dp 软阴影（hairline 单独由 [bbDockTopHairline] 画在最上层）。 */
 @Composable
-fun Modifier.bbDockDepth(shape: Shape = RoundedCornerShape(BbRadius.Dock)): Modifier {
+fun Modifier.bbDockDepth(shape: Shape = RoundedCornerShape(BbRadius.Dock)): Modifier = shadow(
+    elevation = 16.dp,
+    shape = shape,
+    clip = false,
+    ambientColor = Color.Black.copy(alpha = 0.10f),
+    spotColor = Color.Black.copy(alpha = 0.14f),
+)
+
+/**
+ * dock 1dp 顶边 hairline。
+ *
+ * 必须放在 `.clip(shape).background(...)` **之后**：drawWithContent 先画内容再画线，
+ * 线才不会被不透明底色盖住，且被外层 clip 裁进圆角内（不会在圆角外多出短段）。
+ */
+@Composable
+fun Modifier.bbDockTopHairline(): Modifier {
     val hairline = SaltTheme.colors.stroke
-    return this
-        .shadow(
-            elevation = 16.dp,
-            shape = shape,
-            clip = false,
-            ambientColor = Color.Black.copy(alpha = 0.10f),
-            spotColor = Color.Black.copy(alpha = 0.14f),
+    return drawWithContent {
+        drawContent()
+        drawLine(
+            color = hairline,
+            start = Offset(0f, 0f),
+            end = Offset(size.width, 0f),
+            strokeWidth = 1.dp.toPx(),
         )
-        .drawBehind {
-            drawLine(
-                color = hairline,
-                start = Offset(0f, 0f),
-                end = Offset(size.width, 0f),
-                strokeWidth = 1.dp.toPx(),
-            )
-        }
+    }
 }

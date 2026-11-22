@@ -31,6 +31,7 @@ import com.moriafly.salt.ui.SaltTheme
  * - 占位 = 卡片面色（不出现白块/灰块瞬变）
  * - 加载成功 200ms 线性淡入（`tween(200)`，等价 crossfade 200ms）
  * - 加载失败回落为 accent 渐变兜底（不再空白）
+ * - [hairline]：卡片缩略图默认 0.5dp 描边；播放页大封面传 false（冻结口径「无白边/描边」）
  */
 @Composable
 fun CoverImage(
@@ -38,6 +39,7 @@ fun CoverImage(
     modifier: Modifier = Modifier,
     corner: Dp = BbRadius.Small,
     contentDescription: String? = null,
+    hairline: Boolean = true,
 ) {
     val shape = RoundedCornerShape(corner)
     var loaded by remember(url) { mutableStateOf(false) }
@@ -51,7 +53,13 @@ fun CoverImage(
         modifier = modifier
             .clip(shape)
             .background(SaltTheme.colors.subBackground)
-            .border(0.5.dp, SaltTheme.colors.stroke, shape),
+            .then(
+                if (hairline) {
+                    Modifier.border(0.5.dp, SaltTheme.colors.stroke, shape)
+                } else {
+                    Modifier
+                }
+            ),
     ) {
         if (url.isNotBlank() && !failed) {
             AsyncImage(

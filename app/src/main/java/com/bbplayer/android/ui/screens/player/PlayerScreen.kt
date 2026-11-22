@@ -366,7 +366,7 @@ fun PlayerScreen(
                 beyondViewportPageCount = 2,
             ) { page ->
                 when (page) {
-                    0 -> CoverPage(track = track, state = state)
+                    0 -> CoverPage(track = track, state = state, wash = wash)
                     1 -> LyricsPage(
                         lyrics = effectiveLyrics,
                         positionMs = state.positionMs,
@@ -723,7 +723,7 @@ private val PlayerCommentColors = SaltColors(
     onHighlight = Color(0xFF111111),
 )
 @Composable
-private fun CoverPage(track: Track, state: PlaybackState) {
+private fun CoverPage(track: Track, state: PlaybackState, wash: List<Color>) {
     // AC10：播放态封面宽 = 屏宽 85%，暂停态 0.97 缩放后仍 ≥82%，二者都落在 82%–85%；
     // 再与可用高度取 min，小窗/横屏也不溢出；圆角 16dp，无白边/描边。
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -734,7 +734,7 @@ private fun CoverPage(track: Track, state: PlaybackState) {
             label = "coverScale",
         )
         val side = minOf(screenWidth * 0.85f, maxHeight)
-        val wash = rememberAlbumWash(track.coverUrl)
+        // wash 由 PlayerScreen 顶部统一取色，避免同一 coverUrl 二次请求（review P2）。
         val halo = wash.firstOrNull() ?: SaltTheme.colors.highlight
         Box(
             Modifier.size(side * 1.12f).androidxScale(coverScale.value),
@@ -754,9 +754,10 @@ private fun CoverPage(track: Track, state: PlaybackState) {
                 url = track.coverUrl,
                 modifier = Modifier
                     .size(side)
-                    .bbCoverShadow(BbRadius.Card)
-                    .androidxScale(coverScale.value),
+                    .bbCoverShadow(BbRadius.Card),
                 corner = BbRadius.Card,
+                // 缩放只保留在父容器一层（避免 0.97² 跌出 82%–85% 的冻结口径）。
+                hairline = false,
             )
         }
     }

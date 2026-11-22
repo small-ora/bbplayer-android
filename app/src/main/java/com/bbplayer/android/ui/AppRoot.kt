@@ -79,6 +79,7 @@ import com.bbplayer.android.ui.theme.BbIconSize
 import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
 import com.bbplayer.android.ui.theme.bbDockDepth
+import com.bbplayer.android.ui.theme.bbDockTopHairline
 import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -470,7 +471,8 @@ private fun BottomDock(
                     .bbDockDepth(shape)
                     .clip(shape)
                     .background(SaltTheme.colors.popup)
-                    .border(0.5.dp, SaltTheme.colors.stroke, shape),
+                    .border(0.5.dp, SaltTheme.colors.stroke, shape)
+                    .bbDockTopHairline(),
             ) {
                 if (showMini) {
                     MiniPlayer(
