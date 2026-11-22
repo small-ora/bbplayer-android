@@ -102,6 +102,7 @@ import com.bbplayer.android.ui.components.SeekLine
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.screens.comments.CommentsScreen
 import com.bbplayer.android.ui.theme.PlayerBackdrop
+import com.bbplayer.android.ui.theme.PlayerSheetTokens
 import com.bbplayer.android.ui.theme.rememberAlbumWash
 import com.moriafly.salt.ui.SaltColors
 import com.moriafly.salt.ui.SaltConfigs
@@ -492,7 +493,7 @@ fun PlayerScreen(
                 sheet.value = null
             },
             onDismiss = { sheet.value = null },
-            dark = true,
+            ink = pureWhite,
         )
         "timer" -> OptionDialog(
             title = "定时关闭",
@@ -503,7 +504,7 @@ fun PlayerScreen(
                 sheet.value = null
             },
             onDismiss = { sheet.value = null },
-            dark = true,
+            ink = pureWhite,
         )
         "more" -> OptionDialog(
             title = "更多",
@@ -631,15 +632,16 @@ fun PlayerScreen(
                 }
             },
             onDismiss = { sheet.value = null },
-            dark = true,
+            ink = pureWhite,
         )
-        "playlist" -> AddToPlaylistDialog(graph = graph, track = track, onDismiss = { sheet.value = null })
+        "playlist" -> AddToPlaylistDialog(graph = graph, track = track, ink = pureWhite, onDismiss = { sheet.value = null })
         "favoritePicker" -> favoriteAid?.let { aid ->
-            FavoritePickerDialog(graph = graph, aid = aid, onDismiss = { sheet.value = null })
+            FavoritePickerDialog(graph = graph, aid = aid, ink = pureWhite, onDismiss = { sheet.value = null })
         }
         "searchLyrics" -> LyricsSearchDialog(
             graph = graph,
             track = track,
+            ink = pureWhite,
             onDismiss = { sheet.value = null },
             onPicked = { picked ->
                 lyrics = picked
@@ -647,6 +649,7 @@ fun PlayerScreen(
             },
         )
         "pasteLyrics" -> PasteLyricsDialog(
+            ink = pureWhite,
             onDismiss = { sheet.value = null },
             onSave = { text ->
                 scope.safeLaunch {
@@ -867,6 +870,56 @@ private fun BottomActions(
 private fun Modifier.androidxScale(scale: Float): Modifier =
     this.then(Modifier.scale(scale))
 
+/** 播放页弹层的调色板：沉浸页深灰玻璃 / 纯白墨水屏白面（SPEC AC7）。 */
+private class PlayerSheetPalette(
+    val container: Color,
+    val on: Color,
+    val onSecondary: Color,
+    val field: Color,
+    val accent: Color,
+    val onAccent: Color,
+)
+
+private fun playerSheetPalette(ink: Boolean): PlayerSheetPalette = if (ink) PlayerSheetPalette(
+    container = Color(PlayerSheetTokens.InkContainer),
+    on = Color(PlayerSheetTokens.InkOn),
+    onSecondary = Color(PlayerSheetTokens.InkOnSecondary),
+    field = Color(PlayerSheetTokens.InkField),
+    accent = Color(PlayerSheetTokens.InkAccent),
+    onAccent = Color(PlayerSheetTokens.InkOnAccent),
+) else PlayerSheetPalette(
+    container = Color(PlayerSheetTokens.DarkContainer),
+    on = Color(PlayerSheetTokens.DarkOn),
+    onSecondary = Color(PlayerSheetTokens.DarkOnSecondary),
+    field = Color(PlayerSheetTokens.DarkField),
+    accent = Color(PlayerSheetTokens.DarkAccent),
+    onAccent = Color(PlayerSheetTokens.DarkOnAccent),
+)
+
+/** 弹层里的文字按钮（胶囊视觉 + 48dp 热区）。 */
+@Composable
+private fun SheetTextButton(
+    text: String,
+    color: Color,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .clickable(enabled = enabled, onClick = onClick)
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 18.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = if (enabled) color else color.copy(alpha = 0.45f),
+            fontSize = 14.sp,
+        )
+    }
+}
+
 @Composable
 private fun OptionDialog(
     title: String,
@@ -874,19 +927,20 @@ private fun OptionDialog(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit,
-    dark: Boolean = false,
+    ink: Boolean = false,
 ) {
+    val sheet = playerSheetPalette(ink)
     Dialog(onDismissRequest = onDismiss) {
         Column(
             Modifier
                 .fillMaxWidth()
                 .heightIn(max = 560.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(if (dark) Color(0xFF262626) else SaltTheme.colors.popup)
+                .background(sheet.container)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
         ) {
-            Text(title, color = if (dark) Color.White else SaltTheme.colors.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             options.forEachIndexed { index, option ->
                 Row(
@@ -899,27 +953,30 @@ private fun OptionDialog(
                 ) {
                     Text(
                         option,
-                        color = when {
-                            dark && index == selectedIndex -> Color.White
-                            dark -> Color.White.copy(alpha = 0.75f)
-                            index == selectedIndex -> SaltTheme.colors.highlight
-                            else -> SaltTheme.colors.text
-                        },
+                        color = if (index == selectedIndex) sheet.accent else sheet.onSecondary,
                         modifier = Modifier.weight(1f),
                     )
-                    if (index == selectedIndex) Text("✓", color = if (dark) Color.White else SaltTheme.colors.highlight)
+                    if (index == selectedIndex) {
+                        Icon(
+                            Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = sheet.accent,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(6.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                SaltPill(text = "取消", onClick = onDismiss)
+                SheetTextButton(text = "取消", color = sheet.on, onClick = onDismiss)
             }
         }
     }
 }
 
 @Composable
-private fun AddToPlaylistDialog(graph: AppGraph, track: Track, onDismiss: () -> Unit) {
+private fun AddToPlaylistDialog(graph: AppGraph, track: Track, ink: Boolean, onDismiss: () -> Unit) {
+    val sheet = playerSheetPalette(ink)
     val playlists by graph.libraryRepository.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
     var message by remember { mutableStateOf<String?>(null) }
@@ -928,13 +985,13 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, onDismiss: () -> 
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF262626))
+                .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("添加到歌单", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("添加到歌单", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             if (playlists.isEmpty()) {
-                Text("还没有歌单，去音乐库新建一个吧", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                Text("还没有歌单，去音乐库新建一个吧", color = sheet.onSecondary, fontSize = 13.sp)
             } else {
                 playlists.forEach { playlist ->
                     Row(
@@ -950,18 +1007,18 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, onDismiss: () -> 
                             .padding(vertical = 12.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(playlist.name, color = Color.White, modifier = Modifier.weight(1f))
-                        Text("${playlist.tracks.size} 首", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+                        Text(playlist.name, color = sheet.on, modifier = Modifier.weight(1f))
+                        Text("${playlist.tracks.size} 首", color = sheet.onSecondary, fontSize = 12.sp)
                     }
                 }
             }
             message?.let {
                 Spacer(Modifier.height(8.dp))
-                Text(it, color = Color(0xFF7Fb8FF), fontSize = 12.sp)
+                Text(it, color = sheet.accent, fontSize = 12.sp)
             }
             Spacer(Modifier.height(6.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                SaltPill(text = "关闭", onClick = onDismiss)
+                SheetTextButton(text = "关闭", color = sheet.on, onClick = onDismiss)
             }
         }
     }
@@ -969,7 +1026,8 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, onDismiss: () -> 
 
 
 @Composable
-private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Unit) {
+private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDismiss: () -> Unit) {
+    val sheet = playerSheetPalette(ink)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var folders by remember(aid) { mutableStateOf<List<FavoriteFolder>?>(null) }
@@ -1004,21 +1062,21 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Un
                 .fillMaxWidth()
                 .heightIn(max = 560.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF262626))
+                .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("收藏到 B 站收藏夹", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("收藏到 B 站收藏夹", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             when {
                 error != null -> {
-                    Text(error!!, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                    Text(error!!, color = sheet.onSecondary, fontSize = 13.sp)
                     Spacer(Modifier.height(10.dp))
-                    SaltPill(text = "重试", onClick = { attempt++ })
+                    SheetTextButton(text = "重试", color = sheet.accent, onClick = { attempt++ })
                 }
-                folders == null -> Text("正在读取收藏夹…", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                folders == null -> Text("正在读取收藏夹…", color = sheet.onSecondary, fontSize = 13.sp)
                 folders!!.isEmpty() -> Text(
                     "还没有收藏夹，请先在 B 站网页端创建",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = sheet.onSecondary,
                     fontSize = 13.sp,
                 )
                 else -> {
@@ -1045,7 +1103,7 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Un
                                         .size(20.dp)
                                         .clip(RoundedCornerShape(6.dp))
                                         .background(
-                                            if (checked) Color(0xFF7FB8FF) else Color.White.copy(alpha = 0.12f)
+                                            if (checked) sheet.accent else sheet.field
                                         ),
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -1053,7 +1111,7 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Un
                                         Icon(
                                             Icons.Rounded.Check,
                                             contentDescription = null,
-                                            tint = Color(0xFF101010),
+                                            tint = sheet.onAccent,
                                             modifier = Modifier.size(15.dp),
                                         )
                                     }
@@ -1062,14 +1120,14 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Un
                                 Column(Modifier.weight(1f)) {
                                     Text(
                                         folder.title,
-                                        color = Color.White,
+                                        color = sheet.on,
                                         fontSize = 14.sp,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     Text(
                                         "${folder.mediaCount} 个视频${if (folder.isDefault) " · 默认收藏夹" else ""}",
-                                        color = Color.White.copy(alpha = 0.5f),
+                                        color = sheet.onSecondary,
                                         fontSize = 11.sp,
                                     )
                                 }
@@ -1078,11 +1136,12 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Un
                     }
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        SaltPill(text = "取消", onClick = onDismiss)
+                        SheetTextButton(text = "取消", color = sheet.on, onClick = onDismiss)
                         Spacer(Modifier.width(10.dp))
-                        SaltPill(
+                        SheetTextButton(
                             text = if (saving) "保存中…" else "保存",
-                            selected = !saving,
+                            color = sheet.accent,
+                            enabled = !saving,
                             onClick = {
                                 if (!saving) {
                                     val add = (selected - original).toList()
@@ -1116,46 +1175,47 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, onDismiss: () -> Un
 }
 
 @Composable
-private fun PasteLyricsDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
+private fun PasteLyricsDialog(ink: Boolean, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    val sheet = playerSheetPalette(ink)
     var text by remember { mutableStateOf("") }
     Dialog(onDismissRequest = onDismiss) {
         Column(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF262626))
+                .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("粘贴 LRC 歌词", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("粘贴 LRC 歌词", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Box(
                 Modifier
                     .fillMaxWidth()
                     .height(220.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
+                    .background(sheet.field)
                     .padding(12.dp),
             ) {
                 if (text.isEmpty()) {
                     Text(
                         "[00:01.00]第一句歌词\n[00:05.00]第二句歌词",
-                        color = Color.White.copy(alpha = 0.4f),
+                        color = sheet.onSecondary,
                         fontSize = 12.sp,
                     )
                 }
                 androidx.compose.foundation.text.BasicTextField(
                     value = text,
                     onValueChange = { text = it },
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp),
-                    cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF7FB8FF)),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = sheet.on, fontSize = 12.sp),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(sheet.accent),
                     modifier = Modifier.fillMaxSize(),
                 )
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                SaltPill(text = "取消", onClick = onDismiss)
+                SheetTextButton(text = "取消", color = sheet.on, onClick = onDismiss)
                 Spacer(Modifier.width(10.dp))
-                SaltPill(text = "保存", selected = text.isNotBlank(), onClick = {
+                SheetTextButton(text = "保存", color = sheet.accent, enabled = text.isNotBlank(), onClick = {
                     if (text.isNotBlank()) onSave(text)
                 })
             }
@@ -1168,9 +1228,11 @@ private fun PasteLyricsDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
 private fun LyricsSearchDialog(
     graph: AppGraph,
     track: Track,
+    ink: Boolean,
     onDismiss: () -> Unit,
     onPicked: (Lyrics) -> Unit,
 ) {
+    val sheet = playerSheetPalette(ink)
     var candidates by remember { mutableStateOf<List<com.bbplayer.android.core.model.LyricCandidate>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var loadingIndex by remember { mutableStateOf(-1) }
@@ -1186,15 +1248,15 @@ private fun LyricsSearchDialog(
                 .fillMaxWidth()
                 .heightIn(max = 520.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF262626))
+                .background(sheet.container)
                 .padding(20.dp),
         ) {
-            Text("搜索歌词", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("搜索歌词", color = sheet.on, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             when {
-                error != null -> Text(error!!, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
-                candidates == null -> Text("正在搜索…", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
-                candidates!!.isEmpty() -> Text("没有找到匹配歌词", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                error != null -> Text(error!!, color = sheet.onSecondary, fontSize = 13.sp)
+                candidates == null -> Text("正在搜索…", color = sheet.onSecondary, fontSize = 13.sp)
+                candidates!!.isEmpty() -> Text("没有找到匹配歌词", color = sheet.onSecondary, fontSize = 13.sp)
                 else -> androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f, fill = false)) {
                     items(count = candidates!!.size, key = { idx -> candidates!![idx].source + candidates!![idx].sourceId }) { idx ->
                         val candidate = candidates!![idx]
@@ -1216,7 +1278,7 @@ private fun LyricsSearchDialog(
                         ) {
                             Text(
                                 "${candidate.title} · ${candidate.artist}",
-                                color = Color.White,
+                                color = sheet.on,
                                 fontSize = 13.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -1224,7 +1286,7 @@ private fun LyricsSearchDialog(
                             )
                             Text(
                                 if (loadingIndex == idx) "加载中…" else candidate.source.uppercase(),
-                                color = Color.White.copy(alpha = 0.5f),
+                                color = sheet.onSecondary,
                                 fontSize = 11.sp,
                             )
                         }
@@ -1233,7 +1295,7 @@ private fun LyricsSearchDialog(
             }
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                SaltPill(text = "关闭", onClick = onDismiss)
+                SheetTextButton(text = "关闭", color = sheet.on, onClick = onDismiss)
             }
         }
     }

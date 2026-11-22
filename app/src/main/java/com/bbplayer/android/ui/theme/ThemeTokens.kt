@@ -31,3 +31,27 @@ object ThemeTokens {
     // ---- 深色
     val DarkStroke: Long = 0x1FFFFFFF // 12% 白
 }
+
+/**
+ * 播放页弹层调色板（SPEC AC7）。
+ *
+ * 沉浸播放页上的弹层默认深灰玻璃；纯白墨水屏播放页改用白面，
+ * 避免「纯白主题里弹出一个深灰对话框」的割裂。
+ */
+object PlayerSheetTokens {
+    // 沉浸播放页（深色玻璃）
+    val DarkContainer: Long = 0xFF262626
+    val DarkOn: Long = 0xFFFFFFFF
+    val DarkOnSecondary: Long = 0xCCFFFFFF
+    val DarkField: Long = 0x14FFFFFF
+    val DarkAccent: Long = 0xFF7FB8FF
+    val DarkOnAccent: Long = 0xFF101010
+
+    // 纯白墨水屏（浅色面）
+    val InkContainer: Long = 0xFFFFFFFF
+    val InkOn: Long = 0xFF111111
+    val InkOnSecondary: Long = 0x99000000
+    val InkField: Long = 0x0F000000
+    val InkAccent: Long = 0xFF0470E6
+    val InkOnAccent: Long = 0xFFFFFFFF
+}
