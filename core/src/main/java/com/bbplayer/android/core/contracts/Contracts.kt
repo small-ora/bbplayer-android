@@ -14,6 +14,7 @@ import com.bbplayer.android.core.model.Playlist
 import com.bbplayer.android.core.model.SearchPage
 import com.bbplayer.android.core.model.ThemeMode
 import com.bbplayer.android.core.model.Track
+import com.bbplayer.android.core.model.VideoCollection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -31,6 +32,16 @@ interface MusicRepository {
 
     /** All pages (分 P) of a video, or just the single page. */
     suspend fun getVideoPages(bvid: String): Result<List<Track>>
+
+    /**
+     * 把一个视频解析成可当歌单播放的「合集」：多 P 视频的每个 P、B 站 season 合集的每一集。
+     *
+     * 普通单视频（只有 1 P 且不属于多集合集）返回 `Result.success(null)`；请求失败返回
+     * `Result.failure`，由调用方决定回退（搜索页会回退为播放该单曲）。
+     *
+     * 默认返回 `null`，保证既有测试假实现（playback/data）无需改动即可编译。
+     */
+    suspend fun getVideoCollection(bvid: String): Result<VideoCollection?> = Result.success(null)
 
     /** Resolve a fresh (possibly expiring) audio stream URL for a track. */
     suspend fun getAudioStream(track: Track, quality: AudioQuality? = null): Result<AudioStream>
