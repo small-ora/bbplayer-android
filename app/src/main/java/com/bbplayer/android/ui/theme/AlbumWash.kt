@@ -21,6 +21,9 @@ import okhttp3.Request
  * Extracts the album-art wash colours for the player background. Salt Player uses a heavy
  * blurred artwork wash with white text; we sample the artwork down to a tiny bitmap for speed
  * and keep the swatches saturated so the wash still looks like the cover.
+ *
+ * 注意：这里只负责「取色相」；最终的明度/饱和度安全边界由
+ * [PlayerBackdrop.washForBackground] 在播放页统一夹紧（保证白字 ≥4.5:1，SPEC AC1）。
  */
 object CoverWash {
     private val client = OkHttpClient.Builder()

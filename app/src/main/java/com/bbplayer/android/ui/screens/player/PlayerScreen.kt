@@ -59,6 +59,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -95,6 +97,7 @@ import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.SeekLine
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.screens.comments.CommentsScreen
+import com.bbplayer.android.ui.theme.PlayerBackdrop
 import com.bbplayer.android.ui.theme.rememberAlbumWash
 import com.moriafly.salt.ui.SaltColors
 import com.moriafly.salt.ui.SaltConfigs
@@ -214,38 +217,38 @@ fun PlayerScreen(
     val pureWhite = backgroundStyle == PlayerBackgroundStyle.PURE_WHITE
     val onPlayerColor = if (pureWhite) Color(0xFF111111) else Color.White
     val onPlayerSecondary = if (pureWhite) Color(0x99000000) else Color.White.copy(alpha = 0.65f)
+    // v9：封面取色先过亮度守卫，保证任意封面（含纯白/亮黄）下白字对比度 ≥ 4.5:1。
+    val rawWash = wash.firstOrNull() ?: SaltTheme.colors.highlight
+    val backdropBase = Color(PlayerBackdrop.washForBackground(rawWash.toArgb()))
     Box(Modifier.fillMaxSize()) {
-        // ---- background: gradient / solid / pure white ----
-        val base = wash.firstOrNull() ?: SaltTheme.colors.highlight
+        // ---- background: 洗色底 + 模糊封面（40%）+ scrim 渐变 ----
         when (backgroundStyle) {
             PlayerBackgroundStyle.PURE_WHITE -> Box(
                 Modifier
                     .fillMaxSize()
                     .background(Color.White)
             )
-            PlayerBackgroundStyle.SOLID -> Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(base.copy(alpha = 0.92f), base.copy(alpha = 0.75f))
-                        )
-                    )
-            )
+            PlayerBackgroundStyle.SOLID -> {
+                // 洗色底已经是「白字可用」的暗色；再压一层固定 scrim，和 GRADIENT 观感一致。
+                Box(Modifier.fillMaxSize().background(backdropBase))
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = PlayerBackdrop.SCRIM_MID))
+                )
+            }
             PlayerBackgroundStyle.GRADIENT -> {
+                // 第 1 层：封面取色（低饱和低明度）
                 Box(
                     Modifier
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                listOf(
-                                    base.copy(alpha = 0.95f),
-                                    base.copy(alpha = 0.55f),
-                                    Color.Black.copy(alpha = 0.9f),
-                                )
+                                listOf(backdropBase, backdropBase.copy(alpha = 0.92f))
                             )
                         )
                 )
+                // 第 2 层：模糊封面，40% 不透明度保留封面气质，同时不破坏白字可读性
                 AsyncImage(
                     model = track.coverUrl,
                     contentDescription = null,
@@ -253,7 +256,19 @@ fun PlayerScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .blur(90.dp)
-                        .background(Color.Black.copy(alpha = 0.25f)),
+                        .graphicsLayer(alpha = PlayerBackdrop.COVER_IMAGE_ALPHA),
+                )
+                // 第 3 层（必须在图片之上）：固定 scrim 渐变，保证顶部/中部/底部白字都 ≥4.5:1
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Black.copy(alpha = PlayerBackdrop.SCRIM_TOP),
+                                0.55f to Color.Black.copy(alpha = PlayerBackdrop.SCRIM_MID),
+                                1f to Color.Black.copy(alpha = PlayerBackdrop.SCRIM_BOTTOM),
+                            )
+                        )
                 )
             }
         }
