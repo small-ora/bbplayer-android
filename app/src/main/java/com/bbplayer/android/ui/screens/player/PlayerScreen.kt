@@ -69,6 +69,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -154,6 +156,7 @@ fun PlayerScreen(
     val sheet = remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val session by graph.authRepository.session().collectAsStateWithLifecycle(initialValue = null as BiliUser?)
     val loggedIn = session != null
     var favoriteAid by remember(track.key) { mutableStateOf<Long?>(null) }
@@ -438,6 +441,10 @@ fun PlayerScreen(
                         icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         contentDescription = "收藏",
                         onClick = {
+                            val willFavorite = !isFavorite
+                            haptics.performHapticFeedback(
+                                if (willFavorite) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
+                            )
                             scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
                         },
                         tint = if (isFavorite) Color(0xFFFF6B81) else onPlayerColor.copy(alpha = 0.85f),
@@ -1003,6 +1010,7 @@ private fun OptionDialog(
 @Composable
 private fun AddToPlaylistDialog(graph: AppGraph, track: Track, ink: Boolean, onDismiss: () -> Unit) {
     val sheet = playerSheetPalette(ink)
+    val haptics = LocalHapticFeedback.current
     val playlists by graph.libraryRepository.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
     var message by remember { mutableStateOf<String?>(null) }
@@ -1027,6 +1035,7 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, ink: Boolean, onD
                             .clickable {
                                 scope.safeLaunch {
                                     val added = graph.libraryRepository.addTrack(playlist.id, track)
+                                    if (added) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                                     message = if (added) "已添加到「${playlist.name}」" else "已在「${playlist.name}」中"
                                 }
                             }

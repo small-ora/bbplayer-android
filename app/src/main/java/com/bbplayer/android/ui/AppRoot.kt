@@ -31,6 +31,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Person
@@ -113,9 +116,9 @@ object Routes {
 
 /** 底部导航 3 个核心 Tab（需求 §1）：发现（原首页）/ 曲库（原音乐库）/ 我的（原个人中心）。 */
 private val mainTabs = listOf(
-    MainTab("发现", Routes.HOME, Icons.Rounded.Home),
-    MainTab("曲库", Routes.LIBRARY, Icons.Rounded.LibraryMusic),
-    MainTab("我的", Routes.PROFILE, Icons.Rounded.Person),
+    MainTab("发现", Routes.HOME, Icons.Rounded.Home, Icons.Outlined.Home),
+    MainTab("曲库", Routes.LIBRARY, Icons.Rounded.LibraryMusic, Icons.Outlined.LibraryMusic),
+    MainTab("我的", Routes.PROFILE, Icons.Rounded.Person, Icons.Outlined.Person),
 )
 private val rootRoutes = listOf(Routes.HOME, Routes.LIBRARY, Routes.PROFILE)
 

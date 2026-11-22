@@ -19,7 +19,14 @@ import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 
 /** 一个主 Tab：发现 / 曲库 / 我的。 */
-data class MainTab(val label: String, val route: String, val icon: ImageVector)
+data class MainTab(
+    val label: String,
+    val route: String,
+    /** 选中态图标（filled）。 */
+    val icon: ImageVector,
+    /** 未选中态图标（outlined）；默认复用 [icon]。 */
+    val outlinedIcon: ImageVector = icon,
+)
 
 /**
  * 底部 dock 的导航段（v9.1 P1-3）：icon-only、无 M3 pill、无 label。
@@ -52,7 +59,7 @@ fun BbDockNav(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = tab.icon,
+                    imageVector = if (selected) tab.icon else tab.outlinedIcon,
                     contentDescription = tab.label,
                     tint = if (selected) {
                         SaltTheme.colors.text
