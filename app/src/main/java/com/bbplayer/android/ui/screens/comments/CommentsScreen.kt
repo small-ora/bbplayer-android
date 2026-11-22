@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.comments
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +45,11 @@ import com.bbplayer.android.ui.components.ErrorState
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -199,14 +202,14 @@ fun CommentsScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(bottom = if (embedded) 16.dp else BbTokens.SecondaryContentBottomPadding),
+        contentPadding = PaddingValues(bottom = if (embedded) BbSpacing.Lg else BbTokens.SecondaryContentBottomPadding),
     ) {
         if (embedded) {
             item {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp),
+                        .padding(start = BbSpacing.Lg, end = BbSpacing.Lg, top = BbSpacing.Lg, bottom = BbSpacing.Xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("评论", style = BbType.Section)
@@ -232,7 +235,7 @@ fun CommentsScreen(
                                 text = "共 $total 条",
                                 color = SaltTheme.colors.subText,
                                 style = BbType.Caption,
-                                modifier = Modifier.padding(end = 12.dp),
+                                modifier = Modifier.padding(end = BbSpacing.Md),
                             )
                         }
                     },
@@ -277,7 +280,7 @@ fun CommentsScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 14.dp),
+                            .padding(vertical = BbSpacing.Lg),
                         contentAlignment = Alignment.Center,
                     ) {
                         when {
@@ -327,7 +330,7 @@ private fun CommentRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 9.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
     ) {
         Row {
             CoverImage(
@@ -362,7 +365,7 @@ private fun CommentRow(
                         imageVector = Icons.Rounded.ThumbUp,
                         contentDescription = null,
                         tint = SaltTheme.colors.subText,
-                        modifier = Modifier.size(13.dp),
+                        modifier = Modifier.size(BbIconSize.Sm),
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
@@ -396,16 +399,16 @@ private fun CommentRow(
                 modifier = Modifier
                     .padding(start = 46.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground.copy(alpha = 0.55f))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = BbSpacing.Md, vertical = BbSpacing.Sm),
             ) {
                 when {
                     state.loading && state.items.isEmpty() -> Text(
                         text = "正在加载回复…",
                         color = SaltTheme.colors.subText,
                         style = BbType.Caption,
-                        modifier = Modifier.padding(vertical = 6.dp),
+                        modifier = Modifier.padding(vertical = BbSpacing.Sm),
                     )
                     state.error != null && state.items.isEmpty() -> Row(
                         modifier = Modifier.fillMaxWidth(),

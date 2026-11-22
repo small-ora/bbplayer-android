@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.profile
 
-import com.bbplayer.android.ui.theme.BbType
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,8 +37,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -61,7 +60,11 @@ import com.bbplayer.android.ui.components.CoverImage
 import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
@@ -106,12 +109,12 @@ fun ProfileScreen(
             )
         }
         item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Xs)) {
                 DashboardCard(summary = summary, daily = daily)
             }
         }
         item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 12.dp)) {
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Md)) {
                 RoundedColumn(
                     modifier = Modifier.fillMaxWidth(),
                     paddingValues = PaddingValues(0.dp),
@@ -144,7 +147,7 @@ fun ProfileScreen(
             }
         }
         item {
-            Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.fillMaxWidth().padding(BbSpacing.Xxl), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("BBPlayer · 安卓原生版", color = SaltTheme.colors.subText, style = BbType.Caption)
                 Spacer(Modifier.height(4.dp))
                 Text("数据来自 Bilibili · 界面风格致敬椒盐音乐", color = SaltTheme.colors.subText, style = BbType.Micro)
@@ -157,9 +160,9 @@ fun ProfileScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(BbRadius.Card))
                     .background(SaltTheme.colors.popup)
-                    .padding(20.dp),
+                    .padding(BbSpacing.Xl),
             ) {
                 Text("退出登录？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(10.dp))
@@ -197,7 +200,7 @@ private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
         modifier = Modifier.fillMaxWidth(),
         paddingValues = PaddingValues(0.dp),
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(BbSpacing.Lg)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("累计收听", color = SaltTheme.colors.subText, style = BbType.Caption)
@@ -285,7 +288,7 @@ private fun ProfileEntryRow(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .heightIn(min = 64.dp)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -299,7 +302,7 @@ private fun ProfileEntryRow(
                 icon,
                 contentDescription = null,
                 tint = SaltTheme.colors.highlight,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(BbIconSize.Md),
             )
         }
         Spacer(Modifier.width(12.dp))
@@ -324,30 +327,30 @@ private fun ProfileEntryRow(
             Icons.Rounded.ChevronRight,
             contentDescription = null,
             tint = SaltTheme.colors.subText,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(BbIconSize.Md),
         )
     }
 }
 
 @Composable
 private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -> Unit) {
-    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)) {
+    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Xs)) {
         RoundedColumn(
             modifier = Modifier.fillMaxWidth(),
             paddingValues = PaddingValues(0.dp),
         ) {
-          Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+          Column(Modifier.padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Lg)) {
             if (user == null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        Modifier.size(52.dp).clip(RoundedCornerShape(26.dp))
+                        Modifier.size(52.dp).clip(BbRadius.FullShape)
                             .background(SaltTheme.colors.subBackground),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Icons.Rounded.Person, null,
                             tint = SaltTheme.colors.subText,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(BbIconSize.Lg),
                         )
                     }
                     Spacer(Modifier.size(12.dp))

@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.components
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +22,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bbplayer.android.core.Format
 import com.bbplayer.android.core.model.Track
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -46,7 +48,7 @@ fun TrackRow(
             .fillMaxWidth()
             .heightIn(min = 64.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CoverImage(url = track.coverUrl, modifier = Modifier.size(48.dp), corner = 8.dp)
@@ -90,7 +92,7 @@ fun TrackRow(
                     imageVector = Icons.Rounded.MoreVert,
                     contentDescription = "更多",
                     tint = SaltTheme.colors.subText,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(BbIconSize.Md),
                 )
             }
         } else if (trailing != null) {

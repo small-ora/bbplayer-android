@@ -1,14 +1,13 @@
 package com.bbplayer.android.ui.screens.player
 
-import com.bbplayer.android.ui.theme.BbType
+import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,10 +23,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Favorite
@@ -47,7 +48,6 @@ import androidx.compose.material.icons.rounded.Subtitles
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -59,60 +59,63 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import androidx.core.view.WindowCompat
-import com.bbplayer.android.util.BiliIds
 import com.bbplayer.android.core.contracts.toUserMessage
-import com.bbplayer.android.core.model.BiliUser
-import com.bbplayer.android.core.model.FavoriteFolder
-import android.widget.Toast
 import com.bbplayer.android.core.model.AudioQuality
+import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.model.DownloadStatus
+import com.bbplayer.android.core.model.FavoriteFolder
 import com.bbplayer.android.core.model.LyricVisualStyle
-import com.bbplayer.android.core.model.PlayerBackgroundStyle
 import com.bbplayer.android.core.model.Lyrics
 import com.bbplayer.android.core.model.PlayMode
 import com.bbplayer.android.core.model.PlaybackState
+import com.bbplayer.android.core.model.PlayerBackgroundStyle
 import com.bbplayer.android.core.model.Track
+import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.AppGraph
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.CoverImage
-import com.bbplayer.android.ui.components.LoadingState
-import com.bbplayer.android.ui.lyrics.DesktopLyricsService
-import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
-import com.bbplayer.android.ui.share.ShareCard
-import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.IconAction
-import com.bbplayer.android.ui.components.SeekLine
+import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
+import com.bbplayer.android.ui.components.SeekLine
+import com.bbplayer.android.ui.lyrics.DesktopLyricsService
+import com.bbplayer.android.ui.lyrics.NowPlayingLyrics
 import com.bbplayer.android.ui.screens.comments.CommentsScreen
+import com.bbplayer.android.ui.share.ShareCard
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.bbplayer.android.ui.theme.PlayerBackdrop
 import com.bbplayer.android.ui.theme.PlayerSheetTokens
 import com.bbplayer.android.ui.theme.rememberAlbumWash
+import com.bbplayer.android.util.BiliIds
 import com.moriafly.salt.ui.SaltColors
 import com.moriafly.salt.ui.SaltConfigs
 import com.moriafly.salt.ui.SaltDynamicColors
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
-import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,7 +135,7 @@ fun PlayerScreen(
                 .background(SaltTheme.colors.background)
                 .statusBarsPadding(),
         ) {
-            Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(BbSpacing.Sm), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(Icons.Rounded.KeyboardArrowDown, "返回", onClick = onBack)
             }
             EmptyState(title = "还没有正在播放的歌曲", subtitle = "去首页挑一首吧")
@@ -297,16 +300,16 @@ fun PlayerScreen(
             Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = BbSpacing.Xxl),
         ) {
             state.errorMessage?.let { message ->
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .padding(top = BbSpacing.Xs)
+                        .clip(RoundedCornerShape(BbRadius.Media))
                         .background(Color.Black.copy(alpha = 0.35f))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = BbSpacing.Md, vertical = BbSpacing.Sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -327,7 +330,7 @@ fun PlayerScreen(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(
                     Icons.Rounded.KeyboardArrowDown, "收起", onClick = onBack,
-                    tint = onPlayerColor, size = 48,
+                    tint = onPlayerColor,
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -335,13 +338,13 @@ fun PlayerScreen(
                         // UP 主只在下方副标题出现一次，避免重复。
                         // 页码指示：封面 / 歌词 / 评论
                         Spacer(Modifier.height(5.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(BbSpacing.Xs)) {
                             repeat(3) { index ->
                                 val active = index == pagerState.currentPage
                                 Box(
                                     Modifier
                                         .size(if (active) 6.dp else 5.dp)
-                                        .clip(RoundedCornerShape(50))
+                                        .clip(BbRadius.FullShape)
                                         .background(onPlayerColor.copy(alpha = if (active) 0.95f else 0.32f))
                                 )
                             }
@@ -350,7 +353,7 @@ fun PlayerScreen(
                 }
                 IconAction(
                     Icons.Rounded.MoreHoriz, "更多", onClick = { sheet.value = "more" },
-                    tint = onPlayerColor, size = 48,
+                    tint = onPlayerColor,
                 )
             }
 
@@ -393,7 +396,7 @@ fun PlayerScreen(
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(bottom = 4.dp),
+                    .padding(bottom = BbSpacing.Xs),
             ) {
                 // 标题 + 副标题合并在一行块内，收藏红心常驻右侧并垂直居中；
                 // 这样底部固定区更紧凑，封面能接近「屏宽 84%」（AC10）。
@@ -434,8 +437,7 @@ fun PlayerScreen(
                             scope.safeLaunch { isFavorite = graph.libraryRepository.toggleFavorite(track) }
                         },
                         tint = if (isFavorite) Color(0xFFFF6B81) else onPlayerColor.copy(alpha = 0.85f),
-                        // 热区 48dp，与标题块垂直居中。
-                        size = 48,
+                        // 热区固定 48dp，与标题块垂直居中。
                     )
                 }
                 Spacer(Modifier.height(6.dp))
@@ -743,7 +745,7 @@ private fun CoverPage(track: Track, state: PlaybackState) {
 private fun CommentsPage(bvid: String, active: Boolean, pureWhite: Boolean) {
     // 与播放器背景融合：透明底 + 白色文字（深色渐变时加轻微压暗，保证可读）；
     // 纯白墨水屏播放页则用正常深色文字。
-    Box(Modifier.fillMaxSize().padding(top = 4.dp)) {
+    Box(Modifier.fillMaxSize().padding(top = BbSpacing.Xs)) {
         if (!pureWhite) {
             Box(
                 Modifier
@@ -770,9 +772,9 @@ private fun CommentsPage(bvid: String, active: Boolean, pureWhite: Boolean) {
 private fun QualityBadge(quality: AudioQuality, pureWhite: Boolean = false) {
     Box(
         Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(BbRadius.Small))
             .background(if (pureWhite) Color.Black.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.35f))
-            .padding(horizontal = 4.dp, vertical = 1.dp),
+            .padding(horizontal = BbSpacing.Xs, vertical = 1.dp),
     ) {
         Text(
             text = when (quality) {
@@ -806,13 +808,13 @@ private fun TransportRow(
         // 上一首 / 下一首保持无底板，视觉层级低于主播放键。
         IconAction(
             Icons.Rounded.SkipPrevious, "上一首", onClick = { graph.playbackController.previous() },
-            tint = controlTint.copy(alpha = 0.9f), size = 52,
+            tint = controlTint.copy(alpha = 0.9f),
         )
         // 主播放键：72dp + 半透明圆形浅色底板（纯白墨水屏用黑色低透明度）。
         Box(
             Modifier
                 .size(72.dp)
-                .clip(RoundedCornerShape(50))
+                .clip(BbRadius.FullShape)
                 .background(
                     if (pureWhite) Color.Black.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.14f)
                 )
@@ -828,7 +830,7 @@ private fun TransportRow(
         }
         IconAction(
             Icons.Rounded.SkipNext, "下一首", onClick = { graph.playbackController.next() },
-            tint = controlTint.copy(alpha = 0.9f), size = 52,
+            tint = controlTint.copy(alpha = 0.9f),
         )
     }
 }
@@ -842,7 +844,7 @@ private fun BottomActions(
     onOpenQueue: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        Modifier.fillMaxWidth().padding(horizontal = BbSpacing.Xs),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -856,12 +858,11 @@ private fun BottomActions(
             contentDescription = state.playMode.label,
             onClick = onModeClick,
             tint = if (state.playMode in listOf(PlayMode.REPEAT_ONE, PlayMode.SHUFFLE)) Color.White else Color.White.copy(alpha = 0.65f),
-            size = 48,
         )
-        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f), size = 48)
-        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f), size = 48)
-        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f), size = 48)
-        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f), size = 48)
+        IconAction(Icons.Rounded.Timer, "定时关闭", onClick = { onShowSheet("timer") }, tint = Color.White.copy(alpha = 0.65f))
+        IconAction(Icons.Rounded.Speed, "倍速", onClick = { onShowSheet("speed") }, tint = Color.White.copy(alpha = 0.65f))
+        IconAction(Icons.Rounded.QueueMusic, "队列", onClick = onOpenQueue, tint = Color.White.copy(alpha = 0.65f))
+        IconAction(Icons.Rounded.MoreHoriz, "更多", onClick = { onShowSheet("more") }, tint = Color.White.copy(alpha = 0.65f))
     }
 }
 
@@ -904,10 +905,10 @@ private fun SheetTextButton(
 ) {
     Box(
         Modifier
-            .clip(RoundedCornerShape(50))
+            .clip(BbRadius.FullShape)
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = 48.dp)
-            .padding(horizontal = 18.dp),
+            .padding(horizontal = BbSpacing.Xl),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -933,10 +934,10 @@ private fun OptionDialog(
             Modifier
                 .fillMaxWidth()
                 .heightIn(max = 560.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Sheet))
                 .background(sheet.container)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text(title, color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
@@ -944,9 +945,9 @@ private fun OptionDialog(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(BbRadius.Media))
                         .clickable { onSelect(index) }
-                        .padding(horizontal = 12.dp, vertical = 13.dp),
+                        .padding(horizontal = BbSpacing.Md, vertical = BbSpacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -959,7 +960,7 @@ private fun OptionDialog(
                             Icons.Rounded.Check,
                             contentDescription = null,
                             tint = sheet.accent,
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(BbIconSize.Sm),
                         )
                     }
                 }
@@ -982,9 +983,9 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, ink: Boolean, onD
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Sheet))
                 .background(sheet.container)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("添加到歌单", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
@@ -995,14 +996,14 @@ private fun AddToPlaylistDialog(graph: AppGraph, track: Track, ink: Boolean, onD
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(BbRadius.Media))
                             .clickable {
                                 scope.safeLaunch {
                                     val added = graph.libraryRepository.addTrack(playlist.id, track)
                                     message = if (added) "已添加到「${playlist.name}」" else "已在「${playlist.name}」中"
                                 }
                             }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                            .padding(vertical = BbSpacing.Md, horizontal = BbSpacing.Sm),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(playlist.name, color = sheet.on, modifier = Modifier.weight(1f))
@@ -1059,9 +1060,9 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDis
             Modifier
                 .fillMaxWidth()
                 .heightIn(max = 560.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Sheet))
                 .background(sheet.container)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("收藏到 B 站收藏夹", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
@@ -1089,17 +1090,17 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDis
                             Row(
                                 Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(BbRadius.Media))
                                     .clickable {
                                         selected = if (checked) selected - folder.id else selected + folder.id
                                     }
-                                    .padding(horizontal = 6.dp, vertical = 10.dp),
+                                    .padding(horizontal = BbSpacing.Sm, vertical = BbSpacing.Md),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(
                                     Modifier
                                         .size(20.dp)
-                                        .clip(RoundedCornerShape(6.dp))
+                                        .clip(RoundedCornerShape(BbRadius.Small))
                                         .background(
                                             if (checked) sheet.accent else sheet.field
                                         )
@@ -1108,7 +1109,7 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDis
                                                 Modifier.border(
                                                     width = 1.dp,
                                                     color = sheet.on.copy(alpha = if (ink) 0.55f else 0.45f),
-                                                    shape = RoundedCornerShape(6.dp),
+                                                    shape = RoundedCornerShape(BbRadius.Small),
                                                 )
                                             } else {
                                                 Modifier
@@ -1121,7 +1122,7 @@ private fun FavoritePickerDialog(graph: AppGraph, aid: Long, ink: Boolean, onDis
                                             Icons.Rounded.Check,
                                             contentDescription = null,
                                             tint = sheet.onAccent,
-                                            modifier = Modifier.size(15.dp),
+                                            modifier = Modifier.size(BbIconSize.Sm),
                                         )
                                     }
                                 }
@@ -1191,9 +1192,9 @@ private fun PasteLyricsDialog(ink: Boolean, onDismiss: () -> Unit, onSave: (Stri
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Sheet))
                 .background(sheet.container)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("粘贴 LRC 歌词", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
@@ -1201,9 +1202,9 @@ private fun PasteLyricsDialog(ink: Boolean, onDismiss: () -> Unit, onSave: (Stri
                 Modifier
                     .fillMaxWidth()
                     .height(220.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(BbRadius.Media))
                     .background(sheet.field)
-                    .padding(12.dp),
+                    .padding(BbSpacing.Md),
             ) {
                 if (text.isEmpty()) {
                     Text(
@@ -1256,9 +1257,9 @@ private fun LyricsSearchDialog(
             Modifier
                 .fillMaxWidth()
                 .heightIn(max = 520.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Sheet))
                 .background(sheet.container)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("搜索歌词", color = sheet.on, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
@@ -1272,7 +1273,7 @@ private fun LyricsSearchDialog(
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(BbRadius.Media))
                                 .clickable {
                                     loadingIndex = idx
                                     scope.safeLaunch(onError = { error = it.toUserMessage() }) {
@@ -1282,7 +1283,7 @@ private fun LyricsSearchDialog(
                                         loadingIndex = -1
                                     }
                                 }
-                                .padding(vertical = 10.dp, horizontal = 6.dp),
+                                .padding(vertical = BbSpacing.Md, horizontal = BbSpacing.Sm),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(

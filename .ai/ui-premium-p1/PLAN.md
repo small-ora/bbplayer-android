@@ -45,7 +45,7 @@
 | S1 隔离 | ✅ worktree `feat/ui-premium-p1` @ `93c8a07` | — | `git worktree list` |
 | S2 SPEC 冻结 | ✅ | `157ef3b` | `git log` |
 | S11 | ✅ 字阶 7 档 + tnum（21 处）+ fontSize 字面量清零 | `83fc108` | QUICK 绿；`BbTypeTest` 5/5；grep 页面 fontSize 字面量 = 0；app 单测绿 |
-| S12 | ⏳ | — | — |
+| S12 | ✅ 间距/圆角/图标 token + 中间值消除 | `HEAD` | QUICK 绿；`static-assertions-s12.log`：padding 字面量仅剩 7 处结构值（已豁免）、Icon 内仅剩 44/40/56 大图标、`size*0.5f` 清零 |
 | S13 | ⏳ | — | — |
 | S14 | ⏳ | — | — |
 | S15 | ⏳ | — | — |

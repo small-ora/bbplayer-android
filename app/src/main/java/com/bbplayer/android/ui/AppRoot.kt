@@ -2,13 +2,13 @@ package com.bbplayer.android.ui
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,7 +63,6 @@ import com.bbplayer.android.ui.screens.discover.LeaderboardScreen
 import com.bbplayer.android.ui.screens.downloads.DownloadsScreen
 import com.bbplayer.android.ui.screens.history.HistoryScreen
 import com.bbplayer.android.ui.screens.home.HomeScreen
-import com.bbplayer.android.ui.screens.playlistimport.ImportPlaylistScreen
 import com.bbplayer.android.ui.screens.library.CollectionDetailScreen
 import com.bbplayer.android.ui.screens.library.FavoriteFolderScreen
 import com.bbplayer.android.ui.screens.library.LibraryScreen
@@ -71,10 +70,13 @@ import com.bbplayer.android.ui.screens.library.WatchLaterScreen
 import com.bbplayer.android.ui.screens.login.LoginScreen
 import com.bbplayer.android.ui.screens.player.PlayerScreen
 import com.bbplayer.android.ui.screens.playlist.PlaylistDetailScreen
+import com.bbplayer.android.ui.screens.playlistimport.ImportPlaylistScreen
 import com.bbplayer.android.ui.screens.profile.ProfileScreen
 import com.bbplayer.android.ui.screens.search.SearchScreen
 import com.bbplayer.android.ui.screens.settings.SettingsScreen
 import com.bbplayer.android.ui.screens.uploader.UploaderScreen
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
 import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.flow.first
@@ -456,9 +458,9 @@ private fun NavRail(tabs: List<MainTab>, selectedRoute: String?, onSelect: (Stri
             .fillMaxHeight()
             .background(SaltTheme.colors.background)
             .statusBarsPadding()
-            .padding(top = 16.dp),
+            .padding(top = BbSpacing.Lg),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(BbSpacing.Lg),
     ) {
         tabs.forEach { tab ->
             val selected = tab.route == selectedRoute
@@ -476,7 +478,7 @@ private fun NavRail(tabs: List<MainTab>, selectedRoute: String?, onSelect: (Stri
                     imageVector = tab.icon,
                     contentDescription = tab.label,
                     tint = if (selected) SaltTheme.colors.highlight else SaltTheme.colors.subText,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(BbIconSize.Lg),
                 )
             }
         }

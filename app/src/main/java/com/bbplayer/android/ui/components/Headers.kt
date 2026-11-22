@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.components
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,11 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -34,12 +28,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -57,8 +61,8 @@ fun LargeTitle(title: String, subtitle: String? = null, actions: (@Composable ()
             .padding(
                 start = SaltTheme.dimens.padding,
                 end = SaltTheme.dimens.padding,
-                top = 14.dp,
-                bottom = 10.dp,
+                top = BbSpacing.Lg,
+                bottom = BbSpacing.Md,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -82,13 +86,13 @@ fun SmallTopBar(title: String, onBack: (() -> Unit)? = null, actions: (@Composab
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = BbSpacing.Sm, vertical = BbSpacing.Sm)
             .height(48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onBack != null) {
-            Box(Modifier.size(48.dp).clip(RoundedCornerShape(50)).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.ArrowBack, "返回", tint = SaltTheme.colors.text, modifier = Modifier.size(24.dp))
+            Box(Modifier.size(48.dp).clip(BbRadius.FullShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.ArrowBack, "返回", tint = SaltTheme.colors.text, modifier = Modifier.size(BbIconSize.Lg))
             }
         } else {
             Spacer(Modifier.width(8.dp))
@@ -98,7 +102,7 @@ fun SmallTopBar(title: String, onBack: (() -> Unit)? = null, actions: (@Composab
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = BbType.Section,
-            modifier = Modifier.weight(1f).padding(horizontal = 6.dp),
+            modifier = Modifier.weight(1f).padding(horizontal = BbSpacing.Sm),
         )
         actions?.invoke()
     }
@@ -119,13 +123,13 @@ fun SearchField(
             .fillMaxWidth()
             .padding(horizontal = SaltTheme.dimens.padding)
             .height(46.dp)
-            .clip(RoundedCornerShape(50))
+            .clip(BbRadius.FullShape)
             .background(SaltTheme.colors.subBackground)
-            .border(0.5.dp, SaltTheme.colors.stroke, RoundedCornerShape(50))
-            .padding(horizontal = 16.dp),
+            .border(0.5.dp, SaltTheme.colors.stroke, BbRadius.FullShape)
+            .padding(horizontal = BbSpacing.Lg),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.Search, null, tint = SaltTheme.colors.subText, modifier = Modifier.size(20.dp))
+        Icon(Icons.Rounded.Search, null, tint = SaltTheme.colors.subText, modifier = Modifier.size(BbIconSize.Md))
         Spacer(Modifier.width(8.dp))
         Box(Modifier.weight(1f)) {
             BasicTextField(
@@ -161,12 +165,12 @@ fun SearchField(
         if (value.isNotEmpty()) {
             Box(
                 // 行高 46dp 限制，清空键取 40dp（SPEC AC8 显式豁免）；其余可点元素 ≥48dp。
-                Modifier.size(40.dp).clip(RoundedCornerShape(50)).clickable {
+                Modifier.size(40.dp).clip(BbRadius.FullShape).clickable {
                     onValueChange("")
                 },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Rounded.Close, "清空", tint = SaltTheme.colors.subText, modifier = Modifier.size(17.dp))
+                Icon(Icons.Rounded.Close, "清空", tint = SaltTheme.colors.subText, modifier = Modifier.size(BbIconSize.Sm))
             }
         }
     }
@@ -177,15 +181,15 @@ fun SearchField(
 fun SaltPill(text: String, selected: Boolean = false, onClick: (() -> Unit)? = null) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
+            .clip(BbRadius.FullShape)
             .background(if (selected) SaltTheme.colors.highlight.copy(alpha = 0.14f) else SaltTheme.colors.subBackground)
             .border(
                 0.5.dp,
                 if (selected) SaltTheme.colors.highlight.copy(alpha = 0.45f) else SaltTheme.colors.stroke,
-                RoundedCornerShape(50),
+                BbRadius.FullShape,
             )
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = BbSpacing.Md, vertical = BbSpacing.Sm),
     ) {
         Text(
             text = text,
@@ -197,7 +201,9 @@ fun SaltPill(text: String, selected: Boolean = false, onClick: (() -> Unit)? = n
 }
 
 /**
- * 图标按钮：视觉尺寸由 [size] 决定，**触控热区不小于 48dp**（SPEC AC8）。
+ * 图标按钮：图标尺寸取 [BbIconSize] 三档，**触控热区固定 48dp**（SPEC AC3/AC8）。
+ *
+ * v9.1 起不再使用 `size * 0.5f` 魔法比例：图标视觉尺寸与热区解耦。
  */
 @Composable
 fun IconAction(
@@ -205,13 +211,12 @@ fun IconAction(
     contentDescription: String,
     onClick: () -> Unit,
     tint: Color = SaltTheme.colors.text,
-    size: Int = 48,
+    iconSize: Dp = BbIconSize.Lg,
 ) {
-    val touchSize = maxOf(size, 48)
     Box(
-        Modifier.size(touchSize.dp).clip(RoundedCornerShape(50)).clickable(onClick = onClick),
+        Modifier.size(BbIconSize.Touch).clip(BbRadius.FullShape).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription, tint = tint, modifier = Modifier.size((size * 0.5f).dp))
+        Icon(icon, contentDescription, tint = tint, modifier = Modifier.size(iconSize))
     }
 }

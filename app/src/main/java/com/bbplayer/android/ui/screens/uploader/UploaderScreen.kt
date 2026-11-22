@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.uploader
 
-import com.bbplayer.android.ui.theme.BbType
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,11 +8,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -49,7 +48,9 @@ import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
 import com.bbplayer.android.ui.screens.library.rememberPagedTracks
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -142,7 +143,7 @@ fun UploaderScreen(
                 )
                 else -> {
                     val user = info
-                    Column(Modifier.fillMaxWidth().padding(horizontal = SaltTheme.dimens.padding, vertical = 10.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Md)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CoverImage(
                                 url = user?.avatarUrl.orEmpty(),
@@ -193,7 +194,7 @@ fun UploaderScreen(
         }
         item {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+                Modifier.fillMaxWidth().padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("视频", style = BbType.Section, fontWeight = FontWeight.SemiBold)
@@ -233,7 +234,7 @@ fun UploaderScreen(
                 } else if (videos.hasMore) {
                     item {
                         Box(
-                            Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                            Modifier.fillMaxWidth().padding(vertical = BbSpacing.Lg),
                             contentAlignment = Alignment.Center,
                         ) {
                             SaltPill(text = "加载更多", onClick = {
@@ -247,7 +248,7 @@ fun UploaderScreen(
                             "已经到底啦",
                             color = SaltTheme.colors.subText,
                             style = BbType.Micro,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = BbSpacing.Xl),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )
                     }

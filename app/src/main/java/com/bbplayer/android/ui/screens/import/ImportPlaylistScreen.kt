@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.playlistimport
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,12 +11,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -28,8 +27,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,7 +64,11 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import kotlin.math.abs
@@ -325,7 +328,7 @@ fun ImportPlaylistScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(SaltTheme.colors.background)
-                        .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+                        .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -368,9 +371,9 @@ fun ImportPlaylistScreen(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(BbRadius.Media))
                         .background(SaltTheme.colors.subBackground)
-                        .padding(horizontal = 14.dp, vertical = 13.dp),
+                        .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
                 ) {
                     if (input.isEmpty()) {
                         Text(
@@ -421,7 +424,7 @@ fun ImportPlaylistScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = SaltTheme.dimens.padding, vertical = 14.dp),
+                        .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Lg),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     CoverImage(
@@ -464,10 +467,10 @@ fun ImportPlaylistScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = SaltTheme.dimens.padding, vertical = 4.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Xs)
+                            .clip(RoundedCornerShape(BbRadius.Media))
                             .background(SaltTheme.colors.highlight.copy(alpha = 0.09f))
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = BbSpacing.Md, vertical = BbSpacing.Md),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -552,7 +555,7 @@ fun ImportPlaylistScreen(
             if (matching) {
                 item {
                     val p = progress
-                    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 12.dp)) {
+                    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Md)) {
                         Text(
                             text = if (p != null && p.total > 0) {
                                 "正在分批匹配：${p.done} / ${p.total}（每批 $batchSize 首，可随时暂停）"
@@ -590,8 +593,8 @@ fun ImportPlaylistScreen(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(
                             start = SaltTheme.dimens.padding,
-                            top = 16.dp,
-                            bottom = 4.dp,
+                            top = BbSpacing.Lg,
+                            bottom = BbSpacing.Xs,
                         ),
                     )
                 }
@@ -602,7 +605,7 @@ fun ImportPlaylistScreen(
                     )
                 }
                 item {
-                    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 16.dp)) {
+                    Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Lg)) {
                         if (matchDone && matchedCount > 0) {
                             Text(
                                 text = "可直接点顶部「保存为本地歌单」保存匹配成功的歌曲。",
@@ -639,11 +642,11 @@ fun ImportPlaylistScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = SaltTheme.dimens.padding, vertical = 6.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm)
+                        .clip(RoundedCornerShape(BbRadius.Media))
                         .background(SaltTheme.colors.highlight.copy(alpha = 0.1f))
                         .clickable { notice = null }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -679,7 +682,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 7.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (matched != null) {
@@ -688,7 +691,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
             Box(
                 Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(BbRadius.Small))
                     .background(SaltTheme.colors.subBackground),
                 contentAlignment = Alignment.Center,
             ) {
@@ -696,7 +699,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
                     Icons.Rounded.CloudOff,
                     null,
                     tint = SaltTheme.colors.subText,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(BbIconSize.Md),
                 )
             }
         }
@@ -755,7 +758,7 @@ private fun MatchProgressBar(fraction: Float) {
         Modifier
             .fillMaxWidth()
             .height(4.dp)
-            .clip(RoundedCornerShape(50))
+            .clip(BbRadius.FullShape)
             .background(SaltTheme.colors.subBackground),
     ) {
         if (value > 0f) {
@@ -763,7 +766,7 @@ private fun MatchProgressBar(fraction: Float) {
                 Modifier
                     .fillMaxWidth(value)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(50))
+                    .clip(BbRadius.FullShape)
                     .background(SaltTheme.colors.highlight),
             )
         }
@@ -775,7 +778,7 @@ private fun InlineError(message: String, onRetry: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -840,9 +843,9 @@ private fun ManualMatchDialog(
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("手动匹配", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
@@ -857,9 +860,9 @@ private fun ManualMatchDialog(
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             ) {
                 if (keyword.isEmpty()) {
                     Text("输入歌曲关键词", color = SaltTheme.colors.subText, style = BbType.Body)
@@ -888,7 +891,7 @@ private fun ManualMatchDialog(
 
             when {
                 searching -> LoadingState(text = "搜索中…")
-                error != null -> Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                error != null -> Column(Modifier.fillMaxWidth().padding(top = BbSpacing.Sm)) {
                     Text(error!!, color = SaltTheme.colors.subText, style = BbType.Caption)
                     Spacer(Modifier.height(8.dp))
                     SaltPill(text = "重试", onClick = { search() })
@@ -910,9 +913,9 @@ private fun ManualMatchDialog(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(BbRadius.Media))
                                     .clickable { onPicked(track) }
-                                    .padding(vertical = 6.dp),
+                                    .padding(vertical = BbSpacing.Sm),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 CoverImage(

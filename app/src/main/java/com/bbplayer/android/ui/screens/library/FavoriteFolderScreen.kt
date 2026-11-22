@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.library
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,10 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -36,7 +35,9 @@ import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -74,7 +75,7 @@ fun FavoriteFolderScreen(
     ) {
         item { SmallTopBar(title = title, onBack = onBack) }
         item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm)) {
                 Text(title, style = BbType.Title, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -83,7 +84,7 @@ fun FavoriteFolderScreen(
                         color = SaltTheme.colors.subText,
                         style = BbType.Label,
                     )
-                    Spacer(Modifier.padding(horizontal = 6.dp))
+                    Spacer(Modifier.padding(horizontal = BbSpacing.Sm))
                     SaltPill(
                         text = "播放全部",
                         selected = state.items.isNotEmpty(),
@@ -122,7 +123,7 @@ fun FavoriteFolderScreen(
                 } else if (state.hasMore) {
                     item {
                         Box(
-                            Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                            Modifier.fillMaxWidth().padding(vertical = BbSpacing.Lg),
                             contentAlignment = Alignment.Center,
                         ) {
                             SaltPill(text = "加载更多", onClick = {
@@ -136,7 +137,7 @@ fun FavoriteFolderScreen(
                             "已经到底啦",
                             color = SaltTheme.colors.subText,
                             style = BbType.Micro,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = BbSpacing.Xl),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )
                     }

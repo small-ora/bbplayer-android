@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.player
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
@@ -36,6 +35,8 @@ import androidx.compose.ui.unit.sp
 import com.bbplayer.android.core.model.LyricLine
 import com.bbplayer.android.core.model.LyricVisualStyle
 import com.bbplayer.android.core.model.Lyrics
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.Text
 
 /**
@@ -101,8 +102,8 @@ fun LyricsPanel(
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 40.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        contentPadding = PaddingValues(vertical = BbSpacing.Section),
+        verticalArrangement = Arrangement.spacedBy(BbSpacing.Xl),
     ) {
         items(count = lyrics.lines.size) { index ->
             val line = lyrics.lines[index]
@@ -153,7 +154,7 @@ private fun LyricLineItem(
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = BbSpacing.Xs),
         horizontalAlignment = if (modern) Alignment.Start else Alignment.CenterHorizontally,
     ) {
         if (active && verbatim && line.words.isNotEmpty()) {

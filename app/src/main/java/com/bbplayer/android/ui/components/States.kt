@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.components
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -38,7 +39,7 @@ fun EmptyState(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(32.dp),
+            .padding(BbSpacing.Section),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -66,7 +67,7 @@ fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifi
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(32.dp),
+            .padding(BbSpacing.Section),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(Icons.Rounded.CloudOff, null, tint = SaltTheme.colors.subText, modifier = Modifier.size(40.dp))
@@ -79,7 +80,7 @@ fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifi
 
 @Composable
 fun LoadingState(modifier: Modifier = Modifier, text: String = "加载中…") {
-    Box(modifier = modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.fillMaxWidth().padding(BbSpacing.Section), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(
                 color = SaltTheme.colors.highlight,
@@ -97,7 +98,7 @@ fun SaltTextButton(text: String, onClick: () -> Unit) {
     androidx.compose.foundation.layout.Box(
         modifier = Modifier
             .androidxClickable(onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Sm),
         contentAlignment = Alignment.Center,
     ) {
         Text(text = text, color = SaltTheme.colors.highlight, style = BbType.Body)

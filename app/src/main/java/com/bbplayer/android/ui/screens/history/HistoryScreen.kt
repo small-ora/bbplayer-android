@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.history
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,10 +8,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -44,7 +43,10 @@ import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import java.time.LocalDate
@@ -91,11 +93,11 @@ fun HistoryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = SaltTheme.dimens.padding, vertical = 6.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm)
+                        .clip(RoundedCornerShape(BbRadius.Media))
                         .background(SaltTheme.colors.highlight.copy(alpha = 0.1f))
                         .clickable { notice = null }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -137,7 +139,7 @@ fun HistoryScreen(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = SaltTheme.dimens.padding, vertical = 16.dp),
+                        .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Lg),
                 ) {
                     Text(
                         text = "只展示最近 30 天的记录；清空历史不会删除歌单与收藏。",
@@ -155,9 +157,9 @@ fun HistoryScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(BbRadius.Card))
                     .background(SaltTheme.colors.popup)
-                    .padding(20.dp),
+                    .padding(BbSpacing.Xl),
             ) {
                 Text("清空收听历史？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(10.dp))
@@ -196,8 +198,8 @@ private fun DayHeader(day: DailyHistory) {
             .padding(
                 start = SaltTheme.dimens.padding,
                 end = SaltTheme.dimens.padding,
-                top = 18.dp,
-                bottom = 6.dp,
+                top = BbSpacing.Xl,
+                bottom = BbSpacing.Sm,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {

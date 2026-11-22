@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.discover
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +20,8 @@ import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SectionHeader
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -71,18 +72,18 @@ fun HotKeywords(
                 text = "正在加载热搜…",
                 color = SaltTheme.colors.subText,
                 style = BbType.Caption,
-                modifier = Modifier.padding(horizontal = SaltTheme.dimens.padding + 4.dp),
+                modifier = Modifier.padding(horizontal = SaltTheme.dimens.padding + BbSpacing.Xs),
             )
             keywords.isEmpty() -> Text(
                 text = error ?: "热搜暂时不可用",
                 color = SaltTheme.colors.subText,
                 style = BbType.Caption,
-                modifier = Modifier.padding(horizontal = SaltTheme.dimens.padding + 4.dp),
+                modifier = Modifier.padding(horizontal = SaltTheme.dimens.padding + BbSpacing.Xs),
             )
             else -> LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(BbSpacing.Sm),
             ) {
                 items(keywords, key = { keyword -> keyword }) { keyword ->
                     val rank = keywords.indexOf(keyword) + 1

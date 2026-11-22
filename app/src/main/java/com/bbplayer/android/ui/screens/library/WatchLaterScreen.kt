@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.library
 
-import com.bbplayer.android.ui.theme.BbType
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -9,10 +8,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bbplayer.android.util.BiliIds
 import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.model.PlaybackState
@@ -47,7 +45,11 @@ import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
+import com.bbplayer.android.util.BiliIds
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -101,7 +103,7 @@ fun WatchLaterScreen(
             )
         }
         item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm)) {
                 Text("稍后再看", style = BbType.Title, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -176,9 +178,9 @@ fun WatchLaterScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(BbRadius.Card))
                     .background(SaltTheme.colors.popup)
-                    .padding(20.dp),
+                    .padding(BbSpacing.Xl),
             ) {
                 Text("清空稍后再看？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(10.dp))

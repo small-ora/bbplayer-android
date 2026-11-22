@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.home
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,8 +37,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,7 +54,11 @@ import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SectionHeader
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
@@ -118,7 +121,7 @@ fun HomeScreen(
             HomeSearchHeader(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+                    .padding(start = BbSpacing.Lg, end = BbSpacing.Lg, top = BbSpacing.Sm, bottom = BbSpacing.Xs),
                 onOpenSearch = onOpenSearch,
                 onRefresh = { refreshKey++ },
             )
@@ -130,7 +133,7 @@ fun HomeScreen(
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(BbSpacing.Md),
                 ) {
                     items(count = recentTracks.size, key = { idx -> recentTracks[idx].track.key }) { idx ->
                         RecentCard(
@@ -150,7 +153,7 @@ fun HomeScreen(
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(BbSpacing.Md),
                 ) {
                     items(count = recentPlayedPlaylists.size, key = { idx -> "recent-" + recentPlayedPlaylists[idx].id }) { idx ->
                         PlaylistCard(
@@ -169,7 +172,7 @@ fun HomeScreen(
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(BbSpacing.Md),
                 ) {
                     items(count = myPlaylists.size, key = { idx -> "mine-" + myPlaylists[idx].id }) { idx ->
                         PlaylistCard(
@@ -188,7 +191,7 @@ fun HomeScreen(
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(BbSpacing.Md),
                 ) {
                     items(count = favoriteTracks.size, key = { idx -> "fav-" + favoriteTracks[idx].key }) { idx ->
                         RecentCard(
@@ -240,7 +243,7 @@ private fun HomeSearchHeader(
 ) {
     // v9：卡片面（subBackground）与页面底（background）在所有主题下都不同色，
     // 因此搜索条固定补一条发丝描边，不再需要「底色==卡片色才描边」的兜底分支。
-    val searchShape = RoundedCornerShape(50)
+    val searchShape = BbRadius.FullShape
     SearchBar(
         inputField = {
             Row(
@@ -248,14 +251,14 @@ private fun HomeSearchHeader(
                     .fillMaxWidth()
                     .height(56.dp)
                     .clickable(onClick = onOpenSearch)
-                    .padding(start = 16.dp, end = 4.dp),
+                    .padding(start = BbSpacing.Lg, end = BbSpacing.Xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Search,
                     contentDescription = null,
                     tint = SaltTheme.colors.subText,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(BbIconSize.Md),
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
@@ -332,7 +335,7 @@ private fun PlaylistCard(playlist: Playlist, metaSuffix: String?, onClick: () ->
         Box(
             Modifier
                 .size(112.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(BbRadius.Media))
                 .background(SaltTheme.colors.subBackground),
         ) {
             when {

@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.components
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -39,7 +38,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bbplayer.android.core.model.PlaybackState
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import kotlin.math.abs
@@ -109,7 +111,7 @@ fun MiniPlayer(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(BbTokens.MiniPlayerRowHeight)
-                .padding(start = 10.dp, end = 2.dp),
+                .padding(start = BbSpacing.Md, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CoverImage(
@@ -147,7 +149,7 @@ fun MiniPlayer(
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = BbSpacing.Md)
                 .height(2.dp)
                 .clip(CircleShape)
                 .background(SaltTheme.colors.subText.copy(alpha = 0.15f)),
@@ -185,7 +187,7 @@ private fun MiniPlayPauseButton(state: PlaybackState, onClick: () -> Unit) {
                 imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                 contentDescription = null,
                 tint = SaltTheme.colors.text,
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(BbIconSize.Lg),
             )
         }
     }
@@ -208,7 +210,7 @@ private fun MiniTransportButton(
             imageVector = icon,
             contentDescription = description,
             tint = SaltTheme.colors.text.copy(alpha = 0.8f),
-            modifier = Modifier.size(26.dp),
+            modifier = Modifier.size(BbIconSize.Lg),
         )
     }
 }

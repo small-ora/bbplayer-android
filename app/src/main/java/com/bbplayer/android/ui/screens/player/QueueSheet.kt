@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.player
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +30,9 @@ import com.bbplayer.android.core.Format
 import com.bbplayer.android.core.model.Track
 import com.bbplayer.android.ui.components.CoverImage
 import com.bbplayer.android.ui.components.IconAction
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -54,7 +56,7 @@ fun QueueSheet(
     ) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                Modifier.fillMaxWidth().padding(horizontal = BbSpacing.Xl, vertical = BbSpacing.Sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("播放队列", style = BbType.Section, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
@@ -62,7 +64,7 @@ fun QueueSheet(
                 Text("${queue.size} 首", color = SaltTheme.colors.subText, style = BbType.Label)
                 Spacer(Modifier.weight(1f))
                 if (queue.isNotEmpty()) {
-                    Box(Modifier.clickable(onClick = onClear).padding(6.dp)) {
+                    Box(Modifier.clickable(onClick = onClear).padding(BbSpacing.Sm)) {
                         Text("清空", color = SaltTheme.colors.subText, style = BbType.Label)
                     }
                 }
@@ -75,7 +77,7 @@ fun QueueSheet(
                         Modifier
                             .fillMaxWidth()
                             .clickable { onJumpTo(index) }
-                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                            .padding(horizontal = BbSpacing.Xl, vertical = BbSpacing.Sm),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         CoverImage(track.coverUrl, Modifier.size(40.dp), corner = 8.dp)
@@ -97,7 +99,7 @@ fun QueueSheet(
                             )
                         }
                         Text(Format.duration(track.durationMs), color = SaltTheme.colors.subText, style = BbType.CaptionTnum)
-                        IconAction(Icons.Rounded.Close, "移出队列", onClick = { onRemove(index) }, tint = SaltTheme.colors.subText, size = 34)
+                        IconAction(Icons.Rounded.Close, "移出队列", onClick = { onRemove(index) }, tint = SaltTheme.colors.subText, iconSize = BbIconSize.Sm)
                     }
                 }
             }

@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.components
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -13,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 
@@ -46,7 +47,7 @@ fun BbBottomNavBar(
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = tab.label,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(BbIconSize.Lg),
                     )
                 },
                 label = {

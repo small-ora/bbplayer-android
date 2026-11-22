@@ -1,22 +1,24 @@
 package com.bbplayer.android.ui.screens.search
 
-import com.bbplayer.android.ui.theme.BbType
 import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,12 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.clickable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.core.input.SearchInput
 import com.bbplayer.android.core.input.parseSearchInput
 import com.bbplayer.android.core.model.Track
-import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.ErrorState
@@ -41,11 +42,11 @@ import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SearchField
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Search
 
 @Composable
 fun SearchScreen(
@@ -130,7 +131,7 @@ fun SearchScreen(
         }
         if (query.isNotBlank() && suggestions.isNotEmpty() && query != submittedQuery) {
             item {
-                Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
+                Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm)) {
                     suggestions.take(8).forEach { suggestion ->
                         Row(
                             Modifier
@@ -139,14 +140,14 @@ fun SearchScreen(
                                     query = suggestion
                                     submit(suggestion)
                                 }
-                                .padding(vertical = 10.dp),
+                                .padding(vertical = BbSpacing.Md),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                         ) {
                             androidx.compose.material3.Icon(
                                 Icons.Rounded.Search,
                                 null,
                                 tint = SaltTheme.colors.subText,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(BbIconSize.Sm),
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(
@@ -168,8 +169,8 @@ fun SearchScreen(
                         modifier = Modifier.fillMaxWidth().padding(
                             start = SaltTheme.dimens.padding,
                             end = SaltTheme.dimens.padding,
-                            top = 18.dp,
-                            bottom = 8.dp,
+                            top = BbSpacing.Xl,
+                            bottom = BbSpacing.Sm,
                         ),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -179,7 +180,7 @@ fun SearchScreen(
                 item {
                     androidx.compose.foundation.lazy.LazyRow(
                         contentPadding = PaddingValues(horizontal = SaltTheme.dimens.padding),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(BbSpacing.Sm),
                     ) {
                         items(count = hotKeywords.size, key = { "hot_$it" }) { index ->
                             SaltPill(text = hotKeywords[index], onClick = {
@@ -196,8 +197,8 @@ fun SearchScreen(
                         modifier = Modifier.fillMaxWidth().padding(
                             start = SaltTheme.dimens.padding,
                             end = SaltTheme.dimens.padding,
-                            top = 20.dp,
-                            bottom = 8.dp,
+                            top = BbSpacing.Xl,
+                            bottom = BbSpacing.Sm,
                         ),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -206,7 +207,7 @@ fun SearchScreen(
                             "清空",
                             color = SaltTheme.colors.subText,
                             style = BbType.Label,
-                            modifier = Modifier.padding(4.dp).clickable {
+                            modifier = Modifier.padding(BbSpacing.Xs).clickable {
                                 historyStore.clear()
                                 history = emptyList()
                             },
@@ -216,7 +217,7 @@ fun SearchScreen(
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = SaltTheme.dimens.padding),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(BbSpacing.Sm),
                     ) {
                         history.take(6).forEach { h ->
                             SaltPill(text = h, onClick = { query = h; submit(h) })
@@ -225,7 +226,7 @@ fun SearchScreen(
                 }
             }
             item {
-                Column(Modifier.fillMaxSize().padding(top = 40.dp)) {
+                Column(Modifier.fillMaxSize().padding(top = BbSpacing.Section)) {
                     EmptyState(
                         title = "搜索你喜欢的音乐",
                         subtitle = "支持关键词、BV 号、av 号、b23.tv 短链与视频链接",

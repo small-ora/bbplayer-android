@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.playlist
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,10 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -24,18 +23,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bbplayer.android.core.model.Playlist
 import com.bbplayer.android.core.model.Track
+import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.EmptyState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bbplayer.android.core.safeLaunch
 
 @Composable
 fun PlaylistDetailScreen(
@@ -57,7 +58,7 @@ fun PlaylistDetailScreen(
     ) {
         item { SmallTopBar(title = playlist?.name ?: "歌单", onBack = onBack) }
         item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp)) {
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm)) {
                 Text(
                     text = playlist?.name ?: "歌单",
                     style = BbType.Display,

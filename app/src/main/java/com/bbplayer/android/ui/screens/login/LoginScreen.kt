@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.login
 
-import com.bbplayer.android.ui.theme.BbType
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -11,11 +10,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,9 +48,13 @@ import com.bbplayer.android.core.model.QrCodeInfo
 import com.bbplayer.android.core.model.QrPollState
 import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
-import com.bbplayer.android.ui.theme.BbTokens
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.moriafly.salt.ui.SaltTheme
@@ -83,7 +86,7 @@ fun LoginScreen(
                 .padding(horizontal = SaltTheme.dimens.padding),
         ) {
             Spacer(Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(BbSpacing.Sm)) {
                 LoginTab.entries.forEach { item ->
                     SaltPill(text = item.label, selected = tab == item, onClick = { tab = item })
                 }
@@ -184,9 +187,9 @@ private fun QrLoginSection(onLoggedIn: (BiliUser) -> Unit) {
         Box(
             Modifier
                 .size(248.dp)
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(BbRadius.Card))
                 .background(Color.White)
-                .padding(14.dp),
+                .padding(BbSpacing.Lg),
             contentAlignment = Alignment.Center,
         ) {
             when {
@@ -252,16 +255,16 @@ private fun QrLoginSection(onLoggedIn: (BiliUser) -> Unit) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(BbRadius.Media))
                 .background(SaltTheme.colors.subBackground)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 Icons.Rounded.Refresh,
                 contentDescription = null,
                 tint = SaltTheme.colors.highlight,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(BbIconSize.Sm),
             )
             Spacer(Modifier.width(8.dp))
             Text(
@@ -314,9 +317,9 @@ private fun CookieLoginSection(onLoggedIn: (BiliUser) -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .height(156.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(BbRadius.Media))
                 .background(SaltTheme.colors.subBackground)
-                .padding(12.dp),
+                .padding(BbSpacing.Md),
         ) {
             if (cookie.isEmpty()) {
                 Text(
@@ -350,9 +353,9 @@ private fun CookieLoginSection(onLoggedIn: (BiliUser) -> Unit) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(BbRadius.Media))
                 .background(SaltTheme.colors.highlight.copy(alpha = 0.08f))
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         ) {
             Text(
                 "安全提示：Cookie 等同账号凭据，仅保存在本机 Keystore 加密存储，可随时退出清除。请勿分享给他人，也不要粘贴到不可信的页面。",

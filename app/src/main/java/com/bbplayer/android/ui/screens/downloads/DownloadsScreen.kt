@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.downloads
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,11 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -53,7 +52,11 @@ import com.bbplayer.android.ui.components.IconAction
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.SectionHeader
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
 import java.util.Locale
@@ -148,8 +151,8 @@ fun DownloadsScreen(
                     color = SaltTheme.colors.subText,
                     style = BbType.Caption,
                     modifier = Modifier.padding(
-                        start = SaltTheme.dimens.padding + 4.dp,
-                        top = 10.dp,
+                        start = SaltTheme.dimens.padding + BbSpacing.Xs,
+                        top = BbSpacing.Md,
                     ),
                 )
             }
@@ -199,7 +202,7 @@ fun DownloadsScreen(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = SaltTheme.dimens.padding, vertical = 18.dp),
+                        .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Xl),
                 ) {
                     Text(
                         text = "下载文件为 B 站音频容器（m4s），导出到公共目录时以 .m4a 命名；离线播放不会发起网络流解析。",
@@ -245,7 +248,7 @@ private fun DownloadRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(clickableModifier)
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CoverImage(url = entry.track.coverUrl, modifier = Modifier.size(48.dp), corner = 8.dp)
@@ -305,13 +308,13 @@ private fun DownloadRow(
         }
         Spacer(Modifier.width(6.dp))
         if (onExport != null) {
-            IconAction(Icons.Rounded.Download, "导出到公共目录", onClick = onExport, tint = SaltTheme.colors.subText, size = 36)
+            IconAction(Icons.Rounded.Download, "导出到公共目录", onClick = onExport, tint = SaltTheme.colors.subText, iconSize = BbIconSize.Sm)
         }
         if (onCancel != null) {
             SaltPill(text = "取消", onClick = onCancel)
         }
         if (onRemove != null) {
-            IconAction(Icons.Rounded.Delete, "删除", onClick = onRemove, tint = SaltTheme.colors.subText, size = 36)
+            IconAction(Icons.Rounded.Delete, "删除", onClick = onRemove, tint = SaltTheme.colors.subText, iconSize = BbIconSize.Sm)
         }
     }
 }
@@ -323,7 +326,7 @@ private fun ProgressBar(fraction: Float, active: Boolean) {
         Modifier
             .fillMaxWidth()
             .height(3.dp)
-            .clip(RoundedCornerShape(50))
+            .clip(BbRadius.FullShape)
             .background(if (active) SaltTheme.colors.highlight.copy(alpha = 0.15f) else SaltTheme.colors.subBackground),
     ) {
         if (value > 0f) {
@@ -331,7 +334,7 @@ private fun ProgressBar(fraction: Float, active: Boolean) {
                 Modifier
                     .fillMaxWidth(value)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(50))
+                    .clip(BbRadius.FullShape)
                     .background(if (active) SaltTheme.colors.highlight else SaltTheme.colors.subText.copy(alpha = 0.5f)),
             )
         }
@@ -343,11 +346,11 @@ private fun NoticeBanner(text: String, onDismiss: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 6.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm)
+            .clip(RoundedCornerShape(BbRadius.Media))
             .background(SaltTheme.colors.highlight.copy(alpha = 0.1f))
             .clickable(onClick = onDismiss)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -374,9 +377,9 @@ private fun ConfirmDialog(
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text(title, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))

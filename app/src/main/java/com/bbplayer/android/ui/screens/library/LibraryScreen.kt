@@ -1,6 +1,5 @@
 package com.bbplayer.android.ui.screens.library
 
-import com.bbplayer.android.ui.theme.BbType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -53,8 +52,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -82,7 +81,11 @@ import com.bbplayer.android.ui.components.LargeTitle
 import com.bbplayer.android.ui.components.LoadingState
 import com.bbplayer.android.ui.components.SaltPill
 import com.bbplayer.android.ui.components.TrackRow
+import com.bbplayer.android.ui.theme.BbIconSize
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
 import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.bbplayer.android.ui.theme.bbRootContentBottomPadding
 import com.moriafly.salt.ui.Item
 import com.moriafly.salt.ui.RoundedColumn
@@ -218,7 +221,7 @@ fun LibraryScreen(
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
                     .padding(horizontal = SaltTheme.dimens.padding),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(BbSpacing.Sm),
             ) {
                 LibraryTab.entries.forEach { t ->
                     SaltPill(text = t.label, selected = tab == t, onClick = { tab = t })
@@ -226,7 +229,7 @@ fun LibraryScreen(
             }
         }
         item {
-            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = 10.dp)) {
+            Column(Modifier.padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Md)) {
                 RoundedColumn(modifier = Modifier.fillMaxWidth()) {
                     Item(
                         onClick = { if (loggedIn) onOpenWatchLater() else onOpenLogin() },
@@ -435,9 +438,9 @@ private fun SelectionHeaderAction(text: String, enabled: Boolean = true, onClick
     Box(
         modifier = Modifier
             .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(50))
+            .clip(BbRadius.FullShape)
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = BbSpacing.Sm),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -485,7 +488,7 @@ private fun PlaylistActionsSheet(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = BbSpacing.Xl, vertical = BbSpacing.Sm),
             )
             SheetActionRow(Icons.Rounded.PlayArrow, "立即播放", enabled = canPlay, onClick = { dismissThen(onPlayNow) })
             SheetActionRow(Icons.Rounded.Edit, "重命名", onClick = { dismissThen(onRename) })
@@ -508,10 +511,10 @@ private fun SheetActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = BbSpacing.Xl, vertical = BbSpacing.Lg),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(22.dp))
+        Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(BbIconSize.Md))
         Spacer(Modifier.width(16.dp))
         Text(text = text, color = contentColor, style = BbType.Body)
     }
@@ -534,7 +537,7 @@ private fun FavoriteFolderRow(folder: FavoriteFolder, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CoverImage(url = folder.coverUrl, modifier = Modifier.size(54.dp), corner = 10.dp)
@@ -564,7 +567,7 @@ private fun FavoriteFolderRow(folder: FavoriteFolder, onClick: () -> Unit) {
             Icons.Rounded.ChevronRight,
             contentDescription = null,
             tint = SaltTheme.colors.subText,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(BbIconSize.Sm),
         )
     }
 }
@@ -575,7 +578,7 @@ private fun CollectionRow(collection: BiliCollection, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CoverImage(url = collection.coverUrl, modifier = Modifier.size(54.dp), corner = 10.dp)
@@ -610,7 +613,7 @@ private fun CollectionRow(collection: BiliCollection, onClick: () -> Unit) {
             Icons.Rounded.ChevronRight,
             contentDescription = null,
             tint = SaltTheme.colors.subText,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(BbIconSize.Sm),
         )
     }
 }
@@ -628,7 +631,7 @@ private fun PlaylistRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = SaltTheme.dimens.padding, vertical = 8.dp),
+            .padding(horizontal = SaltTheme.dimens.padding, vertical = BbSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (selectionMode) {
@@ -665,7 +668,7 @@ private fun PlaylistRow(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(BbRadius.FullShape)
                     .clickable(onClick = onMore),
                 contentAlignment = Alignment.Center,
             ) {
@@ -673,7 +676,7 @@ private fun PlaylistRow(
                     imageVector = Icons.Rounded.MoreVert,
                     contentDescription = "歌单更多操作",
                     tint = SaltTheme.colors.subText,
-                    modifier = Modifier.size(22.dp),
+                    modifier = Modifier.size(BbIconSize.Md),
                 )
             }
         }
@@ -687,18 +690,18 @@ private fun RenamePlaylistDialog(current: String, onDismiss: () -> Unit, onConfi
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("重命名歌单", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(14.dp))
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             ) {
                 BasicTextField(
                     value = name,
@@ -727,18 +730,18 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("新建歌单", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(14.dp))
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(BbRadius.Media))
                     .background(SaltTheme.colors.subBackground)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
             ) {
                 if (name.isEmpty()) {
                     Text("歌单名称", color = SaltTheme.colors.subText, style = BbType.Body)
@@ -769,9 +772,9 @@ private fun BatchDeleteConfirmDialog(count: Int, onDismiss: () -> Unit, onConfir
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text("删除 $count 个歌单？", style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))

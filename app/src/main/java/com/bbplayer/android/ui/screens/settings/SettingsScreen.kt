@@ -1,6 +1,7 @@
 package com.bbplayer.android.ui.screens.settings
 
-import com.bbplayer.android.ui.theme.BbType
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,25 +10,23 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,24 +36,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.core.model.AccentPreset
-import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.model.AudioQuality
+import com.bbplayer.android.core.model.BiliUser
 import com.bbplayer.android.core.model.LyricSource
 import com.bbplayer.android.core.model.LyricVisualStyle
 import com.bbplayer.android.core.model.PlayerBackgroundStyle
 import com.bbplayer.android.core.model.ReleaseInfo
 import com.bbplayer.android.core.model.ThemeMode
+import com.bbplayer.android.core.safeLaunch
 import com.bbplayer.android.di.LocalAppGraph
 import com.bbplayer.android.ui.components.SaltPill
-import com.bbplayer.android.core.contracts.toUserMessage
-import com.bbplayer.android.ui.lyrics.DesktopLyricsService
 import com.bbplayer.android.ui.components.SmallTopBar
+import com.bbplayer.android.ui.lyrics.DesktopLyricsService
+import com.bbplayer.android.ui.theme.BbRadius
+import com.bbplayer.android.ui.theme.BbSpacing
+import com.bbplayer.android.ui.theme.BbTokens
+import com.bbplayer.android.ui.theme.BbType
 import com.moriafly.salt.ui.RoundedColumn
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.Text
-import com.bbplayer.android.core.safeLaunch
-import com.bbplayer.android.ui.theme.BbTokens
 
 @Composable
 fun SettingsScreen(
@@ -298,7 +300,7 @@ fun SettingsScreen(
         }
 
         item {
-            Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.fillMaxWidth().padding(BbSpacing.Xxl), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (toast != null) {
                     Text(toast!!, color = SaltTheme.colors.highlight, style = BbType.Label)
                 }
@@ -502,9 +504,9 @@ private fun SettingsGroup(title: String) {
         color = SaltTheme.colors.subText,
         style = BbType.Label,
         modifier = Modifier.padding(
-            start = SaltTheme.dimens.padding + 4.dp,
-            top = 18.dp,
-            bottom = 6.dp,
+            start = SaltTheme.dimens.padding + BbSpacing.Xs,
+            top = BbSpacing.Xl,
+            bottom = BbSpacing.Sm,
         ),
     )
 }
@@ -514,7 +516,7 @@ private fun SettingsGroup(title: String) {
 @Composable
 private fun SettingNoteRow(title: String, note: String) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        Modifier.fillMaxWidth().padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -531,7 +533,7 @@ private fun SettingRow(title: String, value: String, onClick: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 15.dp),
+            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Lg),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, modifier = Modifier.weight(1f))
@@ -542,7 +544,7 @@ private fun SettingRow(title: String, value: String, onClick: () -> Unit) {
                 style = BbType.Label,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 12.dp),
+                modifier = Modifier.padding(start = BbSpacing.Md),
             )
         }
     }
@@ -553,7 +555,7 @@ private fun SettingSwitchRow(title: String, subtitle: String?, checked: Boolean,
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -581,12 +583,12 @@ private fun StepRow(title: String, value: String, onMinus: () -> Unit, onPlus: (
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = BbSpacing.Lg, vertical = BbSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, modifier = Modifier.weight(1f))
         SaltPill(text = "−", onClick = onMinus)
-        Text(value, color = SaltTheme.colors.subText, style = BbType.Label, modifier = Modifier.padding(horizontal = 12.dp).width(70.dp))
+        Text(value, color = SaltTheme.colors.subText, style = BbType.Label, modifier = Modifier.padding(horizontal = BbSpacing.Md).width(70.dp))
         SaltPill(text = "+", onClick = onPlus)
     }
 }
@@ -603,9 +605,9 @@ private fun OptionDialog(
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(BbRadius.Card))
                 .background(SaltTheme.colors.popup)
-                .padding(20.dp),
+                .padding(BbSpacing.Xl),
         ) {
             Text(title, style = BbType.Section, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(12.dp))
@@ -613,9 +615,9 @@ private fun OptionDialog(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(BbRadius.Media))
                         .clickable { onSelect(index) }
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                        .padding(horizontal = BbSpacing.Md, vertical = BbSpacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
