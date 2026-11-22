@@ -1,5 +1,6 @@
 package com.bbplayer.android.ui.theme
 
+import androidx.compose.ui.text.font.FontWeight
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -7,59 +8,71 @@ import org.junit.Test
 /**
  * v9.1 字阶 token 断言（SPEC AC1 / AC2）。
  *
- * 只断言纯 Kotlin 数值（[BbTypeScale]），不依赖 android.* / Compose 运行时。
+ * 断言对象是 **真实的 [BbType] TextStyle API**（不是测试内手写值）：
+ * 删/改任一档字号、行高、字重或 tnum 变体，本测试都会红。
+ * Compose TextStyle 在 JVM 上只做纯值构造，无需 Android 运行时。
  */
 class BbTypeTest {
 
-    private data class Tier(val name: String, val size: Float, val line: Float)
-
-    private val tiers = listOf(
-        Tier("Display", BbTypeScale.DisplaySize, BbTypeScale.DisplayLine),
-        Tier("Title", BbTypeScale.TitleSize, BbTypeScale.TitleLine),
-        Tier("Section", BbTypeScale.SectionSize, BbTypeScale.SectionLine),
-        Tier("Body", BbTypeScale.BodySize, BbTypeScale.BodyLine),
-        Tier("Label", BbTypeScale.LabelSize, BbTypeScale.LabelLine),
-        Tier("Caption", BbTypeScale.CaptionSize, BbTypeScale.CaptionLine),
-        Tier("Micro", BbTypeScale.MicroSize, BbTypeScale.MicroLine),
-    )
-
-    @Test
-    fun hasExactlySevenTiers() {
-        assertEquals("字阶必须恰好 7 档", 7, tiers.size)
-    }
+    private val display get() = BbType.Display
+    private val title get() = BbType.Title
+    private val section get() = BbType.Section
+    private val body get() = BbType.Body
+    private val label get() = BbType.Label
+    private val caption get() = BbType.Caption
+    private val micro get() = BbType.Micro
 
     @Test
     fun sizesMatchSpec() {
-        assertEquals(28f, BbTypeScale.DisplaySize, 0.01f)
-        assertEquals(22f, BbTypeScale.TitleSize, 0.01f)
-        assertEquals(18f, BbTypeScale.SectionSize, 0.01f)
-        assertEquals(15f, BbTypeScale.BodySize, 0.01f)
-        assertEquals(13f, BbTypeScale.LabelSize, 0.01f)
-        assertEquals(12f, BbTypeScale.CaptionSize, 0.01f)
-        assertEquals(11f, BbTypeScale.MicroSize, 0.01f)
+        assertEquals(28f, display.fontSize.value, 0.01f)
+        assertEquals(22f, title.fontSize.value, 0.01f)
+        assertEquals(18f, section.fontSize.value, 0.01f)
+        assertEquals(15f, body.fontSize.value, 0.01f)
+        assertEquals(13f, label.fontSize.value, 0.01f)
+        assertEquals(12f, caption.fontSize.value, 0.01f)
+        assertEquals(11f, micro.fontSize.value, 0.01f)
     }
 
     @Test
     fun lineHeightsMatchSpecAndExceedFontSize() {
-        assertEquals(34f, BbTypeScale.DisplayLine, 0.01f)
-        assertEquals(28f, BbTypeScale.TitleLine, 0.01f)
-        assertEquals(24f, BbTypeScale.SectionLine, 0.01f)
-        assertEquals(22f, BbTypeScale.BodyLine, 0.01f)
-        assertEquals(18f, BbTypeScale.LabelLine, 0.01f)
-        assertEquals(17f, BbTypeScale.CaptionLine, 0.01f)
-        assertEquals(16f, BbTypeScale.MicroLine, 0.01f)
-        tiers.forEach { assertTrue("${it.name} 行高应大于字号", it.line > it.size) }
-    }
-
-    @Test
-    fun tiersAreStrictlyDescending() {
-        tiers.zipWithNext().forEach { (a, b) ->
-            assertTrue("${a.name} 应大于 ${b.name}", a.size > b.size)
+        assertEquals(34f, display.lineHeight.value, 0.01f)
+        assertEquals(28f, title.lineHeight.value, 0.01f)
+        assertEquals(24f, section.lineHeight.value, 0.01f)
+        assertEquals(22f, body.lineHeight.value, 0.01f)
+        assertEquals(18f, label.lineHeight.value, 0.01f)
+        assertEquals(17f, caption.lineHeight.value, 0.01f)
+        assertEquals(16f, micro.lineHeight.value, 0.01f)
+        listOf(display, title, section, body, label, caption, micro).forEach {
+            assertTrue("行高应大于字号", it.lineHeight.value > it.fontSize.value)
         }
     }
 
     @Test
-    fun tnumFeatureIsDeclared() {
-        assertEquals("tnum", BB_TNUM_FEATURE)
+    fun weightsMatchSpec() {
+        assertEquals(FontWeight.Bold, display.fontWeight)
+        assertEquals(FontWeight.SemiBold, title.fontWeight)
+        assertEquals(FontWeight.SemiBold, section.fontWeight)
+        assertEquals(FontWeight.Normal, body.fontWeight)
+        assertEquals(FontWeight.Medium, label.fontWeight)
+        assertEquals(FontWeight.Normal, caption.fontWeight)
+        assertEquals(FontWeight.Medium, micro.fontWeight)
+    }
+
+    @Test
+    fun tnumVariantsAreDeclaredWithFeature() {
+        assertEquals(BB_TNUM_FEATURE, BbType.TitleTnum.fontFeatureSettings)
+        assertEquals(BB_TNUM_FEATURE, BbType.CaptionTnum.fontFeatureSettings)
+        assertEquals(BB_TNUM_FEATURE, BbType.MicroTnum.fontFeatureSettings)
+        // tnum 变体只应改 feature，不应改字号/行高
+        assertEquals(title.fontSize, BbType.TitleTnum.fontSize)
+        assertEquals(title.lineHeight, BbType.TitleTnum.lineHeight)
+        assertEquals(caption.fontSize, BbType.CaptionTnum.fontSize)
+        assertEquals(micro.fontSize, BbType.MicroTnum.fontSize)
+    }
+
+    @Test
+    fun tiersAreStrictlyDescending() {
+        val sizes = listOf(display, title, section, body, label, caption, micro).map { it.fontSize.value }
+        sizes.zipWithNext().forEach { (a, b) -> assertTrue("$a 应大于 $b", a > b) }
     }
 }
