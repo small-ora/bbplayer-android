@@ -45,7 +45,9 @@ import androidx.compose.material.icons.rounded.Subtitles
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import androidx.core.view.WindowCompat
 import com.bbplayer.android.util.BiliIds
 import com.bbplayer.android.core.contracts.toUserMessage
 import com.bbplayer.android.core.model.BiliUser
@@ -220,6 +224,26 @@ fun PlayerScreen(
     // v9：封面取色先过亮度守卫，保证任意封面（含纯白/亮黄）下白字对比度 ≥ 4.5:1。
     val rawWash = wash.firstOrNull() ?: SaltTheme.colors.highlight
     val backdropBase = Color(PlayerBackdrop.washForBackground(rawWash.toArgb()))
+
+    // ---- P0-2：状态栏图标跟随播放页背景亮度（深底白图标 / 亮底深图标），离开时还原 ----
+    val activity = LocalActivity.current
+    val view = LocalView.current
+    val playerBackgroundIsBright = pureWhite ||
+        PlayerBackdrop.isBright(backdropBase.toArgb(), PlayerBackdrop.SCRIM_TOP)
+    DisposableEffect(activity, view, playerBackgroundIsBright) {
+        val window = activity?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        val previous = controller?.isAppearanceLightStatusBars
+        controller?.isAppearanceLightStatusBars = playerBackgroundIsBright
+        onDispose {
+            val disposeWindow = activity?.window
+            if (previous != null && disposeWindow != null) {
+                WindowCompat.getInsetsController(disposeWindow, view).isAppearanceLightStatusBars =
+                    previous
+            }
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
         // ---- background: 洗色底 + 模糊封面（40%）+ scrim 渐变 ----
         when (backgroundStyle) {
