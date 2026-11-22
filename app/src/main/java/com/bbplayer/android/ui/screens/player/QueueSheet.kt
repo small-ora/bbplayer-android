@@ -70,7 +70,7 @@ fun QueueSheet(
                 }
             }
             LazyColumn(Modifier.fillMaxWidth().height(if (queue.size > 6) 460.dp else (queue.size * 60 + 20).dp)) {
-                items(count = queue.size, key = { queue[it].key }) { index ->
+                items(count = queue.size, key = { "queue-${queue[it].key}-$it" }) { index ->
                     val track = queue[index]
                     val current = index == currentIndex
                     Row(

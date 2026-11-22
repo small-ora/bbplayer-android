@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,10 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -121,7 +117,7 @@ fun HomeScreen(
         modifier = Modifier.fillMaxSize().statusBarsPadding().clipToBounds(),
         contentPadding = PaddingValues(bottom = bbRootContentBottomPadding()),
     ) {
-        // ---- 顶部：M3 SearchBar 形态 Header（替代「发现音乐」大标题）----
+        // ---- 顶部：搜索入口 pill（替代「发现音乐」大标题）----
         item {
             HomeSearchHeader(
                 modifier = Modifier
@@ -252,62 +248,48 @@ fun HomeScreen(
 }
 
 /**
- * 发现页顶部搜索入口：用 Material 3 SearchBar 作为 Header（不展开，只当可点击的搜索框）。
- * 整条点击进搜索页；右侧保留刷新入口。
+ * 发现页顶部搜索入口。
+ *
+ * v9.1 修复（人工验收反馈「搜索框描边和白色底不在同一尺寸、像分开了」）：
+ * 不再用 M3 `SearchBar` 当静态入口——`SearchBar` 作为 top bar 内部固定 `.padding(top = 8.dp)`
+ * （`SearchBarAsTopBarPadding`），外层 `border` 会画在这个 8dp 之外，而白色 Surface 在里面，
+ * 于是描边与白底错位。改为自绘 pill：底色 / 描边 / 圆角都挂在同一个 Row 上，线面天然贴合，
+ * 同时去掉不用的 M3 展开态与 `ExperimentalMaterial3Api`。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeSearchHeader(
     modifier: Modifier = Modifier,
     onOpenSearch: () -> Unit,
     onRefresh: () -> Unit,
 ) {
-    // v9：卡片面（subBackground）与页面底（background）在所有主题下都不同色，
-    // 因此搜索条固定补一条发丝描边，不再需要「底色==卡片色才描边」的兜底分支。
     val searchShape = BbRadius.FullShape
-    SearchBar(
-        inputField = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .clickable(onClick = onOpenSearch)
-                    .padding(start = BbSpacing.Lg, end = BbSpacing.Xs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = null,
-                    tint = SaltTheme.colors.subText,
-                    modifier = Modifier.size(BbIconSize.Md),
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "搜索音乐 / BV号 / 链接",
-                    color = SaltTheme.colors.subText,
-                    style = BbType.Body,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                IconAction(Icons.Rounded.Refresh, "刷新", onClick = onRefresh)
-            }
-        },
-        expanded = false,
-        onExpandedChange = { if (it) onOpenSearch() },
-        modifier = modifier.border(0.5.dp, SaltTheme.colors.stroke, searchShape),
-        shape = searchShape,
-        // SaltUI 没有为 M3 组件提供 MaterialTheme，这里手动取 Salt token，避免深色模式下变成默认亮色。
-        colors = SearchBarDefaults.colors(
-            containerColor = SaltTheme.colors.subBackground,
-            dividerColor = SaltTheme.colors.stroke,
-        ),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-        // 外层已 statusBarsPadding，避免 SearchBar 默认 windowInsets 再叠一次。
-        windowInsets = WindowInsets(0, 0, 0, 0),
-        content = {},
-    )
+    Row(
+        modifier = modifier
+            .height(56.dp)
+            .clip(searchShape)
+            .background(SaltTheme.colors.subBackground)
+            .border(0.5.dp, SaltTheme.colors.stroke, searchShape)
+            .clickable(onClick = onOpenSearch)
+            .padding(start = BbSpacing.Lg, end = BbSpacing.Xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Search,
+            contentDescription = null,
+            tint = SaltTheme.colors.subText,
+            modifier = Modifier.size(BbIconSize.Md),
+        )
+        Spacer(Modifier.width(BbSpacing.Md))
+        Text(
+            text = "搜索音乐 / BV号 / 链接",
+            color = SaltTheme.colors.subText,
+            style = BbType.Body,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        IconAction(Icons.Rounded.Refresh, "刷新", onClick = onRefresh)
+    }
 }
 
 /**
@@ -379,7 +361,7 @@ private fun ContinueListeningHero(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = "继续收听",
                 tint = Color.Black,
-                modifier = Modifier.size(26.dp),
+                modifier = Modifier.size(BbIconSize.Lg),
             )
         }
     }

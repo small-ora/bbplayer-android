@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +71,8 @@ fun MiniPlayer(
     embedded: Boolean = false,
     /** v9.2：封面共享元素可见性（播放页打开时为 false，让 sharedElement 从 mini 过渡到播放页封面）。 */
     sharedVisible: Boolean = true,
+    /** v9.2 hotfix：播放页打开时 dock 仍组合（供共享元素）但不得再接收点击/语义。 */
+    interactive: Boolean = true,
 ) {
     val track = state.track ?: return
     val fraction = if (state.durationMs > 0) {
@@ -97,6 +100,7 @@ fun MiniPlayer(
     Column(
         modifier = surfaceModifier
             .pointerInput(Unit) {
+                if (!interactive) return@pointerInput
                 var total = Offset.Zero
                 detectDragGestures(
                     onDragStart = { total = Offset.Zero },
@@ -117,7 +121,8 @@ fun MiniPlayer(
                     },
                 )
             }
-            .clickable(onClick = onOpenPlayer),
+            .clickable(enabled = interactive, onClick = onOpenPlayer)
+            .then(if (interactive) Modifier else Modifier.clearAndSetSemantics { }),
     ) {
         Row(
             modifier = Modifier

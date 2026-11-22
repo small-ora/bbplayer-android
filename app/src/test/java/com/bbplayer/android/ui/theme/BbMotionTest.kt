@@ -24,6 +24,6 @@ class BbMotionTest {
     @Test
     fun exitIsFasterThanEnter() {
         assertTrue(BbMotion.FastMs < BbMotion.BaseMs)
-        assertEquals(BbMotion.BaseMs, BbMotion.BaseMs)
+        assertTrue(BbMotion.ProgressMs in 200..300)
     }
 }

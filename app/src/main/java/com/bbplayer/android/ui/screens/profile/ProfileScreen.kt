@@ -236,7 +236,7 @@ private fun Heatmap(daily: List<DailyStat>) {
                             .then(
                                 if (empty) {
                                     Modifier.border(
-                                        width = 0.5.dp,
+                                        width = 1.dp,
                                         color = SaltTheme.colors.stroke,
                                         shape = RoundedCornerShape(2.dp),
                                     )

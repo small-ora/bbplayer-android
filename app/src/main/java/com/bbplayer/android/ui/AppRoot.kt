@@ -2,6 +2,8 @@ package com.bbplayer.android.ui
 
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.SharedTransitionLayout
 import android.net.Uri
@@ -252,8 +254,10 @@ fun AppRoot() {
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .fillMaxWidth()
-                                .background(SaltTheme.colors.background)
-                                .navigationBarsPadding(),
+                                // hotfix：播放页打开时这层不能保留不透明底色（会盖住播放页底部按钮）
+                                .background(if (playerOpen) Color.Transparent else SaltTheme.colors.background)
+                                .navigationBarsPadding()
+                                .alpha(if (playerOpen) 0f else 1f),
                             contentAlignment = Alignment.Center,
                         ) {
                             MiniPlayer(
@@ -263,10 +267,10 @@ fun AppRoot() {
                                 onNext = { graph.playbackController.next() },
                                 onPrevious = { graph.playbackController.previous() },
                                 sharedVisible = !playerOpen,
+                                interactive = !playerOpen,
                                 modifier = Modifier
                                     .widthIn(max = 560.dp)
                                     .padding(bottom = BbTokens.MiniPlayerGap)
-                                    .alpha(if (playerOpen) 0f else 1f)
                                     .zIndex(if (playerOpen) -1f else 0f),
                             )
                         }
@@ -540,7 +544,8 @@ private fun BottomDock(
             .fillMaxWidth()
             .background(SaltTheme.colors.background)
             .alpha(if (visible) 1f else 0f)
-            .zIndex(if (visible) 0f else -1f),
+            .zIndex(if (visible) 0f else -1f)
+            .then(if (visible) Modifier else Modifier.clearAndSetSemantics { }),
     ) {
         Column(
             Modifier
@@ -569,6 +574,7 @@ private fun BottomDock(
                         onPrevious = onPrevious,
                         embedded = true,
                         sharedVisible = sharedVisible,
+                        interactive = visible,
                     )
                 }
                 AnimatedVisibility(
@@ -613,7 +619,7 @@ private fun NavRail(tabs: List<MainTab>, selectedRoute: String?, onSelect: (Stri
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = tab.icon,
+                    imageVector = if (selected) tab.icon else tab.outlinedIcon,
                     contentDescription = tab.label,
                     tint = if (selected) SaltTheme.colors.highlight else SaltTheme.colors.subText,
                     modifier = Modifier.size(BbIconSize.Lg),
