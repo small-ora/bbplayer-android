@@ -3,6 +3,7 @@
 > SPEC：[SPEC.md](SPEC.md)（冻结于 `SPEC_BASE = 157ef3b`）；本文件**不冻结**，执行记录随实现追加。
 > 分支：`feat/ui-premium-p1`（worktree `.agents/worktrees/feat/ui-premium-p1`）；`BASE = 93c8a07`（P0 HEAD）。
 > 交付方式：本地提交 + 验收包，**不 push / 不合入**。
+> 变基记录：P0 真机验收通过并发布 v0.9.0 后，本分支已 `git rebase main`（main@`7ff362a`）；上表哈希为变基后哈希。
 
 ## 0. 依赖与并行
 
@@ -44,11 +45,11 @@
 |---|---|---|---|
 | S1 隔离 | ✅ worktree `feat/ui-premium-p1` @ `93c8a07` | — | `git worktree list` |
 | S2 SPEC 冻结 | ✅ | `157ef3b` | `git log` |
-| S11 | ✅ 字阶 7 档 + tnum（21 处）+ fontSize 字面量清零 | `83fc108` | QUICK 绿；`BbTypeTest` 5/5；grep 页面 fontSize 字面量 = 0；app 单测绿 |
-| S12 | ✅ 间距/圆角/图标 token + 中间值消除 | `217bcdf` | QUICK 绿；`static-assertions-s12.log`：padding 字面量仅剩 7 处结构值（已豁免）、Icon 内仅剩 44/40/56 大图标、`size*0.5f` 清零 |
-| S13 | ✅ 底部 dock 合并（迷你行 + icon-only 导航） | `78c7152` | QUICK 绿；`NavigationBar` 引用 0；dock token 见 `DesignTokens`；设备截图待 P0 会话释放 |
-| S14 | ✅ 深度体系：卡片 hairline / 封面 24dp 阴影+光晕 / dock 16dp 阴影 | `0c3599f` | QUICK 绿；`shadow(` 仅剩 MiniPlayer 悬浮态 + Depth.kt；21 处卡片补 0.5dp hairline |
-| S15 | ✅ 骨架屏 + 图片占位/淡入/错误兜底 + 空/错误态 | `0c3599f` | QUICK 绿；10 处首屏 loading 换骨架；CoverImage 200ms 淡入 + onError 兜底；ErrorState 内联卡片 |
+| S11 | ✅ 字阶 7 档 + tnum（21 处）+ fontSize 字面量清零 | `3f5100b` | QUICK 绿；`BbTypeTest` 5/5；grep 页面 fontSize 字面量 = 0；app 单测绿 |
+| S12 | ✅ 间距/圆角/图标 token + 中间值消除 | `ddc0d7b` | QUICK 绿；`static-assertions-s12.log`：padding 字面量仅剩 7 处结构值（已豁免）、Icon 内仅剩 44/40/56 大图标、`size*0.5f` 清零 |
+| S13 | ✅ 底部 dock 合并（迷你行 + icon-only 导航） | `6f009a3` | QUICK 绿；`NavigationBar` 引用 0；dock token 见 `DesignTokens`；设备截图待 P0 会话释放 |
+| S14 | ✅ 深度体系：卡片 hairline / 封面 24dp 阴影+光晕 / dock 16dp 阴影 | `f60b99a` | QUICK 绿；`shadow(` 仅剩 MiniPlayer 悬浮态 + Depth.kt；21 处卡片补 0.5dp hairline |
+| S15 | ✅ 骨架屏 + 图片占位/淡入/错误兜底 + 空/错误态 | `f60b99a` | QUICK 绿；10 处首屏 loading 换骨架；CoverImage 200ms 淡入 + onError 兜底；ErrorState 内联卡片 |
 | S16 | ⏳ | — | — |
 | S17 | ⏳ | — | — |
 | S18 | ⏳ | — | — |
