@@ -82,7 +82,7 @@
 | S6 | ✅ 弹层 token 化 | `ca86bb6` + `52ef5e5` | grep：`PlayerScreen` 无 `#262626` |
 | S7 | ✅ 48dp 热区 | `e775de0` | grep：`IconAction` 内部 clamp 48；播放页 `size=32/36` 清零 |
 | S8 | ✅ FULL gate | `e775de0` 时点 | `evidence/full-gate.log`（EXIT=0）+ `evidence/static-assertions.log` |
-| S9 | ⏳ 独立审查 | — | `REVIEW.md`（fresh reviewer） |
-| S10 | ⏳ 验收包 | — | `ACCEPTANCE.md`（v1） |
+| S9 | ✅ 独立审查 + 复核 | `ab54c85`/`15435b5`（修复） | `REVIEW.md`：P0×0 / P1×1 / P2×5；P1 已修，P2 处置见 `ACCEPTANCE.md` §4 |
+| S10 | ✅ 验收包 v1 | — | `ACCEPTANCE.md`（含 BLOCKED 说明与 3 项人工验收步骤） |
 
-> 注：S8 之后又提交了 `52ef5e5`（弹层色单一事实源，纯重构），验收前需重跑 FULL gate；真机截图均 **BLOCKED**（本机无设备/模拟器），已用 `docs/ui-review/p0-*.png`（同算法模拟，明确标注非真机）替代示意。
+> 注：S8 之后又有 `52ef5e5`（弹层色单一事实源，纯重构），验收前需重跑 FULL gate；真机截图均 **BLOCKED**（本机无设备/模拟器），已用 `docs/ui-review/p0-*.png`（同算法模拟，明确标注非真机）替代示意。
