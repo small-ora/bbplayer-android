@@ -237,10 +237,9 @@ private fun HomeSearchHeader(
     onOpenSearch: () -> Unit,
     onRefresh: () -> Unit,
 ) {
-    // 纯白（墨水屏）主题下 background == subBackground，SearchBar 会"消失"；
-    // 此时补一条发丝描边，正常主题保持无描边（视觉不变）。
+    // v9：卡片面（subBackground）与页面底（background）在所有主题下都不同色，
+    // 因此搜索条固定补一条发丝描边，不再需要 needHairline 兜底分支。
     val searchShape = RoundedCornerShape(50)
-    val needHairline = SaltTheme.colors.subBackground == SaltTheme.colors.background
     SearchBar(
         inputField = {
             Row(
@@ -260,7 +259,7 @@ private fun HomeSearchHeader(
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = "搜索音乐 / BV号 / 链接",
-                    color = SaltTheme.colors.subText.copy(alpha = 0.75f),
+                    color = SaltTheme.colors.subText,
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -271,13 +270,7 @@ private fun HomeSearchHeader(
         },
         expanded = false,
         onExpandedChange = { if (it) onOpenSearch() },
-        modifier = modifier.then(
-            if (needHairline) {
-                Modifier.border(0.5.dp, SaltTheme.colors.stroke, searchShape)
-            } else {
-                Modifier
-            }
-        ),
+        modifier = modifier.border(0.5.dp, SaltTheme.colors.stroke, searchShape),
         shape = searchShape,
         // SaltUI 没有为 M3 组件提供 MaterialTheme，这里手动取 Salt token，避免深色模式下变成默认亮色。
         colors = SearchBarDefaults.colors(
@@ -318,7 +311,7 @@ private fun RecentCard(track: Track, onClick: () -> Unit) {
         Spacer(Modifier.height(2.dp))
         Text(
             text = track.uploader,
-            color = SaltTheme.colors.subText.copy(alpha = 0.6f),
+            color = SaltTheme.colors.subText,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             fontSize = 12.sp,

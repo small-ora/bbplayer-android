@@ -374,7 +374,7 @@ fun ImportPlaylistScreen(
                     if (input.isEmpty()) {
                         Text(
                             text = "粘贴歌单链接或 ID，例如 https://music.163.com/playlist?id=…",
-                            color = SaltTheme.colors.subText.copy(alpha = 0.7f),
+                            color = SaltTheme.colors.subText,
                             fontSize = 13.sp,
                         )
                     }
@@ -568,7 +568,7 @@ fun ImportPlaylistScreen(
                         Spacer(Modifier.height(6.dp))
                         Text(
                             text = "为降低风控概率，匹配按约 1.2 秒/首限速；暂停/退出后进度会保存，可在下次继续",
-                            color = SaltTheme.colors.subText.copy(alpha = 0.75f),
+                            color = SaltTheme.colors.subText,
                             fontSize = 11.sp,
                         )
                     }
@@ -694,7 +694,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
                 androidx.compose.material3.Icon(
                     Icons.Rounded.CloudOff,
                     null,
-                    tint = SaltTheme.colors.subText.copy(alpha = 0.7f),
+                    tint = SaltTheme.colors.subText,
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -720,7 +720,7 @@ private fun MatchRow(match: ImportMatch, onManualMatch: () -> Unit) {
                 if (matched.durationMs > 0 && match.external.durationMs > 0 && abs(diffMs) >= 5_000) {
                     Text(
                         text = "时长差 ${if (diffMs > 0) "+" else "−"}${Format.duration(abs(diffMs))}",
-                        color = SaltTheme.colors.subText.copy(alpha = 0.75f),
+                        color = SaltTheme.colors.subText,
                         fontSize = 10.sp,
                     )
                 }

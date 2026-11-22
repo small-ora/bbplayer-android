@@ -129,7 +129,7 @@ fun MiniPlayer(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = track.uploader,
-                    color = SaltTheme.colors.subText.copy(alpha = 0.6f),
+                    color = SaltTheme.colors.subText,
                     fontSize = 12.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

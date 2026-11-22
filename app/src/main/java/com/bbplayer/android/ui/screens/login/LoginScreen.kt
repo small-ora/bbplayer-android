@@ -229,7 +229,7 @@ private fun QrLoginSection(onLoggedIn: (BiliUser) -> Unit) {
         Spacer(Modifier.height(6.dp))
         Text(
             "二维码 150 秒内有效，登录成功后将自动返回",
-            color = SaltTheme.colors.subText.copy(alpha = 0.7f),
+            color = SaltTheme.colors.subText,
             fontSize = 11.sp,
         )
         Spacer(Modifier.height(14.dp))
@@ -320,7 +320,7 @@ private fun CookieLoginSection(onLoggedIn: (BiliUser) -> Unit) {
             if (cookie.isEmpty()) {
                 Text(
                     "SESSDATA=...; bili_jct=...; DedeUserID=...",
-                    color = SaltTheme.colors.subText.copy(alpha = 0.55f),
+                    color = SaltTheme.colors.subText,
                     fontSize = 12.sp,
                     lineHeight = 17.sp,
                 )

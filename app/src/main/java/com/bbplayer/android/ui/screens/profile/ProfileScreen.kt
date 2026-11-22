@@ -146,7 +146,7 @@ fun ProfileScreen(
             Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("BBPlayer · 安卓原生版", color = SaltTheme.colors.subText, fontSize = 12.sp)
                 Spacer(Modifier.height(4.dp))
-                Text("数据来自 Bilibili · 界面风格致敬椒盐音乐", color = SaltTheme.colors.subText.copy(alpha = 0.6f), fontSize = 11.sp)
+                Text("数据来自 Bilibili · 界面风格致敬椒盐音乐", color = SaltTheme.colors.subText, fontSize = 11.sp)
             }
         }
     }
@@ -211,7 +211,7 @@ private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "播放次数 ${summary.totalPlayCount} 次",
-                    color = SaltTheme.colors.subText.copy(alpha = BbTokens.CaptionAlpha),
+                    color = SaltTheme.colors.subText,
                     fontSize = BbTokens.CaptionSize,
                 )
             }
@@ -221,7 +221,7 @@ private fun DashboardCard(summary: ListeningSummary, daily: List<DailyStat>) {
         Spacer(Modifier.height(12.dp))
         Text(
             "最近 12 周听歌记录",
-            color = SaltTheme.colors.subText.copy(alpha = BbTokens.CaptionAlpha),
+            color = SaltTheme.colors.subText,
             fontSize = BbTokens.CaptionSize,
         )
         }
@@ -312,7 +312,7 @@ private fun ProfileEntryRow(
             Spacer(Modifier.height(2.dp))
             Text(
                 subtitle,
-                color = SaltTheme.colors.subText.copy(alpha = BbTokens.CaptionAlpha),
+                color = SaltTheme.colors.subText,
                 fontSize = BbTokens.CaptionSize,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -322,7 +322,7 @@ private fun ProfileEntryRow(
         Icon(
             Icons.Rounded.ChevronRight,
             contentDescription = null,
-            tint = SaltTheme.colors.subText.copy(alpha = 0.6f),
+            tint = SaltTheme.colors.subText,
             modifier = Modifier.size(20.dp),
         )
     }
@@ -401,7 +401,7 @@ private fun AccountCard(user: BiliUser?, onOpenLogin: () -> Unit, onLogout: () -
             Spacer(Modifier.height(10.dp))
             Text(
                 "凭据仅保存在本机 Keystore 加密存储，界面不会显示 Cookie。",
-                color = SaltTheme.colors.subText.copy(alpha = 0.7f),
+                color = SaltTheme.colors.subText,
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
             )

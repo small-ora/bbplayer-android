@@ -58,13 +58,12 @@ object BbTokens {
     /** 二级页：只有迷你播放器 + 手势条，需求口径约 140dp。 */
     val SecondaryContentBottomPadding: Dp = 140.dp
 
-    // ---------------- 字阶（需求：20sp Bold / 14sp Regular / 12sp 60%）
+    // ---------------- 字阶（需求：20sp Bold / 14sp Regular / 12sp）
+    // v9：辅助文字改用实色 subText token（不再叠加 alpha），见 ThemeTokens / BbTheme。
     val TitleLargeSize = 20.sp
     val BodySize = 14.sp
     val CaptionSize = 12.sp
 
-    /** 辅助说明文字用 60% 主题灰。 */
-    const val CaptionAlpha = 0.6f
 }
 
 /**

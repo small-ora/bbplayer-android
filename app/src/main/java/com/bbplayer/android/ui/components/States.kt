@@ -48,7 +48,7 @@ fun EmptyState(
             Spacer(Modifier.height(6.dp))
             Text(
                 text = it,
-                color = SaltTheme.colors.subText.copy(alpha = 0.7f),
+                color = SaltTheme.colors.subText,
                 fontSize = SaltTheme.textStyles.sub.fontSize,
                 textAlign = TextAlign.Center,
             )

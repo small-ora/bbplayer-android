@@ -353,20 +353,20 @@ private fun CommentRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = formatRelativeTime(comment.createdAtSec),
-                        color = SaltTheme.colors.subText.copy(alpha = 0.75f),
+                        color = SaltTheme.colors.subText,
                         fontSize = 11.sp,
                     )
                     Spacer(Modifier.width(14.dp))
                     Icon(
                         imageVector = Icons.Rounded.ThumbUp,
                         contentDescription = null,
-                        tint = SaltTheme.colors.subText.copy(alpha = 0.75f),
+                        tint = SaltTheme.colors.subText,
                         modifier = Modifier.size(13.dp),
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = Format.count(comment.likeCount),
-                        color = SaltTheme.colors.subText.copy(alpha = 0.75f),
+                        color = SaltTheme.colors.subText,
                         fontSize = 11.sp,
                     )
                 }
@@ -479,7 +479,7 @@ private fun ReplyRow(reply: CommentItem) {
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = formatRelativeTime(reply.createdAtSec),
-                    color = SaltTheme.colors.subText.copy(alpha = 0.6f),
+                    color = SaltTheme.colors.subText,
                     fontSize = 10.sp,
                 )
             }
@@ -489,7 +489,7 @@ private fun ReplyRow(reply: CommentItem) {
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = "赞 ${Format.count(reply.likeCount)}",
-                    color = SaltTheme.colors.subText.copy(alpha = 0.7f),
+                    color = SaltTheme.colors.subText,
                     fontSize = 10.sp,
                 )
             }

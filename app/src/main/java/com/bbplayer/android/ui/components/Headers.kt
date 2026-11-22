@@ -67,7 +67,7 @@ fun LargeTitle(title: String, subtitle: String? = null, actions: (@Composable ()
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = it,
-                    color = SaltTheme.colors.subText.copy(alpha = 0.6f),
+                    color = SaltTheme.colors.subText,
                     fontSize = SaltTheme.textStyles.sub.fontSize,
                 )
             }
@@ -151,7 +151,7 @@ fun SearchField(
                     },
                 decorationBox = { inner ->
                     if (value.isEmpty()) {
-                        Text(placeholder, color = SaltTheme.colors.subText.copy(alpha = 0.75f), fontSize = 14.sp)
+                        Text(placeholder, color = SaltTheme.colors.subText, fontSize = 14.sp)
                     }
                     inner()
                 },
