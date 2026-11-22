@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -48,6 +49,8 @@ class BiliVideoCollectionMapperTest {
         assertEquals("https://i0.hdslb.com/bfs/archive/cover.jpg", collection.coverUrl)
         assertEquals(3, collection.size)
         assertTrue(collection.isCollection)
+        // 多 P 合集永远不标记 partial。
+        assertFalse(collection.partial)
 
         assertEquals(listOf(111L, 222L, 333L), collection.tracks.map { it.cid })
         assertEquals(List(3) { "BV1o6k4YUEeX" }, collection.tracks.map { it.bvid })
@@ -153,6 +156,8 @@ class BiliVideoCollectionMapperTest {
         assertEquals("影视飓风", collection.uploader)
         assertEquals("https://i0.hdslb.com/bfs/archive/season.jpg", collection.coverUrl)
         assertEquals(3, collection.size)
+        // mapper 仅做解析，兜底补全由仓储负责，此时尚未标记 partial。
+        assertFalse(collection.partial)
         // ep_count 仍是接口声明的真实集数（供仓储判断要不要兜底分页）。
         assertEquals(4, BiliMapper.seasonEpisodeCount(seasonView))
 
@@ -179,7 +184,7 @@ class BiliVideoCollectionMapperTest {
     }
 
     @Test
-    fun `season ep_count 缺失时回退 episodes 展平数`() {
+    fun `season ep_count 缺失时按有效去重集数回退`() {
         val noCount = json(
             """
             {
@@ -301,6 +306,8 @@ class BiliVideoCollectionMapperTest {
         assertEquals(80_000L, fallbackTrack.durationMs)
         assertEquals(400L, fallbackTrack.playCount)
         assertEquals(4L, fallbackTrack.pubDateSec)
+        // ep_count 声明 5 集，但接口实际只给出 4 集：保留结果并标记不完整。
+        assertTrue(collection.partial)
     }
 
     @Test
@@ -320,6 +327,8 @@ class BiliVideoCollectionMapperTest {
         assertEquals(2, collection.size)
         assertEquals(listOf("BV1s1", "BV1s2"), collection.tracks.map { it.bvid })
         assertEquals(2, api.gets.size)
+        // 兜底失败仍 success，但必须标记 partial（曲目可能不完整）。
+        assertTrue(collection.partial)
     }
 
     @Test
@@ -334,6 +343,185 @@ class BiliVideoCollectionMapperTest {
         val collection = repo(api).getVideoCollection("BV1be41127ft").getOrThrow()
         assertEquals(2, collection?.size)
         assertEquals(1, api.gets.size)
+        assertFalse(collection!!.partial)
+    }
+
+    @Test
+    fun `season view 内只有 1 集但 ep_count 更多时仍识别为 SEASON 并兜底补全`() = runBlocking {
+        val oneEpisodeView = json(
+            """
+            {
+              "bvid": "BV1be41127ft",
+              "title": "第一集",
+              "owner": {"mid": 946974, "name": "影视飓风"},
+              "ugc_season": {
+                "id": 2046621,
+                "title": "样片日记",
+                "ep_count": 5,
+                "sections": [
+                  {
+                    "episodes": [
+                      {
+                        "bvid": "BV1t1", "cid": 21, "title": "第一集",
+                        "arc": {
+                          "pic": "//i0.hdslb.com/t1.jpg", "duration": 60, "pubdate": 1,
+                          "author": {"mid": 946974, "name": "影视飓风"},
+                          "stat": {"view": 100}
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+            """.trimIndent(),
+        )
+        // mapper 层：view 内只有 1 集也识别为 SEASON（交给仓储兜底补全）。
+        val mapped = BiliMapper.videoCollection(oneEpisodeView) ?: error("expected collection")
+        assertEquals(VideoCollectionKind.SEASON, mapped.kind)
+        assertEquals(1, mapped.size)
+        assertFalse(mapped.partial)
+
+        val api = FakeContentApi(
+            onGet = { path, params ->
+                when (path) {
+                    "/x/web-interface/view" -> oneEpisodeView
+                    "/x/polymer/web-space/seasons_archives_list" -> {
+                        // 一页即可补全到 ep_count，不应再请求第二页。
+                        assertEquals("1", params["page_num"])
+                        json(
+                            """
+                            {
+                              "archives": [
+                                {"bvid": "BV1t2", "title": "第二集", "pic": "//i0.hdslb.com/t2.jpg", "duration": 60, "pubdate": 2, "stat": {"view": 200}},
+                                {"bvid": "BV1t3", "title": "第三集", "pic": "//i0.hdslb.com/t3.jpg", "duration": 60, "pubdate": 3, "stat": {"view": 300}},
+                                {"bvid": "BV1t4", "title": "第四集", "pic": "//i0.hdslb.com/t4.jpg", "duration": 60, "pubdate": 4, "stat": {"view": 400}},
+                                {"bvid": "BV1t5", "title": "第五集", "pic": "//i0.hdslb.com/t5.jpg", "duration": 60, "pubdate": 5, "stat": {"view": 500}}
+                              ]
+                            }
+                            """.trimIndent(),
+                        )
+                    }
+
+                    else -> error("unexpected path $path")
+                }
+            },
+        )
+        val collection = repo(api).getVideoCollection("BV1be41127ft").getOrThrow()
+            ?: error("expected collection")
+        assertEquals(VideoCollectionKind.SEASON, collection.kind)
+        assertTrue(collection.isCollection)
+        assertEquals(5, collection.size)
+        assertEquals(
+            listOf("BV1t1", "BV1t2", "BV1t3", "BV1t4", "BV1t5"),
+            collection.tracks.map { it.bvid },
+        )
+        assertFalse(collection.partial)
+        // view + 第 1 页兜底，共 2 次请求。
+        assertEquals(2, api.gets.size)
+    }
+
+    @Test
+    fun `ep_count 缺失且含重复空 bvid 时按有效去重数计数且不触发兜底`() = runBlocking {
+        val duplicateView = json(
+            """
+            {
+              "bvid": "BV1dup",
+              "title": "重复合集",
+              "owner": {"mid": 42, "name": "UP"},
+              "ugc_season": {
+                "id": 7,
+                "title": "重复合集",
+                "sections": [
+                  {
+                    "episodes": [
+                      {"bvid": "BV1a", "cid": 1, "title": "A"},
+                      {"bvid": "", "cid": 2, "title": "空 bvid 脏数据"},
+                      {"bvid": "BV1a", "cid": 3, "title": "A 重复"}
+                    ]
+                  },
+                  {
+                    "episodes": [
+                      {"bvid": "BV1b", "cid": 4, "title": "B"},
+                      {"bvid": "BV1b", "cid": 5, "title": "B 重复"}
+                    ]
+                  }
+                ]
+              }
+            }
+            """.trimIndent(),
+        )
+        // 有效去重集数 = {BV1a, BV1b} = 2（不是 raw 的 5 条）。
+        assertEquals(2, BiliMapper.seasonEpisodeCount(duplicateView))
+        val mapped = BiliMapper.videoCollection(duplicateView) ?: error("expected collection")
+        assertEquals(VideoCollectionKind.SEASON, mapped.kind)
+        assertEquals(2, mapped.size)
+
+        val api = FakeContentApi(
+            onGet = { path, _ ->
+                when (path) {
+                    "/x/web-interface/view" -> duplicateView
+                    // 有效集数已达上限：不应触发兜底分页。
+                    else -> error("unexpected path $path")
+                }
+            },
+        )
+        val collection = repo(api).getVideoCollection("BV1dup").getOrThrow()
+            ?: error("expected collection")
+        assertEquals(2, collection.size)
+        assertFalse(collection.partial)
+        assertEquals(1, api.gets.size)
+    }
+
+    @Test
+    fun `archives 某页没有任何新增时立即停止翻页`() = runBlocking {
+        val api = FakeContentApi(
+            onGet = { path, params ->
+                when (path) {
+                    "/x/web-interface/view" -> truncatedSeasonView(epCount = 6)
+                    "/x/polymer/web-space/seasons_archives_list" -> when (params["page_num"]) {
+                        // 第 1 页全是 view 内已存在的 bvid → 没有新增，应立即停止，不再请求第 2 页。
+                        "1" -> json(
+                            """
+                            {
+                              "archives": [
+                                {"bvid": "BV1s1", "title": "第一集", "duration": 60},
+                                {"bvid": "BV1s2", "title": "第二集", "duration": 60}
+                              ]
+                            }
+                            """.trimIndent(),
+                        )
+
+                        else -> json(
+                            """
+                            {
+                              "archives": [
+                                {"bvid": "BV1s3", "title": "第三集", "duration": 60},
+                                {"bvid": "BV1s4", "title": "第四集", "duration": 60}
+                              ]
+                            }
+                            """.trimIndent(),
+                        )
+                    }
+
+                    else -> error("unexpected path $path")
+                }
+            },
+        )
+        val collection = repo(api).getVideoCollection("BV1be41127ft").getOrThrow()
+            ?: error("expected collection")
+        assertEquals(2, collection.size)
+        assertEquals(listOf("BV1s1", "BV1s2"), collection.tracks.map { it.bvid })
+        // 声明 6 集但只拿到 2 集：partial=true；且第 1 页无新增后立即停止（共 2 次请求）。
+        assertTrue(collection.partial)
+        assertEquals(2, api.gets.size)
+        assertEquals(
+            listOf(
+                "/x/web-interface/view",
+                "/x/polymer/web-space/seasons_archives_list",
+            ),
+            api.gets.map { it.path },
+        )
     }
 
     @Test

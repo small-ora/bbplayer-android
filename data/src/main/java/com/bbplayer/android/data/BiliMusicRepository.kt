@@ -179,7 +179,8 @@ class BiliMusicRepository internal constructor(
      * 判定一个视频是否是「合集」（多 P 或 season），是则返回可直接当歌单播放的合集。
      *
      * 主路径只发一次 `view`（走 [BiliApi] 既有缓存/节流）；season 在 view 内 episodes
-     * 少于 `ep_count` 时，才追加匿名兜底分页 `seasons_archives_list` 补全。
+     * 少于 `ep_count` 时（含被截断到 0/1 集），才追加匿名兜底分页 `seasons_archives_list` 补全，
+     * 并在未补全时把 [VideoCollection.partial] 置 true 供 UI 提示。
      * 兜底失败时保留已解析的 view episodes，整体仍成功——不因补全失败让主路径失败，
      * 单视频返回 `Result.success(null)`，view 本身失败则照常传播为 `Result.failure`。
      */
@@ -188,6 +189,8 @@ class BiliMusicRepository internal constructor(
         val view = api.getObject("/x/web-interface/view", mapOf("bvid" to safeBvid))
         val collection = BiliMapper.videoCollection(view) ?: return@result null
         if (collection.kind != VideoCollectionKind.SEASON) return@result collection
+        // ep_count 是声明值；缺失时 seasonEpisodeCount 回退为有效去重集数（与 mapper 过滤规则一致），
+        // 因此不会因 raw 重复/空 bvid 误触发兜底。
         val expected = BiliMapper.seasonEpisodeCount(view)
         if (collection.tracks.size >= expected) return@result collection
         appendSeasonArchives(view, collection)
@@ -198,24 +201,27 @@ class BiliMusicRepository internal constructor(
     /**
      * season 兜底分页：`seasons_archives_list` 按页补全 view 内被截断的 episodes。
      *
-     * 只做追加：按 bvid 去重，最多 [MAX_SEASON_FALLBACK_PAGES] 页；每页请求失败或返回空
-     * 立即停止并保留已解析结果（调用方仍按成功返回）。
+     * 只做追加：按 bvid 去重，最多 [MAX_SEASON_FALLBACK_PAGES] 页。以下任一情况立即停止并保留
+     * 已解析结果（调用方仍按成功返回）：某页没有任何新增（空页 / 全是重复项 / 全失效）、
+     * 请求异常。结束后按 `merged.size < target` 标记 [VideoCollection.partial]。
      */
     private suspend fun appendSeasonArchives(
         view: JsonObject,
         parsed: VideoCollection,
     ): VideoCollection {
-        val season = view.objOrNull("ugc_season") ?: return parsed
-        val seasonId = season.longOrNull("id") ?: return parsed
+        val season = view.objOrNull("ugc_season") ?: return parsed.copy(partial = true)
+        val seasonId = season.longOrNull("id") ?: return parsed.copy(partial = true)
         val mid = view.objOrNull("owner")?.longOrNull("mid")
             ?: season.longOrNull("mid")
-            ?: return parsed
-        val target = BiliMapper.seasonEpisodeCount(view).coerceAtLeast(parsed.tracks.size)
+            ?: return parsed.copy(partial = true)
+        // target 用 ep_count 的声明值（调用方只在此值 > tracks.size 时进来；缺失时不会触发兜底）。
+        val target = BiliMapper.seasonEpisodeCount(view)
+        if (target <= parsed.tracks.size) return parsed.copy(partial = false)
         val seen = parsed.tracks.mapTo(mutableSetOf()) { it.bvid }
         val merged = parsed.tracks.toMutableList()
         var page = 1
         while (page <= MAX_SEASON_FALLBACK_PAGES && merged.size < target) {
-            val archives = try {
+            val added = try {
                 api.getObject(
                     path = PATH_SEASON_ARCHIVES,
                     params = mapOf(
@@ -226,19 +232,20 @@ class BiliMusicRepository internal constructor(
                         "page_size" to SEASON_PAGE_SIZE.toString(),
                     ),
                 ).arrOrNull("archives").toObjectList()
+                    .mapNotNull { BiliContentMapper.mediaTrack(it) }
+                    .filter { seen.add(it.bvid) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                // 兜底失败不影响主路径：保留 view 内已解析的 episodes。
+                // 兜底失败不影响主路径：保留 view 内已解析的 episodes，用 partial 提示不完整。
                 break
             }
-            if (archives.isEmpty()) break
-            archives.mapNotNull { BiliContentMapper.mediaTrack(it) }
-                .filter { seen.add(it.bvid) }
-                .forEach(merged::add)
+            // 该页没有任何新增：继续翻页也不会有新增，立即停止（避免跑满 20 页）。
+            if (added.isEmpty()) break
+            merged += added
             page++
         }
-        return parsed.copy(tracks = merged)
+        return parsed.copy(tracks = merged, partial = merged.size < target)
     }
 
     /** b23.tv 短链：跟随重定向，从最终 URL / canonical / 落地页 HTML 中提取视频 ID。 */

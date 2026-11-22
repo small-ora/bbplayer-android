@@ -116,7 +116,9 @@ internal object BiliMapper {
      * `view` 接口 → 可当作歌单播放的「合集」。
      *
      * 判定顺序（SPEC：两者都有时优先 season）：
-     * 1. `ugc_season.sections[].episodes[]` 展平、去空 bvid、按 bvid 去重后 ≥2 条 → [VideoCollectionKind.SEASON]；
+     * 1. 存在 `ugc_season` 且（view 内有效 episodes > 1 或 `ep_count` 声明 > 1）→ [VideoCollectionKind.SEASON]。
+     *    view 内的 episodes 可能被接口截断到 0/1 条，此时返回的 SEASON `tracks` 可能不足 2 条，
+     *    由仓储走 `seasons_archives_list` 兜底分页补全；
      * 2. 否则 `pages[]` > 1 → [VideoCollectionKind.MULTI_PAGE]；
      * 3. 否则 null（普通单视频，由调用方按原有逻辑播放）。
      */
@@ -124,9 +126,10 @@ internal object BiliMapper {
         val season = view.objOrNull("ugc_season")
         if (season != null) {
             val tracks = seasonTracks(season)
-            if (tracks.size > 1) {
+            // 截断到 0/1 集也要能识别：只要 ep_count 声明是多集合集，就交给仓储兜底补全。
+            if (tracks.size > 1 || seasonEpisodeCount(view) > 1) {
                 val ownerName = HtmlText.clean(view.objOrNull("owner")?.strOrNull("name"))
-                    .ifBlank { tracks.first().uploader }
+                    .ifBlank { tracks.firstOrNull()?.uploader.orEmpty() }
                 return VideoCollection(
                     bvid = view.strOrNull("bvid")?.trim().orEmpty(),
                     title = HtmlText.clean(season.strOrNull("title"))
@@ -154,15 +157,21 @@ internal object BiliMapper {
     }
 
     /**
-     * season 的真实集数：优先 `ugc_season.ep_count`；缺失/非正时回退 view 内 episodes 展平数。
-     * 供仓储判断是否需要走 `seasons_archives_list` 兜底分页。
+     * season 的真实集数，供仓储判断是否需要走 `seasons_archives_list` 兜底分页：
+     * - `ugc_season.ep_count` > 0 时优先使用（接口声明的真实集数）；
+     * - 缺失/非正时回退为 sections[].episodes[] 中**非空且按 bvid 去重**的有效条目数
+     *   （与 [seasonTracks] 的过滤规则一致，避免 raw 含重复/空 bvid 时 target 永远不可达）。
      */
     fun seasonEpisodeCount(view: JsonObject): Int {
         val season = view.objOrNull("ugc_season") ?: return 0
         val declared = season.intOrNull("ep_count", "epCount")
         if (declared != null && declared > 0) return declared
         return season.arrOrNull("sections").toObjectList()
-            .sumOf { it.arrOrNull("episodes").toObjectList().size }
+            .asSequence()
+            .flatMap { it.arrOrNull("episodes").toObjectList().asSequence() }
+            .mapNotNull { episode -> episode.strOrNull("bvid")?.trim()?.takeIf { it.isNotBlank() } }
+            .distinct()
+            .count()
     }
 
     /** 各 section 的 episodes[] 展平 → Track；丢弃 bvid 为空 / 重复的条目。 */
