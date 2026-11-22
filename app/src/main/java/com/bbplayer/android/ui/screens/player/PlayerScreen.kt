@@ -263,16 +263,8 @@ fun PlayerScreen(
                 )
             }
             PlayerBackgroundStyle.GRADIENT -> {
-                // 第 1 层：封面取色（低饱和低明度）
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(backdropBase, backdropBase.copy(alpha = 0.92f))
-                            )
-                        )
-                )
+                // 第 1 层：封面取色（低饱和低明度，保持不透明，避免透出窗口底色）
+                Box(Modifier.fillMaxSize().background(backdropBase))
                 // 第 2 层：模糊封面，40% 不透明度保留封面气质，同时不破坏白字可读性
                 AsyncImage(
                     model = track.coverUrl,
